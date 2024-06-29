@@ -21,8 +21,36 @@ function exportAtlas(exportPath, symbolName)
 		return;
 	}
 	
+	// Export the basic data
 	exporter.exportTextureAtlas(symbol);
+
+	// Generate custom json	
+	var jsonResult = generateJson(symbol);
+
+	// Override Animation.json with custom format
+	FLfile.write(formatPath(path + "/Animation.json"), jsonResult);
+	
 	fl.trace("Exported to folder: " + exportPath);
+}
+
+function generateJson(symbol) {
+	var json ="{\n";
+	
+	// Add Animation
+	json += '"ANIMATION": {\n';
+	json += '},\n';
+	
+	// Add Symbol Dictionary
+	json += '"SYMBOL_DICTIONARY": {\n';
+	json += '},\n';
+	
+	// Add Metadata
+	json += '"metadata": {\n';
+	json += '"framerate": ' + doc.frameRate + "\n";
+	json += '}\n';
+	
+	json += "}";
+	return json;
 }
 
 function findSymbol(name) {
@@ -38,7 +66,7 @@ function findSymbol(name) {
 function setupExporter(path) {
 	var exporter = new TextureAtlasExporter;
 
-	exporter.filePath = "file:///C|/" + path;
+	exporter.filePath = formatPath(path);
 	exporter.algorithm = "maxRects";
 	exporter.autoSize = true;
 	exporter.resolution = 1;
@@ -47,4 +75,8 @@ function setupExporter(path) {
 	exporter.optimizeBitmap = true;
 	
 	return exporter;
+}
+
+function formatPath(path) {
+	return "file:///C|/" + path;
 }
