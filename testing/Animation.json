@@ -10,36 +10,144 @@
 "index": 0,
 "duration": 2,
 "elements": [
+{
+"SYMBOL_Instance": {
+"SYMBOL_name": "bf eyes 1",
+"firstFrame": 0,
+"Instance_Name": "",
+"symbolType": "graphic",
+"Matrix": [0.9929046630859375,-0.1156005859375,0.1156005859375,0.9929046630859375,-541.7,23.5],
+"blendMode": "normal",
+"filters": [
+]
+}
+}
 ]
 },
 {
 "index": 2,
 "duration": 2,
 "elements": [
+{
+"SYMBOL_Instance": {
+"SYMBOL_name": "bf eyes 1",
+"firstFrame": 0,
+"Instance_Name": "",
+"symbolType": "graphic",
+"Matrix": [0.9874114990234375,-0.1548614501953125,0.1548614501953125,0.9874114990234375,-542.5,25.6],
+"blendMode": "normal",
+"filters": [
+]
+}
+}
 ]
 },
 {
 "index": 4,
 "duration": 2,
 "elements": [
+{
+"SYMBOL_Instance": {
+"SYMBOL_name": "bf eyes 1",
+"firstFrame": 0,
+"Instance_Name": "",
+"symbolType": "graphic",
+"Matrix": [0.9827728271484375,-0.1814422607421875,0.1814422607421875,0.9827728271484375,-541.75,25.9],
+"blendMode": "normal",
+"filters": [
+]
+}
+}
 ]
 },
 {
 "index": 6,
 "duration": 2,
 "elements": [
+{
+"SYMBOL_Instance": {
+"SYMBOL_name": "bf eyes 1",
+"firstFrame": 0,
+"Instance_Name": "",
+"symbolType": "graphic",
+"Matrix": [0.999664306640625,-0.02239990234375,0.02239990234375,0.999664306640625,-527.45,7.45],
+"blendMode": "normal",
+"filters": [
+]
+}
+}
+,{
+"SYMBOL_Instance": {
+"SYMBOL_name": "bf mouth 1",
+"firstFrame": 0,
+"Instance_Name": "",
+"symbolType": "graphic",
+"Matrix": [0.999664306640625,-0.02239990234375,0.02239990234375,0.999664306640625,-483.9,74.15],
+"blendMode": "normal",
+"filters": [
+]
+}
+}
 ]
 },
 {
 "index": 8,
 "duration": 5,
 "elements": [
+{
+"SYMBOL_Instance": {
+"SYMBOL_name": "bf eyes 1",
+"firstFrame": 0,
+"Instance_Name": "",
+"symbolType": "graphic",
+"Matrix": [1,0,0,1,-525.5,3.5],
+"blendMode": "normal",
+"filters": [
+]
+}
+}
+,{
+"SYMBOL_Instance": {
+"SYMBOL_name": "bf mouth 1",
+"firstFrame": 0,
+"Instance_Name": "",
+"symbolType": "graphic",
+"Matrix": [1,0,0,1,-483.45,71.2],
+"blendMode": "normal",
+"filters": [
+]
+}
+}
 ]
 },
 {
 "index": 13,
 "duration": 1,
 "elements": [
+{
+"SYMBOL_Instance": {
+"SYMBOL_name": "bf eyes 1",
+"firstFrame": 0,
+"Instance_Name": "",
+"symbolType": "graphic",
+"Matrix": [1,0,0,1,-525.5,3.5],
+"blendMode": "normal",
+"filters": [
+]
+}
+}
+,{
+"SYMBOL_Instance": {
+"SYMBOL_name": "bf mouth 1",
+"firstFrame": 0,
+"Instance_Name": "",
+"symbolType": "graphic",
+"Matrix": [1,0,0,1,-483.45,71.2],
+"blendMode": "normal",
+"filters": [
+]
+}
+}
 ]
 }
 ]
@@ -51,36 +159,108 @@
 "index": 0,
 "duration": 2,
 "elements": [
+{
+"SYMBOL_Instance": {
+"SYMBOL_name": "boyfriend top head",
+"firstFrame": 0,
+"Instance_Name": "",
+"symbolType": "graphic",
+"Matrix": [0.9929046630859375,-0.1156005859375,0.1156005859375,0.9929046630859375,-594.75,-23.1],
+"blendMode": "normal",
+"filters": [
+]
+}
+}
 ]
 },
 {
 "index": 2,
 "duration": 2,
 "elements": [
+{
+"SYMBOL_Instance": {
+"SYMBOL_name": "boyfriend top head",
+"firstFrame": 0,
+"Instance_Name": "",
+"symbolType": "graphic",
+"Matrix": [0.9874114990234375,-0.1548614501953125,0.1548614501953125,0.9874114990234375,-597.35,-18.85],
+"blendMode": "normal",
+"filters": [
+]
+}
+}
 ]
 },
 {
 "index": 4,
 "duration": 2,
 "elements": [
+{
+"SYMBOL_Instance": {
+"SYMBOL_name": "boyfriend top head",
+"firstFrame": 0,
+"Instance_Name": "",
+"symbolType": "graphic",
+"Matrix": [0.9827728271484375,-0.1814422607421875,0.1814422607421875,0.9827728271484375,-597.75,-17],
+"blendMode": "normal",
+"filters": [
+]
+}
+}
 ]
 },
 {
 "index": 6,
 "duration": 2,
 "elements": [
+{
+"SYMBOL_Instance": {
+"SYMBOL_name": "boyfriend top head",
+"firstFrame": 0,
+"Instance_Name": "",
+"symbolType": "graphic",
+"Matrix": [0.999664306640625,-0.02239990234375,0.02239990234375,0.999664306640625,-575.9,-43.95],
+"blendMode": "normal",
+"filters": [
+]
+}
+}
 ]
 },
 {
 "index": 8,
 "duration": 5,
 "elements": [
+{
+"SYMBOL_Instance": {
+"SYMBOL_name": "boyfriend top head",
+"firstFrame": 0,
+"Instance_Name": "",
+"symbolType": "graphic",
+"Matrix": [1,0,0,1,-572.8,-48.95],
+"blendMode": "normal",
+"filters": [
+]
+}
+}
 ]
 },
 {
 "index": 13,
 "duration": 1,
 "elements": [
+{
+"SYMBOL_Instance": {
+"SYMBOL_name": "boyfriend top head",
+"firstFrame": 0,
+"Instance_Name": "",
+"symbolType": "graphic",
+"Matrix": [1,0,0,1,-572.8,-48.95],
+"blendMode": "normal",
+"filters": [
+]
+}
+}
 ]
 }
 ]
@@ -92,36 +272,180 @@
 "index": 0,
 "duration": 2,
 "elements": [
+{
+"SYMBOL_Instance": {
+"SYMBOL_name": "DJ arm",
+"firstFrame": 0,
+"Instance_Name": "",
+"symbolType": "graphic",
+"Matrix": [1,0,0,1,-539.3,69.25],
+"blendMode": "normal",
+"filters": [
+]
+}
+}
+,{
+"SYMBOL_Instance": {
+"SYMBOL_name": "rave hand",
+"firstFrame": 0,
+"Instance_Name": "",
+"symbolType": "graphic",
+"Matrix": [1,0,0,1,-625.6,-71.95],
+"blendMode": "normal",
+"filters": [
+]
+}
+}
 ]
 },
 {
 "index": 2,
 "duration": 2,
 "elements": [
+{
+"SYMBOL_Instance": {
+"SYMBOL_name": "DJ arm",
+"firstFrame": 2,
+"Instance_Name": "",
+"symbolType": "graphic",
+"Matrix": [1,0,0,1,-539.3,69.25],
+"blendMode": "normal",
+"filters": [
+]
+}
+}
+,{
+"SYMBOL_Instance": {
+"SYMBOL_name": "rave hand",
+"firstFrame": 2,
+"Instance_Name": "",
+"symbolType": "graphic",
+"Matrix": [1,0,0,1,-625.6,-71.95],
+"blendMode": "normal",
+"filters": [
+]
+}
+}
 ]
 },
 {
 "index": 4,
 "duration": 2,
 "elements": [
+{
+"SYMBOL_Instance": {
+"SYMBOL_name": "DJ arm",
+"firstFrame": 4,
+"Instance_Name": "",
+"symbolType": "graphic",
+"Matrix": [1,0,0,1,-539.3,69.25],
+"blendMode": "normal",
+"filters": [
+]
+}
+}
+,{
+"SYMBOL_Instance": {
+"SYMBOL_name": "rave hand",
+"firstFrame": 4,
+"Instance_Name": "",
+"symbolType": "graphic",
+"Matrix": [1,0,0,1,-625.6,-71.95],
+"blendMode": "normal",
+"filters": [
+]
+}
+}
 ]
 },
 {
 "index": 6,
 "duration": 2,
 "elements": [
+{
+"SYMBOL_Instance": {
+"SYMBOL_name": "DJ arm",
+"firstFrame": 6,
+"Instance_Name": "",
+"symbolType": "graphic",
+"Matrix": [1,0,0,1,-539.3,69.25],
+"blendMode": "normal",
+"filters": [
+]
+}
+}
+,{
+"SYMBOL_Instance": {
+"SYMBOL_name": "rave hand",
+"firstFrame": 6,
+"Instance_Name": "",
+"symbolType": "graphic",
+"Matrix": [1,0,0,1,-625.6,-71.95],
+"blendMode": "normal",
+"filters": [
+]
+}
+}
 ]
 },
 {
 "index": 8,
 "duration": 5,
 "elements": [
+{
+"SYMBOL_Instance": {
+"SYMBOL_name": "DJ arm",
+"firstFrame": 8,
+"Instance_Name": "",
+"symbolType": "graphic",
+"Matrix": [1,0,0,1,-539.3,69.25],
+"blendMode": "normal",
+"filters": [
+]
+}
+}
+,{
+"SYMBOL_Instance": {
+"SYMBOL_name": "rave hand",
+"firstFrame": 8,
+"Instance_Name": "",
+"symbolType": "graphic",
+"Matrix": [1,0,0,1,-625.6,-71.95],
+"blendMode": "normal",
+"filters": [
+]
+}
+}
 ]
 },
 {
 "index": 13,
 "duration": 1,
 "elements": [
+{
+"SYMBOL_Instance": {
+"SYMBOL_name": "DJ arm",
+"firstFrame": 13,
+"Instance_Name": "",
+"symbolType": "graphic",
+"Matrix": [1,0,0,1,-539.3,69.25],
+"blendMode": "normal",
+"filters": [
+]
+}
+}
+,{
+"SYMBOL_Instance": {
+"SYMBOL_name": "rave hand",
+"firstFrame": 13,
+"Instance_Name": "",
+"symbolType": "graphic",
+"Matrix": [1,0,0,1,-625.6,-71.95],
+"blendMode": "normal",
+"filters": [
+]
+}
+}
 ]
 }
 ]
@@ -133,18 +457,54 @@
 "index": 0,
 "duration": 2,
 "elements": [
+{
+"SYMBOL_Instance": {
+"SYMBOL_name": "bf mouth 1",
+"firstFrame": 0,
+"Instance_Name": "",
+"symbolType": "graphic",
+"Matrix": [0.9929046630859375,-0.1156005859375,0.1156005859375,0.9929046630859375,-492.05,85.9],
+"blendMode": "normal",
+"filters": [
+]
+}
+}
 ]
 },
 {
 "index": 2,
 "duration": 2,
 "elements": [
+{
+"SYMBOL_Instance": {
+"SYMBOL_name": "bf mouth 1",
+"firstFrame": 0,
+"Instance_Name": "",
+"symbolType": "graphic",
+"Matrix": [0.9874114990234375,-0.1548614501953125,0.1548614501953125,0.9874114990234375,-490.4,86],
+"blendMode": "normal",
+"filters": [
+]
+}
+}
 ]
 },
 {
 "index": 4,
 "duration": 2,
 "elements": [
+{
+"SYMBOL_Instance": {
+"SYMBOL_name": "bf mouth 1",
+"firstFrame": 0,
+"Instance_Name": "",
+"symbolType": "graphic",
+"Matrix": [0.9827728271484375,-0.1814422607421875,0.1814422607421875,0.9827728271484375,-488,84.9],
+"blendMode": "normal",
+"filters": [
+]
+}
+}
 ]
 },
 {
@@ -162,36 +522,108 @@
 "index": 0,
 "duration": 2,
 "elements": [
+{
+"SYMBOL_Instance": {
+"SYMBOL_name": "boyfriend bottom head",
+"firstFrame": 0,
+"Instance_Name": "",
+"symbolType": "graphic",
+"Matrix": [0.9929046630859375,-0.1156005859375,0.1156005859375,0.9929046630859375,-545.9,62.85],
+"blendMode": "normal",
+"filters": [
+]
+}
+}
 ]
 },
 {
 "index": 2,
 "duration": 2,
 "elements": [
+{
+"SYMBOL_Instance": {
+"SYMBOL_name": "boyfriend bottom head",
+"firstFrame": 0,
+"Instance_Name": "",
+"symbolType": "graphic",
+"Matrix": [0.9874114990234375,-0.1548614501953125,0.1548614501953125,0.9874114990234375,-545.15,65.05],
+"blendMode": "normal",
+"filters": [
+]
+}
+}
 ]
 },
 {
 "index": 4,
 "duration": 2,
 "elements": [
+{
+"SYMBOL_Instance": {
+"SYMBOL_name": "boyfriend bottom head",
+"firstFrame": 0,
+"Instance_Name": "",
+"symbolType": "graphic",
+"Matrix": [0.9827728271484375,-0.1814422607421875,0.1814422607421875,0.9827728271484375,-543.35,65.45],
+"blendMode": "normal",
+"filters": [
+]
+}
+}
 ]
 },
 {
 "index": 6,
 "duration": 2,
 "elements": [
+{
+"SYMBOL_Instance": {
+"SYMBOL_name": "boyfriend bottom head",
+"firstFrame": 0,
+"Instance_Name": "",
+"symbolType": "graphic",
+"Matrix": [0.999664306640625,-0.02239990234375,0.02239990234375,0.999664306640625,-535.4,46.15],
+"blendMode": "normal",
+"filters": [
+]
+}
+}
 ]
 },
 {
 "index": 8,
 "duration": 5,
 "elements": [
+{
+"SYMBOL_Instance": {
+"SYMBOL_name": "boyfriend bottom head",
+"firstFrame": 0,
+"Instance_Name": "",
+"symbolType": "graphic",
+"Matrix": [1,0,0,1,-534.3,42.05],
+"blendMode": "normal",
+"filters": [
+]
+}
+}
 ]
 },
 {
 "index": 13,
 "duration": 1,
 "elements": [
+{
+"SYMBOL_Instance": {
+"SYMBOL_name": "boyfriend bottom head",
+"firstFrame": 0,
+"Instance_Name": "",
+"symbolType": "graphic",
+"Matrix": [1,0,0,1,-534.3,42.05],
+"blendMode": "normal",
+"filters": [
+]
+}
+}
 ]
 }
 ]
@@ -203,12 +635,36 @@
 "index": 0,
 "duration": 13,
 "elements": [
+{
+"SYMBOL_Instance": {
+"SYMBOL_name": "spinning disk",
+"firstFrame": 0,
+"Instance_Name": "",
+"symbolType": "graphic",
+"Matrix": [0.9892730712890625,0.135223388671875,-0.135223388671875,0.9892730712890625,-610.15,152.65],
+"blendMode": "normal",
+"filters": [
+]
+}
+}
 ]
 },
 {
 "index": 13,
 "duration": 1,
 "elements": [
+{
+"SYMBOL_Instance": {
+"SYMBOL_name": "spinning disk",
+"firstFrame": 5,
+"Instance_Name": "",
+"symbolType": "graphic",
+"Matrix": [0.9892730712890625,0.135223388671875,-0.135223388671875,0.9892730712890625,-610.15,152.65],
+"blendMode": "normal",
+"filters": [
+]
+}
+}
 ]
 }
 ]
@@ -220,12 +676,36 @@
 "index": 0,
 "duration": 13,
 "elements": [
+{
+"SYMBOL_Instance": {
+"SYMBOL_name": "spinning disk",
+"firstFrame": 0,
+"Instance_Name": "",
+"symbolType": "graphic",
+"Matrix": [1,0,0,1,-446.15,161.3],
+"blendMode": "normal",
+"filters": [
+]
+}
+}
 ]
 },
 {
 "index": 13,
 "duration": 1,
 "elements": [
+{
+"SYMBOL_Instance": {
+"SYMBOL_name": "spinning disk",
+"firstFrame": 5,
+"Instance_Name": "",
+"symbolType": "graphic",
+"Matrix": [1,0,0,1,-446.15,161.3],
+"blendMode": "normal",
+"filters": [
+]
+}
+}
 ]
 }
 ]
@@ -237,12 +717,36 @@
 "index": 0,
 "duration": 13,
 "elements": [
+{
+"SYMBOL_Instance": {
+"SYMBOL_name": "turn table",
+"firstFrame": 0,
+"Instance_Name": "",
+"symbolType": "graphic",
+"Matrix": [1,0,0,1,-649.4,158],
+"blendMode": "normal",
+"filters": [
+]
+}
+}
 ]
 },
 {
 "index": 13,
 "duration": 1,
 "elements": [
+{
+"SYMBOL_Instance": {
+"SYMBOL_name": "turn table",
+"firstFrame": 13,
+"Instance_Name": "",
+"symbolType": "graphic",
+"Matrix": [1,0,0,1,-649.4,158],
+"blendMode": "normal",
+"filters": [
+]
+}
+}
 ]
 }
 ]
@@ -254,30 +758,90 @@
 "index": 0,
 "duration": 2,
 "elements": [
+{
+"SYMBOL_Instance": {
+"SYMBOL_name": "boyfriend dj body",
+"firstFrame": 0,
+"Instance_Name": "",
+"symbolType": "graphic",
+"Matrix": [1.0217437744140625,0.0269317626953125,-0.0388336181640625,0.9765472412109375,-601.95,80.75],
+"blendMode": "normal",
+"filters": [
+]
+}
+}
 ]
 },
 {
 "index": 2,
 "duration": 2,
 "elements": [
+{
+"SYMBOL_Instance": {
+"SYMBOL_name": "boyfriend dj body",
+"firstFrame": 0,
+"Instance_Name": "",
+"symbolType": "graphic",
+"Matrix": [1.0220184326171875,0.00921630859375,-0.022216796875,0.9911041259765625,-604.3,81.05],
+"blendMode": "normal",
+"filters": [
+]
+}
+}
 ]
 },
 {
 "index": 4,
 "duration": 2,
 "elements": [
+{
+"SYMBOL_Instance": {
+"SYMBOL_name": "boyfriend dj body",
+"firstFrame": 0,
+"Instance_Name": "",
+"symbolType": "graphic",
+"Matrix": [1.0219879150390625,-0.0048065185546875,-0.0087738037109375,1.0091400146484375,-607.4,79.05],
+"blendMode": "normal",
+"filters": [
+]
+}
+}
 ]
 },
 {
 "index": 6,
 "duration": 7,
 "elements": [
+{
+"SYMBOL_Instance": {
+"SYMBOL_name": "boyfriend dj body",
+"firstFrame": 0,
+"Instance_Name": "",
+"symbolType": "graphic",
+"Matrix": [1,0,0,1,-606.25,77.5],
+"blendMode": "normal",
+"filters": [
+]
+}
+}
 ]
 },
 {
 "index": 13,
 "duration": 1,
 "elements": [
+{
+"SYMBOL_Instance": {
+"SYMBOL_name": "boyfriend dj body",
+"firstFrame": 0,
+"Instance_Name": "",
+"symbolType": "graphic",
+"Matrix": [1,0,0,1,-606.25,77.5],
+"blendMode": "normal",
+"filters": [
+]
+}
+}
 ]
 }
 ]
@@ -287,6 +851,640 @@
 },
 "SYMBOL_DICTIONARY": {
 "Symbols": [
+{
+"SYMBOL_name": "bf eyes 1",
+"TIMELINE": {
+"LAYERS": [
+{
+"Layer_name": "Layer 1",
+"Frames": [
+{
+"index": 0,
+"duration": 1,
+"elements": [
+{
+"SYMBOL_Instance": {
+"Instance_Name": "",
+"symbolType": "undefined",
+"Matrix": [1,0,0,1,0,0],
+"blendMode": "undefined",
+"filters": [
+]
+}
+}
+]
+}
+]
+}
+]
+}
+},
+{
+"SYMBOL_name": "bf mouth 1",
+"TIMELINE": {
+"LAYERS": [
+{
+"Layer_name": "Layer 1",
+"Frames": [
+{
+"index": 0,
+"duration": 1,
+"elements": [
+{
+"SYMBOL_Instance": {
+"Instance_Name": "",
+"symbolType": "undefined",
+"Matrix": [1,0,0,1,0,0],
+"blendMode": "undefined",
+"filters": [
+]
+}
+}
+]
+}
+]
+}
+]
+}
+},
+{
+"SYMBOL_name": "boyfriend top head",
+"TIMELINE": {
+"LAYERS": [
+{
+"Layer_name": "Layer 1",
+"Frames": [
+{
+"index": 0,
+"duration": 1,
+"elements": [
+{
+"SYMBOL_Instance": {
+"Instance_Name": "",
+"symbolType": "undefined",
+"Matrix": [1,0,0,1,0,0],
+"blendMode": "undefined",
+"filters": [
+]
+}
+}
+]
+}
+]
+}
+]
+}
+},
+{
+"SYMBOL_name": "DJ arm",
+"TIMELINE": {
+"LAYERS": [
+{
+"Layer_name": "Layer 1",
+"Frames": [
+{
+"index": 0,
+"duration": 2,
+"elements": [
+{
+"SYMBOL_Instance": {
+"SYMBOL_name": "dj arm out",
+"firstFrame": 0,
+"Instance_Name": "",
+"symbolType": "graphic",
+"Matrix": [1,0,0,1,-41.05,3.5],
+"blendMode": "normal",
+"filters": [
+]
+}
+}
+]
+},
+{
+"index": 2,
+"duration": 2,
+"elements": [
+{
+"SYMBOL_Instance": {
+"SYMBOL_name": "dj arm out",
+"firstFrame": 0,
+"Instance_Name": "",
+"symbolType": "graphic",
+"Matrix": [0.9997711181640625,0.0183563232421875,-0.0183563232421875,0.9997711181640625,-36.25,2.85],
+"blendMode": "normal",
+"filters": [
+]
+}
+}
+]
+},
+{
+"index": 4,
+"duration": 2,
+"elements": [
+{
+"SYMBOL_Instance": {
+"SYMBOL_name": "dj arm out",
+"firstFrame": 0,
+"Instance_Name": "",
+"symbolType": "graphic",
+"Matrix": [0.9986419677734375,-0.0488739013671875,0.0488739013671875,0.9986419677734375,-35.35,10],
+"blendMode": "normal",
+"filters": [
+]
+}
+}
+]
+},
+{
+"index": 6,
+"duration": 2,
+"elements": [
+{
+"SYMBOL_Instance": {
+"SYMBOL_name": "dj arm in",
+"firstFrame": 0,
+"Instance_Name": "",
+"symbolType": "graphic",
+"Matrix": [0.9992218017578125,-0.036102294921875,0.0046234130859375,1.0003662109375,1.55,4.8],
+"blendMode": "normal",
+"filters": [
+]
+}
+}
+]
+},
+{
+"index": 8,
+"duration": 2,
+"elements": [
+{
+"SYMBOL_Instance": {
+"SYMBOL_name": "dj arm in",
+"firstFrame": 0,
+"Instance_Name": "",
+"symbolType": "graphic",
+"Matrix": [0.9997711181640625,-0.0184173583984375,0.01025390625,0.9999237060546875,1.4,2.4],
+"blendMode": "normal",
+"filters": [
+]
+}
+}
+]
+},
+{
+"index": 10,
+"duration": 4,
+"elements": [
+{
+"SYMBOL_Instance": {
+"SYMBOL_name": "dj arm in",
+"firstFrame": 0,
+"Instance_Name": "",
+"symbolType": "graphic",
+"Matrix": [1,0,0,1,1.45,0],
+"blendMode": "normal",
+"filters": [
+]
+}
+}
+]
+}
+]
+}
+]
+}
+},
+{
+"SYMBOL_name": "rave hand",
+"TIMELINE": {
+"LAYERS": [
+{
+"Layer_name": "Layer 1",
+"Frames": [
+{
+"index": 0,
+"duration": 2,
+"elements": [
+{
+"SYMBOL_Instance": {
+"SYMBOL_name": "hand out",
+"firstFrame": 0,
+"Instance_Name": "",
+"symbolType": "graphic",
+"Matrix": [0.999847412109375,-0.0137939453125,0.0137939453125,0.999847412109375,-8.65,15.35],
+"blendMode": "normal",
+"filters": [
+]
+}
+}
+]
+},
+{
+"index": 2,
+"duration": 2,
+"elements": [
+{
+"SYMBOL_Instance": {
+"SYMBOL_name": "hand out",
+"firstFrame": 0,
+"Instance_Name": "",
+"symbolType": "graphic",
+"Matrix": [0.99261474609375,-0.1179351806640625,0.2176513671875,0.98077392578125,-14.85,24.2],
+"blendMode": "normal",
+"filters": [
+]
+}
+}
+]
+},
+{
+"index": 4,
+"duration": 2,
+"elements": [
+{
+"SYMBOL_Instance": {
+"SYMBOL_name": "hand out",
+"firstFrame": 0,
+"Instance_Name": "",
+"symbolType": "graphic",
+"Matrix": [0.997528076171875,0.0668792724609375,-0.0668792724609375,0.997528076171875,8.4,-4.1],
+"blendMode": "normal",
+"filters": [
+]
+}
+}
+]
+},
+{
+"index": 6,
+"duration": 2,
+"elements": [
+{
+"SYMBOL_Instance": {
+"SYMBOL_name": "hand in",
+"firstFrame": 0,
+"Instance_Name": "",
+"symbolType": "graphic",
+"Matrix": [0.998443603515625,-0.05242919921875,0.05242919921875,0.998443603515625,53.2,0.2],
+"blendMode": "normal",
+"filters": [
+]
+}
+}
+]
+},
+{
+"index": 8,
+"duration": 2,
+"elements": [
+{
+"SYMBOL_Instance": {
+"SYMBOL_name": "hand in",
+"firstFrame": 0,
+"Instance_Name": "",
+"symbolType": "graphic",
+"Matrix": [1,0,0,1,62.45,2.75],
+"blendMode": "normal",
+"filters": [
+]
+}
+}
+]
+},
+{
+"index": 10,
+"duration": 4,
+"elements": [
+{
+"SYMBOL_Instance": {
+"SYMBOL_name": "hand in",
+"firstFrame": 0,
+"Instance_Name": "",
+"symbolType": "graphic",
+"Matrix": [0.9995574951171875,0.026611328125,-0.026611328125,0.9995574951171875,65.15,2.55],
+"blendMode": "normal",
+"filters": [
+]
+}
+}
+]
+}
+]
+}
+]
+}
+},
+{
+"SYMBOL_name": "boyfriend bottom head",
+"TIMELINE": {
+"LAYERS": [
+{
+"Layer_name": "Layer 1",
+"Frames": [
+{
+"index": 0,
+"duration": 1,
+"elements": [
+{
+"SYMBOL_Instance": {
+"Instance_Name": "",
+"symbolType": "undefined",
+"Matrix": [1,0,0,1,0,0],
+"blendMode": "undefined",
+"filters": [
+]
+}
+}
+]
+}
+]
+}
+]
+}
+},
+{
+"SYMBOL_name": "spinning disk",
+"TIMELINE": {
+"LAYERS": [
+{
+"Layer_name": "Layer 2",
+"Frames": [
+{
+"index": 0,
+"duration": 2,
+"elements": [
+{
+"SYMBOL_Instance": {
+"Instance_Name": "",
+"symbolType": "undefined",
+"Matrix": [1,0,0,1,0,0],
+"blendMode": "undefined",
+"filters": [
+]
+}
+}
+]
+},
+{
+"index": 2,
+"duration": 2,
+"elements": [
+{
+"SYMBOL_Instance": {
+"Instance_Name": "",
+"symbolType": "undefined",
+"Matrix": [1,0,0,1,0,0],
+"blendMode": "undefined",
+"filters": [
+]
+}
+}
+]
+},
+{
+"index": 4,
+"duration": 2,
+"elements": [
+{
+"SYMBOL_Instance": {
+"Instance_Name": "",
+"symbolType": "undefined",
+"Matrix": [1,0,0,1,0,0],
+"blendMode": "undefined",
+"filters": [
+]
+}
+}
+]
+},
+{
+"index": 6,
+"duration": 2,
+"elements": [
+{
+"SYMBOL_Instance": {
+"Instance_Name": "",
+"symbolType": "undefined",
+"Matrix": [1,0,0,1,0,0],
+"blendMode": "undefined",
+"filters": [
+]
+}
+}
+]
+}
+]
+},
+{
+"Layer_name": "Layer 1",
+"Frames": [
+{
+"index": 0,
+"duration": 8,
+"elements": [
+{
+"SYMBOL_Instance": {
+"Instance_Name": "",
+"symbolType": "undefined",
+"Matrix": [1,0,0,1,0,0],
+"blendMode": "undefined",
+"filters": [
+]
+}
+}
+]
+}
+]
+}
+]
+}
+},
+{
+"SYMBOL_name": "turn table",
+"TIMELINE": {
+"LAYERS": [
+{
+"Layer_name": "turntable lights Layer",
+"Frames": [
+{
+"index": 0,
+"duration": 14,
+"elements": [
+{
+"SYMBOL_Instance": {
+"SYMBOL_name": "turntable lights",
+"Instance_Name": "",
+"symbolType": "movie clip",
+"Matrix": [1,0,0,1,0,0],
+"blendMode": "add",
+"filters": [
+{
+"name": "blurFilter",
+"blurX": 9,
+"blurY": 9,
+"quality": 3
+}
+]
+}
+}
+]
+}
+]
+},
+{
+"Layer_name": "Layer 1",
+"Frames": [
+{
+"index": 0,
+"duration": 14,
+"elements": [
+{
+"SYMBOL_Instance": {
+"Instance_Name": "",
+"symbolType": "undefined",
+"Matrix": [1,0,0,1,0,0],
+"blendMode": "undefined",
+"filters": [
+]
+}
+}
+]
+}
+]
+},
+{
+"Layer_name": "Layer 2",
+"Frames": [
+{
+"index": 0,
+"duration": 2,
+"elements": [
+{
+"SYMBOL_Instance": {
+"Instance_Name": "",
+"symbolType": "undefined",
+"Matrix": [1,0,0,1,0,0],
+"blendMode": "undefined",
+"filters": [
+]
+}
+}
+]
+},
+{
+"index": 2,
+"duration": 2,
+"elements": [
+{
+"SYMBOL_Instance": {
+"Instance_Name": "",
+"symbolType": "undefined",
+"Matrix": [1,0,0,1,0,0],
+"blendMode": "undefined",
+"filters": [
+]
+}
+}
+]
+},
+{
+"index": 4,
+"duration": 2,
+"elements": [
+{
+"SYMBOL_Instance": {
+"Instance_Name": "",
+"symbolType": "undefined",
+"Matrix": [1,0,0,1,0,0],
+"blendMode": "undefined",
+"filters": [
+]
+}
+}
+]
+},
+{
+"index": 6,
+"duration": 2,
+"elements": [
+{
+"SYMBOL_Instance": {
+"Instance_Name": "",
+"symbolType": "undefined",
+"Matrix": [1,0,0,1,0,0],
+"blendMode": "undefined",
+"filters": [
+]
+}
+}
+]
+},
+{
+"index": 8,
+"duration": 2,
+"elements": [
+{
+"SYMBOL_Instance": {
+"Instance_Name": "",
+"symbolType": "undefined",
+"Matrix": [1,0,0,1,0,0],
+"blendMode": "undefined",
+"filters": [
+]
+}
+}
+]
+},
+{
+"index": 10,
+"duration": 4,
+"elements": [
+{
+"SYMBOL_Instance": {
+"Instance_Name": "",
+"symbolType": "undefined",
+"Matrix": [1,0,0,1,0,0],
+"blendMode": "undefined",
+"filters": [
+]
+}
+}
+]
+}
+]
+}
+]
+}
+},
+{
+"SYMBOL_name": "boyfriend dj body",
+"TIMELINE": {
+"LAYERS": [
+{
+"Layer_name": "Layer 1",
+"Frames": [
+{
+"index": 0,
+"duration": 1,
+"elements": [
+{
+"SYMBOL_Instance": {
+"Instance_Name": "",
+"symbolType": "undefined",
+"Matrix": [1,0,0,1,0,0],
+"blendMode": "undefined",
+"filters": [
+]
+}
+}
+]
+}
+]
+}
+]
+}
+}
 ]
 },
 "metadata": {

@@ -38,12 +38,22 @@ function generateJson(symbol) {
 	
 	// Add Animation
 	json += '"ANIMATION": {\n';
+	//json += '"StageInstance": {\n';
+	//json += parseSymbolInstance(symbol);
+	//json += '},\n';
 	json += parseSymbol(symbol);
 	json += '},\n';
+	
+	var dictionary = findDictionary(symbol);
 	
 	// Add Symbol Dictionary
 	json += '"SYMBOL_DICTIONARY": {\n';
 	json += '"Symbols": [\n';
+	for (d = 0; d < dictionary.length; d++) {
+		json += '{\n';
+		json += parseSymbol(dictionary[d]);
+		json += (d < dictionary.length - 1) ? '},\n' : '}\n';
+	}
 	json += ']\n';
 	json += '},\n';
 	
@@ -56,6 +66,33 @@ function generateJson(symbol) {
 	return json;
 }
 
+function findDictionary(symbol)
+{
+	var dictionary = [];
+	
+	for (l = 0; l < symbol.timeline.layers.length; l++)
+	{
+		var layer = symbol.timeline.layers[l];
+		for (f = 0; f < layer.frames.length; f++)
+		{
+			var frame = layer.frames[f];
+			for (e = 0; e < frame.elements.length; e++)
+			{
+				var element = frame.elements[e];
+				if (element.elementType == "instance")
+				{
+					var libraryItem = element.libraryItem;
+					if (dictionary.indexOf(libraryItem) == -1) {
+						dictionary.push(libraryItem);
+					}
+				}
+			}
+		}
+	}
+
+	return dictionary;
+}
+
 function parseSymbol(symbol)
 {
 	var json = '';
@@ -63,7 +100,7 @@ function parseSymbol(symbol)
 	var timeline = symbol.timeline;
 	var layers = timeline.layers;
 	
-	json += '"SYMBOL_name": "' + symbol.name + '",\n';
+	json += jsonStr("SYMBOL_name", symbol.name);
 	
 	json += '"TIMELINE": {\n';
 	json += '"LAYERS": [\n';
@@ -73,10 +110,8 @@ function parseSymbol(symbol)
 	{
 		var layer = layers[l];		
 		json += '{\n';
-		json += '"Layer_name": "' + layer.name + '",\n';
-		json += '"Frames": [\n';
+		json += jsonStr("Layer_name", layer.name);
 		json += parseFrames(layer.frames);
-		json += ']\n';
 		json += (l < layers.length - 1) ? '},\n' : '}\n';
 	}
 	
@@ -88,7 +123,7 @@ function parseSymbol(symbol)
 
 function parseFrames(frames)
 {
-	var json = '';
+	var json = '"Frames": [\n';
 	
 	var startFrames = [];
 	
@@ -105,15 +140,114 @@ function parseFrames(frames)
 		var frame = startFrames[f];
 			
 		json += '{\n';
-		json += '"index": ' + frame.startFrame + ',\n';
-		json += '"duration": ' + frame.duration + ',\n';
-		json += '"elements": [\n';
-		// TODO: parse elements
-		json += ']\n';
+		json += jsonVar("index", frame.startFrame);
+		json += jsonVar("duration", frame.duration);
+		json += parseElements(frame.elements);
 		json += (f < startFrames.length - 1) ? '},\n' : '}\n';
 	}
 	
+	json += ']\n';
 	return json;
+}
+
+function parseElements(elements)
+{
+	var json = '"elements": [\n';
+	
+	for (e = 0; e < elements.length; e++)
+	{
+		var element = elements[e];
+		switch (element.elementType) {
+			case "shape":
+			case "text":
+			case "tlfText":
+			case "instance":
+				json += parseSymbolInstance(element);
+			case "shapeObj":
+		}
+	
+		if (e < elements.length -1) {
+			json += ",";
+		}
+	}
+	
+	json += ']\n';
+	return json;
+}
+
+// TODO: atlas instance crap
+
+function parseAtlasIntance(instance)
+{
+	
+}
+
+function parseSymbolInstance(instance)
+{
+	var json = "{\n";
+	json += '"SYMBOL_Instance": {\n';
+	
+	if (instance.libraryItem != undefined) {
+		json += jsonStr("SYMBOL_name", instance.libraryItem.name);
+	}
+
+	if (instance.firstFrame != undefined) {
+		json += jsonVar("firstFrame", instance.firstFrame);
+	}
+	
+	json += jsonStr("Instance_Name", instance.name);
+	json += jsonStr("symbolType", instance.symbolType);
+	json += jsonVar("Matrix", parseMatrix(instance.matrix));
+	json += jsonStr("blendMode", instance.blendMode);
+	
+	// Add Filters
+	json += '"filters": [\n';
+	
+	var filters = instance.filters;
+	if (filters != undefined) {
+		for (i = 0; i < filters.length; i++) {
+			var filter = filters[i];
+			json += '{\n';
+			json += jsonStr("name", filter.name);
+			
+			// TODO: implement the rest of the filters
+			switch (filter.name) {
+				case "blurFilter":
+				json += jsonVar("blurX", filter.blurX);
+				json += jsonVar("blurY", filter.blurY);
+				json += '"quality": ' + parseQuality(filter.quality) + '\n';
+			}
+			
+			json += (i < filters.length - 1) ? '},\n' : '}\n';
+		}
+	}
+	
+	json += ']\n';
+	
+	json += '}\n}\n';
+	return json;
+}
+
+function parseMatrix(mat) {
+	var str = '['
+	str += mat.a + ",";
+	str += mat.b + ",";
+	str += mat.c + ",";
+	str += mat.d + ",";
+	str += mat.tx + ",";
+	str += mat.ty;
+	str += "]";
+	return str;
+}
+
+function parseQuality(quality) {
+	var result = 3;
+	switch (quality) {
+		case "low": quality = 1;
+		case "medium": quality = 2;
+		case "high": quality = 3;
+	}
+	return result;
 }
 
 function findSymbol(name) {
@@ -124,6 +258,14 @@ function findSymbol(name) {
 
 	fl.trace("Symbol not found: " + name);
 	return null;
+}
+
+function jsonVar(name, value) {
+	return '"' + name +'": ' + value + ',\n';
+}
+
+function jsonStr(name, value) {
+	return '"' + name +'": "' + value + '",\n';
 }
 
 function setupExporter(path) {
