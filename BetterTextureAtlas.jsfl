@@ -2,6 +2,7 @@
 
 var path = "Users/marut/OneDrive/Documentos/GitHub/BetterTextureAtlas/testing"
 var symbol = "Boyfriend DJ";
+var meshExport = false; // If to use a spritemap or mesh vertex data
 
 /////
 
@@ -11,10 +12,15 @@ var lib = doc.library;
 
 exportAtlas(path, symbol);
 
+//var spritemap = {};
+var smIndex = 0;
+
 function exportAtlas(exportPath, symbolName)
 {
-	var exporter = setupExporter(exportPath);
+	//var exporter = setupExporter(exportPath);
 	var symbol = findSymbol(symbolName);
+	//spritemap = {};
+	smIndex = 0;
 	
 	if (!(symbol.itemType == "graphic" || symbol.itemType == "movie clip")) {
 		fl.trace("Invalid symbol type: " + symbol.itemType);
@@ -22,18 +28,99 @@ function exportAtlas(exportPath, symbolName)
 	}
 	
 	// Export the basic data
-	exporter.exportTextureAtlas(symbol);
+	//exporter.exportTextureAtlas(symbol);
 
-	// Generate custom json	
-	var jsonResult = generateJson(symbol);
+	// Write Animation.json
+	var animJson = generateAnimation(symbol);
+	FLfile.write(formatPath(path + "/Animation.json"), animJson);
 
-	// Override Animation.json with custom format
-	FLfile.write(formatPath(path + "/Animation.json"), jsonResult);
+	// Generate Spritemap
+	var sm = new SpriteSheetExporter;
+	sm.algorithm = "maxRects";
+	sm.borderPadding = 3;
+	sm.autoSize = true;
+	sm.allowRotate = true;
+	sm.allowTrimming = true;
+
+	// OK this becomes SUPER bullshit but you gotta do what you gotta do
+	
+	/*
+	for (i = 0; i < smIndex; i++)
+	{
+		var shape = spritemap[i];
+		
+		lib.deleteItem("_ta_temp_");
+		lib.addNewItem("movie clip", "_ta_temp_" );
+		dom.enterEditMode( "inPlace" );
+		
+		//shape.selected = true;
+		//doc.enterEditMode( "inPlace" );
+		
+		//shape.selected = false;
+		
+		/*shape.selected = true;
+		
+		lib.deleteItem("_ta_temp_");
+		lib.addNewItem("movie clip", "_ta_temp_");
+		
+		var index = lib.findItemIndex("_ta_temp_");
+		var item = lib.items[index];*/
+		
+		//doc.clipCopy();
+		//lib.editItem("_ta_temp_");
+		//doc.clipPaste();
+		
+		//var frame = item.timeline.layers[0].frames[0];
+		//frame.elements.unshift(shape);
+		//frame.elements.push(shape);
+		
+		//shape.selected = false;
+		
+		
+		//fl.trace(frame.elements.length);
+		
+		//var symbol = new SymbolItem;
+		//symbol.timeline = new Timeline;
+		//symbol.timeline;//.insertKeyframe()
+		
+		//fl.trace(symbol.timeline);
+			
+		//shape.selected = true;
+		//dummyDoc.addItem({x:0,y:0}, shape);
+		
+		//var symbol = dummyDoc.convertToSymbol("graphic", "mcSymbolName", "center");
+		//fl.trace(symbol);
+		
+		//shape.selected = false;
+		
+		//doc.selectNone();
+		//shape.selected = true;
+		
+		//var symbol = doc.convertToSymbol("graphic", "mcSymbolName", "center");
+		//fl.trace(doc.selection);
+		//doc.convertToSymbol("graphic", "mcSymbolName", "center"); 
+		
+		//var selection = new Array();
+		//selection[0] = shape;
+		//doc.selection = selection;
+		// fl.getDocumentDOM().selection = selection;
+		
+		//fl.trace(doc.selection.length);
+		
+		//var symbol = doc.convertToSymbol("movie clip", "fuck", "top left");
+		//fl.trace(symbol);
+		
+		//var symbol = //...convert shape to symbol instance
+		
+		//shape.selected = false;
+	//}
+
+	//lib.deleteItem("_ta_temp_");
 	
 	fl.trace("Exported to folder: " + exportPath);
 }
 
-function generateJson(symbol) {
+function generateAnimation(symbol) {
 	var json ="{\n";
 	
 	// Add Animation
@@ -44,7 +131,8 @@ function generateJson(symbol) {
 	json += parseSymbol(symbol);
 	json += '},\n';
 	
-	var dictionary = findDictionary(symbol);
+	// Get the dictionary
+	var dictionary = findDictionary(symbol, []);
 	
 	// Add Symbol Dictionary
 	json += '"SYMBOL_DICTIONARY": {\n';
@@ -66,10 +154,8 @@ function generateJson(symbol) {
 	return json;
 }
 
-function findDictionary(symbol)
-{
-	var dictionary = [];
-	
+function findDictionary(symbol, dictionary)
+{	
 	for (l = 0; l < symbol.timeline.layers.length; l++)
 	{
 		var layer = symbol.timeline.layers[l];
@@ -84,6 +170,7 @@ function findDictionary(symbol)
 					var libraryItem = element.libraryItem;
 					if (dictionary.indexOf(libraryItem) == -1) {
 						dictionary.push(libraryItem);
+						findDictionary(libraryItem, dictionary);
 					}
 				}
 			}
@@ -111,7 +198,7 @@ function parseSymbol(symbol)
 		var layer = layers[l];		
 		json += '{\n';
 		json += jsonStr("Layer_name", layer.name);
-		json += parseFrames(layer.frames);
+		json += parseFrames(layer.frames, symbol);
 		json += (l < layers.length - 1) ? '},\n' : '}\n';
 	}
 	
@@ -121,7 +208,7 @@ function parseSymbol(symbol)
 	return json;
 }
 
-function parseFrames(frames)
+function parseFrames(frames, symbol)
 {
 	var json = '"Frames": [\n';
 	
@@ -142,7 +229,7 @@ function parseFrames(frames)
 		json += '{\n';
 		json += jsonVar("index", frame.startFrame);
 		json += jsonVar("duration", frame.duration);
-		json += parseElements(frame.elements);
+		json += parseElements(frame.elements, symbol);
 		json += (f < startFrames.length - 1) ? '},\n' : '}\n';
 	}
 	
@@ -150,21 +237,31 @@ function parseFrames(frames)
 	return json;
 }
 
-function parseElements(elements)
+function parseElements(elements, symbol)
 {
 	var json = '"elements": [\n';
 	
 	for (e = 0; e < elements.length; e++)
 	{
 		var element = elements[e];
-		switch (element.elementType) {
-			case "shape":
-			case "text":
-			case "tlfText":
-			case "instance":
-				json += parseSymbolInstance(element);
-			case "shapeObj":
+		var type = element.elementType;
+		
+		json += "{\n";
+		
+		if (type == "shape") {
+			json += parseShape(element, symbol);
 		}
+		else if (type == "instance") {
+			json += parseSymbolInstance(element);
+		}
+		else if (type == "text") {
+		}
+		else if (type == "tlfText") {
+		}
+		else if (type == "shapeObj") {
+		}
+			
+		json += "}\n";
 	
 		if (e < elements.length -1) {
 			json += ",";
@@ -175,17 +272,43 @@ function parseElements(elements)
 	return json;
 }
 
-// TODO: atlas instance crap
-
-function parseAtlasIntance(instance)
+function parseShape(shape, symbol)
 {
+	var json = '"ATLAS_SPRITE_instance": {\n';
+
+	json += jsonVar("Matrix", parseMatrix(shape.matrix));
+
+	json += '"name": "' + smIndex + '"\n';
+	
+	// TODO: do this diferently if its mesh mode
+	shapeToSymbol(shape, symbol);
+	smIndex++;
+	
+	//fl.trace(symbol.name);
+	
+	json += '}\n';
+	return json;
+}
+
+function shapeToSymbol(shape, parentSymbol) {
+	lib.editItem(parentSymbol.name);
+	doc.selectNone();
+	
+	shape.selected = true;
+	doc.clipCopy();
+
+	//if (lib.itemExists("_temp_atlas_")) {
+	//	lib.deleteItem("_temp_atlas_");
+	//}
+	
+	//var symbol = doc.convertToSymbol("movie clip", "_temp_atlas_", "top left");
+	
 	
 }
 
 function parseSymbolInstance(instance)
 {
-	var json = "{\n";
-	json += '"SYMBOL_Instance": {\n';
+	var json = '"SYMBOL_Instance": {\n';
 	
 	if (instance.libraryItem != undefined) {
 		json += jsonStr("SYMBOL_name", instance.libraryItem.name);
@@ -201,16 +324,17 @@ function parseSymbolInstance(instance)
 	json += jsonStr("blendMode", instance.blendMode);
 	
 	// Add Filters
-	json += '"filters": [\n';
+	json += '"filters": [';
 	
 	var filters = instance.filters;
 	if (filters != undefined) {
 		for (i = 0; i < filters.length; i++) {
 			var filter = filters[i];
-			json += '{\n';
+			json += '\n{\n';
 			json += jsonStr("name", filter.name);
 			
 			// TODO: implement the rest of the filters
+			// Also im not sure switch statements are working??
 			switch (filter.name) {
 				case "blurFilter":
 				json += jsonVar("blurX", filter.blurX);
@@ -218,13 +342,13 @@ function parseSymbolInstance(instance)
 				json += '"quality": ' + parseQuality(filter.quality) + '\n';
 			}
 			
-			json += (i < filters.length - 1) ? '},\n' : '}\n';
+			json += (i < filters.length - 1) ? '},' : '}\n';
 		}
 	}
 	
 	json += ']\n';
-	
-	json += '}\n}\n';
+	json += '}\n';
+
 	return json;
 }
 
@@ -268,6 +392,7 @@ function jsonStr(name, value) {
 	return '"' + name +'": "' + value + '",\n';
 }
 
+/*
 function setupExporter(path) {
 	var exporter = new TextureAtlasExporter;
 
@@ -280,7 +405,7 @@ function setupExporter(path) {
 	exporter.optimizeBitmap = true;
 	
 	return exporter;
-}
+}*/
 
 function formatPath(path) {
 	return "file:///C|/" + path;
