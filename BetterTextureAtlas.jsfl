@@ -252,21 +252,22 @@ function parseElements(elements, frameIndex, symbol)
 	for (e = 0; e < elements.length; e++)
 	{
 		var element = elements[e];
-		var type = element.elementType;
 		
 		json += "{\n";
 		
-		if (type == "shape") {
-			json += parseShape(element, frameIndex, symbol);
-		}
-		else if (type == "instance") {
-			json += parseSymbolInstance(element);
-		}
-		else if (type == "text") {
-		}
-		else if (type == "tlfText") {
-		}
-		else if (type == "shapeObj") {
+		switch (element.elementType) {
+			case "shape":
+				json += parseShape(element, frameIndex, symbol);
+			break;
+			case "instance":
+				json += parseSymbolInstance(element);
+			break;
+			case "text":
+			break;
+			case "tlfText":
+			break;
+			case "shapeObj":
+			break;
 		}
 			
 		json += "}";
@@ -341,11 +342,12 @@ function parseSymbolInstance(instance)
 			json += jsonStr("name", name);
 			
 			// TODO: implement the rest of the filters
-			if (name == "blurFilter")
-			{
-				json += jsonVar("blurX", filter.blurX);
-				json += jsonVar("blurY", filter.blurY);
-				json += '"quality": ' + parseQuality(filter.quality) + '\n';
+			switch (name) {
+				case "blurFilter":
+					json += jsonVar("blurX", filter.blurX);
+					json += jsonVar("blurY", filter.blurY);
+					json += '"quality": ' + parseQuality(filter.quality) + '\n';
+				break;
 			}
 			
 			json += (i < filters.length - 1) ? '},' : '}\n';
