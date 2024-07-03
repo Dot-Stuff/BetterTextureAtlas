@@ -3,7 +3,7 @@
 var symbol = "";
 var meshExport = false; // If to use a spritemap or mesh vertex data
 var onlyVisibleLayers = true;
-
+var optimiseDimensions = true;
 /////
 
 var doc = fl.getDocumentDOM();
@@ -45,7 +45,7 @@ function exportAtlas(exportPath, symbolName)
 	spritemap = [];
 	smIndex = 0;
 	
-	if (!(symbol.itemType == "graphic" || symbol.itemType == "movie clip")) {
+	if (!(symbol.itemType == "graphic" || symbol.itemType == "movie clip")) { // What is this? DM - Cheems
 		fl.trace("Invalid symbol type: " + symbol.itemType);
 		return;
 	}
@@ -64,6 +64,12 @@ function exportAtlas(exportPath, symbolName)
 	sm.allowTrimming = true;
 	sm.stackDuplicate = true;
 	sm.layoutFormat = "JSON";
+
+	if (optimiseDimensions)
+	{
+		sm.maxSheetWidth = w + (sm.shapePadding * Math.max(smIndex - 1, 0)) + sm.borderPadding; 
+		sm.maxSheetHeight = h + (sm.shapePadding * Math.max(smIndex - 1, 0)) + sm.borderPadding;
+	}
 
 	// OK this becomes SUPER bullshit but you gotta do what you gotta do
 
@@ -296,6 +302,8 @@ function parseShape(shape, frameIndex, symbol)
 	return json;
 }
 
+var w = 0;
+var h = 0;
 function pushShapeSpritemap(shape, frameIndex, parentSymbol)
 {
 	lib.editItem(parentSymbol.name);
@@ -307,6 +315,10 @@ function pushShapeSpritemap(shape, frameIndex, parentSymbol)
 	lib.editItem(temp);
 	doc.getTimeline().setSelectedFrames(0,0);
 	doc.getTimeline().pasteFrames();
+
+	var bs = doc.getTimeline().getBounds(0); // TODO/Reminder: in the future macro symbol, use smIndex instead of 0
+	w += bs.width;
+	h += bs.height;
 	
 	spritemap.push(lib.items[lib.findItemIndex(temp)]);
 	smIndex++;
@@ -327,39 +339,46 @@ function parseSymbolInstance(instance)
 	
 	json += jsonStr("Instance_Name", instance.name);
 	json += jsonStr("symbolType", instance.symbolType);
-	json += jsonVar("Matrix", parseMatrix(instance.matrix));
-	json += jsonStr("blendMode", instance.blendMode);
-	
-	// Add Filters
-	json += '"filters": [';
-	
-	var filters = instance.filters;
-	if (filters != undefined) {
-		for (i = 0; i < filters.length; i++) {
-			var filter = filters[i];
-			var name = filter.name;
-			json += '\n{\n';
-			json += jsonStr("name", name);
-			
-			// TODO: implement the rest of the filters
-			switch (name) {
-				case "blurFilter":
-					json += jsonVar("blurX", filter.blurX);
-					json += jsonVar("blurY", filter.blurY);
-					json += '"quality": ' + parseQuality(filter.quality) + '\n';
-				break;
+	if (!instance.is3D)
+		json += jsonVar("Matrix", parseMatrix(instance.matrix));
+	else
+		json += jsonVar("Matrix3D", parseMatrix3D(instance.matrix3D));
+
+	if (instace.symbolType != "graphic")
+	{
+		json += jsonStr("blendMode", instance.blendMode);
+		
+		// Add Filters
+		json += '"filters": [';
+		
+		var filters = instance.filters;
+		if (filters != undefined) {
+			for (i = 0; i < filters.length; i++) {
+				var filter = filters[i];
+				var name = filter.name;
+				json += '\n{\n';
+				json += jsonStr("name", name);
+				
+				// TODO: implement the rest of the filters
+				switch (name) {
+					case "blurFilter":
+						json += jsonVar("blurX", filter.blurX);
+						json += jsonVar("blurY", filter.blurY);
+						json += '"quality": ' + parseQuality(filter.quality) + '\n';
+					break;
+				}
+				
+				json += (i < filters.length - 1) ? '},' : '}\n';
 			}
-			
-			json += (i < filters.length - 1) ? '},' : '}\n';
 		}
+		
+		json += ']\n';
 	}
-	
-	json += ']\n';
+
 	json += '}';
 
 	return json;
 }
-
 function parseMatrix(mat) {
 	var str = '['
 	str += mat.a + ",";
@@ -369,6 +388,28 @@ function parseMatrix(mat) {
 	str += mat.tx + ",";
 	str += mat.ty;
 	str += "]";
+	return str;
+}
+
+function parseMatrix3D(mat) {
+	var str = '[\n'
+	str += "\t" + mat.m00 + ",\n";
+	str += "\t" + mat.m01 + ",\n";
+	str += "\t" + mat.m02 + ",\n";
+	str += "\t" + mat.m03 + ",\n";
+	str += "\t" + mat.m10 + ",\n";
+	str += "\t" + mat.m11 + ",\n";
+	str += "\t" + mat.m12 + ",\n";
+	str += "\t" + mat.m13 + ",\n";
+	str += "\t" + mat.m20 + ",\n";
+	str += "\t" + mat.m21 + ",\n";
+	str += "\t" + mat.m22 + ",\n";
+	str += "\t" + mat.m23 + ",\n";
+	str += "\t" + mat.m30 + ",\n";
+	str += "\t" + mat.m31 + ",\n";
+	str += "\t" + mat.m32 + ",\n";
+	str += "\t" + mat.m33;
+	str += "\n]";
 	return str;
 }
 
