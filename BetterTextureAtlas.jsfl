@@ -12,14 +12,14 @@ var lib = doc.library;
 
 exportAtlas(path, symbol);
 
-//var spritemap = {};
+var spritemap = [];
 var smIndex = 0;
 
 function exportAtlas(exportPath, symbolName)
 {
 	//var exporter = setupExporter(exportPath);
 	var symbol = findSymbol(symbolName);
-	//spritemap = {};
+	spritemap = [];
 	smIndex = 0;
 	
 	if (!(symbol.itemType == "graphic" || symbol.itemType == "movie clip")) {
@@ -43,79 +43,20 @@ function exportAtlas(exportPath, symbolName)
 	sm.allowTrimming = true;
 
 	// OK this becomes SUPER bullshit but you gotta do what you gotta do
-	
-	/*
-	for (i = 0; i < smIndex; i++)
-	{
-		var shape = spritemap[i];
-		
-		lib.deleteItem("_ta_temp_");
-		lib.addNewItem("movie clip", "_ta_temp_" );
-		dom.enterEditMode( "inPlace" );
-		
-		//shape.selected = true;
-		//doc.enterEditMode( "inPlace" );
-		
-		//shape.selected = false;
-		
-		/*shape.selected = true;
-		
-		lib.deleteItem("_ta_temp_");
-		lib.addNewItem("movie clip", "_ta_temp_");
-		
-		var index = lib.findItemIndex("_ta_temp_");
-		var item = lib.items[index];*/
-		
-		//doc.clipCopy();
-		//lib.editItem("_ta_temp_");
-		//doc.clipPaste();
-		
-		//var frame = item.timeline.layers[0].frames[0];
-		//frame.elements.unshift(shape);
-		//frame.elements.push(shape);
-		
-		//shape.selected = false;
-		
-		
-		//fl.trace(frame.elements.length);
-		
-		//var symbol = new SymbolItem;
-		//symbol.timeline = new Timeline;
-		//symbol.timeline;//.insertKeyframe()
-		
-		//fl.trace(symbol.timeline);
-			
-		//shape.selected = true;
-		//dummyDoc.addItem({x:0,y:0}, shape);
-		
-		//var symbol = dummyDoc.convertToSymbol("graphic", "mcSymbolName", "center");
-		//fl.trace(symbol);
-		
-		//shape.selected = false;
-		
-		//doc.selectNone();
-		//shape.selected = true;
-		
-		//var symbol = doc.convertToSymbol("graphic", "mcSymbolName", "center");
-		//fl.trace(doc.selection);
-		//doc.convertToSymbol("graphic", "mcSymbolName", "center"); 
-		
-		//var selection = new Array();
-		//selection[0] = shape;
-		//doc.selection = selection;
-		// fl.getDocumentDOM().selection = selection;
-		
-		//fl.trace(doc.selection.length);
-		
-		//var symbol = doc.convertToSymbol("movie clip", "fuck", "top left");
-		//fl.trace(symbol);
-		
-		//var symbol = //...convert shape to symbol instance
-		
-		//shape.selected = false;
-	//}
 
-	//lib.deleteItem("_ta_temp_");
+	for (i = 0; i < spritemap.length; i++) {
+		var temp = "_ta_temp_" + i;
+		var item = lib.items[lib.findItemIndex(temp)];
+		sm.addSymbol(item);
+		lib.deleteItem(temp);
+	}
+
+	//fl.trace(exportPath + "/fuck");
+	var smPath = formatPath(exportPath + "/spritemap1");
+	var smSettings = {format:"png", bitDepth:32, backgroundColor:"#00000000"};
+	
+	var meta = sm.exportSpriteSheet(smPath, smSettings, true);
+	fl.trace(meta);
 	
 	fl.trace("Exported to folder: " + exportPath);
 }
@@ -185,21 +126,36 @@ function parseSymbol(symbol)
 	var json = '';
 	
 	var timeline = symbol.timeline;
-	var layers = timeline.layers;
+	lib.editItem(symbol.name);
 	
 	json += jsonStr("SYMBOL_name", symbol.name);
 	
 	json += '"TIMELINE": {\n';
 	json += '"LAYERS": [\n';
 	
+	// We only need the visible layers
+	var layers = [];
+	for (l = 0; l < timeline.layers.length; l++) {
+		var layer = timeline.layers[l];
+		if (layer.visible) {
+			layers.push(layer);
+		}
+	}
+	
 	// Add Layers and Frames
 	for (l = 0; l < layers.length; l++)
 	{
 		var layer = layers[l];		
+		
+		var locked = layer.locked;
+		layer.locked = false;
+		
 		json += '{\n';
 		json += jsonStr("Layer_name", layer.name);
 		json += parseFrames(layer.frames, symbol);
 		json += (l < layers.length - 1) ? '},\n' : '}\n';
+		
+		layer.locked = locked;
 	}
 	
 	json += ']\n';
@@ -225,11 +181,14 @@ function parseFrames(frames, symbol)
 	for (f = 0; f < startFrames.length; f++)
 	{
 		var frame = startFrames[f];
-			
+
+		doc.getTimeline().setSelectedFrames(f, f);
+		doc.selectNone();
+		
 		json += '{\n';
 		json += jsonVar("index", frame.startFrame);
 		json += jsonVar("duration", frame.duration);
-		json += parseElements(frame.elements, symbol);
+		json += parseElements(frame.elements, f, symbol);
 		json += (f < startFrames.length - 1) ? '},\n' : '}\n';
 	}
 	
@@ -237,7 +196,7 @@ function parseFrames(frames, symbol)
 	return json;
 }
 
-function parseElements(elements, symbol)
+function parseElements(elements, frameIndex, symbol)
 {
 	var json = '"elements": [\n';
 	
@@ -249,7 +208,7 @@ function parseElements(elements, symbol)
 		json += "{\n";
 		
 		if (type == "shape") {
-			json += parseShape(element, symbol);
+			json += parseShape(element, frameIndex, symbol);
 		}
 		else if (type == "instance") {
 			json += parseSymbolInstance(element);
@@ -272,7 +231,7 @@ function parseElements(elements, symbol)
 	return json;
 }
 
-function parseShape(shape, symbol)
+function parseShape(shape, frameIndex, symbol)
 {
 	var json = '"ATLAS_SPRITE_instance": {\n';
 
@@ -281,29 +240,26 @@ function parseShape(shape, symbol)
 	json += '"name": "' + smIndex + '"\n';
 	
 	// TODO: do this diferently if its mesh mode
-	shapeToSymbol(shape, symbol);
+	pushShapeSpritemap(shape, frameIndex, symbol);
 	smIndex++;
-	
-	//fl.trace(symbol.name);
 	
 	json += '}\n';
 	return json;
 }
 
-function shapeToSymbol(shape, parentSymbol) {
+function pushShapeSpritemap(shape, frameIndex, parentSymbol)
+{
 	lib.editItem(parentSymbol.name);
-	doc.selectNone();
+	doc.getTimeline().copyFrames(frameIndex, frameIndex);
 	
-	shape.selected = true;
-	doc.clipCopy();
-
-	//if (lib.itemExists("_temp_atlas_")) {
-	//	lib.deleteItem("_temp_atlas_");
-	//}
+	var temp = "_ta_temp_" + smIndex;
+	lib.addNewItem("graphic", temp);
 	
-	//var symbol = doc.convertToSymbol("movie clip", "_temp_atlas_", "top left");
+	lib.editItem(temp);
+	doc.getTimeline().setSelectedFrames(0,0);
+	doc.getTimeline().pasteFrames();
 	
-	
+	spritemap.push(lib.items[lib.findItemIndex(temp)]);
 }
 
 function parseSymbolInstance(instance)
