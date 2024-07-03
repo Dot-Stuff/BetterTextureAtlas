@@ -1,23 +1,44 @@
 ﻿///// CONFIGURATION
 
-var symbol = "Boyfriend DJ";
+var symbol = "";
+var instance = null;
+if (doc.library.getSelectedItems().length > 0)
+{
+	symbol = doc.library.getSelectedItems()[0].name;
+}
+else if (doc.selection.length > 0)
+{
+	instance = doc.selection[0];
+	
+	symbol = instance.libraryItem.name;
+}
+
+
+
 var meshExport = false; // If to use a spritemap or mesh vertex data
 
 /////
+if (symbol != "") // That means nothing was selected
+{
+	// First ask for the export folder
+	var path = fl.browseForFolderURL("Select a folder.");
+	if (path != null) // not cancelled
+	{
+		path += "/" + symbol;
+		FLfile.createFolder(path);
 
-// First ask for the export folder
-var path = fl.browseForFolderURL("Select a folder.");
-path += "/" + symbol;
-FLfile.createFolder(path);
+		var configDir = fl.configDirectory;
+		var doc = fl.getDocumentDOM();
+		var lib = doc.library;
 
-var configDir = fl.configDirectory;
-var doc = fl.getDocumentDOM();
-var lib = doc.library;
+		exportAtlas(path, symbol);
 
-exportAtlas(path, symbol);
-
-var spritemap = [];
-var smIndex = 0;
+		var spritemap = [];
+		var smIndex = 0;
+	}
+}
+else
+	fl.trace("ERROR: NOTHING IS SELECTED");
 
 function exportAtlas(exportPath, symbolName)
 {
