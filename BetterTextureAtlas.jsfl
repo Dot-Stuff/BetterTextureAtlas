@@ -344,7 +344,7 @@ function parseSymbolInstance(instance)
 	else
 		json += jsonVar("Matrix3D", parseMatrix3D(instance.matrix3D));
 
-	if (instace.symbolType != "graphic")
+	if (instance.symbolType != "graphic")
 	{
 		json += jsonStr("blendMode", instance.blendMode);
 		
