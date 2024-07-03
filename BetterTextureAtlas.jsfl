@@ -1,10 +1,14 @@
 ﻿///// CONFIGURATION
 
-var path = "Users/marut/OneDrive/Documentos/GitHub/BetterTextureAtlas/testing"
 var symbol = "Boyfriend DJ";
 var meshExport = false; // If to use a spritemap or mesh vertex data
 
 /////
+
+// First ask for the export folder
+var path = fl.browseForFolderURL("Select a folder.");
+path += "/" + symbol;
+FLfile.createFolder(path);
 
 var configDir = fl.configDirectory;
 var doc = fl.getDocumentDOM();
@@ -28,7 +32,7 @@ function exportAtlas(exportPath, symbolName)
 
 	// Write Animation.json
 	var animJson = generateAnimation(symbol);
-	FLfile.write(formatPath(path + "/Animation.json"), animJson);
+	FLfile.write(path + "/Animation.json", animJson);
 
 	// Generate Spritemap
 	var sm = new SpriteSheetExporter;
@@ -50,7 +54,7 @@ function exportAtlas(exportPath, symbolName)
 		lib.deleteItem(temp);
 	}
 
-	var smPath = formatPath(exportPath + "/spritemap1");
+	var smPath = exportPath + "/spritemap1";
 	var smSettings = {format:"png", bitDepth:32, backgroundColor:"#00000000"};
 	
 	// TODO: metadata is broken and not all shapes seem to be exporting..
@@ -351,8 +355,4 @@ function jsonVar(name, value) {
 
 function jsonStr(name, value) {
 	return '"' + name +'": "' + value + '",\n';
-}
-
-function formatPath(path) {
-	return "file:///C|/" + path;
 }
