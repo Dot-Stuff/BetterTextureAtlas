@@ -2,6 +2,7 @@
 
 var symbol = "";
 var meshExport = false; // If to use a spritemap or mesh vertex data
+var onlyVisibleLayers = true;
 
 /////
 
@@ -120,6 +121,7 @@ function generateAnimation(symbol) {
 	
 	// Add Metadata
 	json += '"metadata": {\n';
+	json += jsonStr("version", "bta_1");
 	json += '"framerate": ' + doc.frameRate + "\n";
 	json += '}\n';
 	
@@ -169,13 +171,18 @@ function parseSymbol(symbol)
 	json += '"TIMELINE": {\n';
 	json += '"LAYERS": [\n';
 	
-	// We only need the visible layers
-	var layers = [];
-	for (l = 0; l < timeline.layers.length; l++) {
-		var layer = timeline.layers[l];
-		if (layer.visible) {
-			layers.push(layer);
+	var layers;
+	if (onlyVisibleLayers) // We only need the visible layers
+	{
+		layers = [];
+		for (l = 0; l < timeline.layers.length; l++) {
+			var layer = timeline.layers[l];
+			if (layer.visible)
+				layers.push(layer);
 		}
+	}
+	else {
+		layers = timeline.layers;
 	}
 	
 	// Add Layers and Frames
@@ -329,13 +336,13 @@ function parseSymbolInstance(instance)
 	if (filters != undefined) {
 		for (i = 0; i < filters.length; i++) {
 			var filter = filters[i];
+			var name = filter.name;
 			json += '\n{\n';
-			json += jsonStr("name", filter.name);
+			json += jsonStr("name", name);
 			
 			// TODO: implement the rest of the filters
-			// Also im not sure switch statements are working??
-			switch (filter.name) {
-				case "blurFilter":
+			if (name == "blurFilter")
+			{
 				json += jsonVar("blurX", filter.blurX);
 				json += jsonVar("blurY", filter.blurY);
 				json += '"quality": ' + parseQuality(filter.quality) + '\n';
@@ -364,13 +371,9 @@ function parseMatrix(mat) {
 }
 
 function parseQuality(quality) {
-	var result = 3;
-	switch (quality) {
-		case "low": quality = 1;
-		case "medium": quality = 2;
-		case "high": quality = 3;
-	}
-	return result;
+	if (quality == "low") return 1;
+	if (quality == "medium") return 2;
+	return 3;
 }
 
 function findSymbol(name) {
