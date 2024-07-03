@@ -37,10 +37,13 @@ function exportAtlas(exportPath, symbolName)
 	// Generate Spritemap
 	var sm = new SpriteSheetExporter;
 	sm.algorithm = "maxRects";
-	sm.borderPadding = 3;
 	sm.autoSize = true;
+	sm.borderPadding = 3;
+	sm.shapePadding = 3;
 	sm.allowRotate = true;
 	sm.allowTrimming = true;
+	sm.stackDuplicate = true;
+	sm.layoutFormat = "JSON";
 
 	// OK this becomes SUPER bullshit but you gotta do what you gotta do
 
@@ -51,10 +54,11 @@ function exportAtlas(exportPath, symbolName)
 		lib.deleteItem(temp);
 	}
 
-	//fl.trace(exportPath + "/fuck");
 	var smPath = formatPath(exportPath + "/spritemap1");
 	var smSettings = {format:"png", bitDepth:32, backgroundColor:"#00000000"};
 	
+	// TODO: metadata is broken and not all shapes seem to be exporting..
+	// fix that crap
 	var meta = sm.exportSpriteSheet(smPath, smSettings, true);
 	fl.trace(meta);
 	
@@ -126,7 +130,6 @@ function parseSymbol(symbol)
 	var json = '';
 	
 	var timeline = symbol.timeline;
-	lib.editItem(symbol.name);
 	
 	json += jsonStr("SYMBOL_name", symbol.name);
 	
@@ -145,10 +148,14 @@ function parseSymbol(symbol)
 	// Add Layers and Frames
 	for (l = 0; l < layers.length; l++)
 	{
-		var layer = layers[l];		
+		var layer = layers[l];	
 		
 		var locked = layer.locked;
 		layer.locked = false;
+		
+		lib.editItem(symbol.name);	
+		doc.getTimeline().setSelectedLayers(l);
+		doc.selectNone();
 		
 		json += '{\n';
 		json += jsonStr("Layer_name", layer.name);
@@ -157,6 +164,8 @@ function parseSymbol(symbol)
 		
 		layer.locked = locked;
 	}
+
+	doc.exitEditMode();
 	
 	json += ']\n';
 	json += '}\n';
@@ -188,7 +197,7 @@ function parseFrames(frames, symbol)
 		json += '{\n';
 		json += jsonVar("index", frame.startFrame);
 		json += jsonVar("duration", frame.duration);
-		json += parseElements(frame.elements, f, symbol);
+		json += parseElements(frame.elements, frame.startFrame, symbol);
 		json += (f < startFrames.length - 1) ? '},\n' : '}\n';
 	}
 	
