@@ -374,6 +374,10 @@ function parseSymbolInstance(instance)
 		
 		json += ']\n';
 	}
+	else {
+		json = json.substring(0, json.length - 2);
+		json += "\n";
+	}
 
 	json += '}';
 
