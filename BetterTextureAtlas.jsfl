@@ -17,7 +17,6 @@ var smIndex = 0;
 
 function exportAtlas(exportPath, symbolName)
 {
-	//var exporter = setupExporter(exportPath);
 	var symbol = findSymbol(symbolName);
 	spritemap = [];
 	smIndex = 0;
@@ -26,9 +25,6 @@ function exportAtlas(exportPath, symbolName)
 		fl.trace("Invalid symbol type: " + symbol.itemType);
 		return;
 	}
-	
-	// Export the basic data
-	//exporter.exportTextureAtlas(symbol);
 
 	// Write Animation.json
 	var animJson = generateAnimation(symbol);
@@ -356,21 +352,6 @@ function jsonVar(name, value) {
 function jsonStr(name, value) {
 	return '"' + name +'": "' + value + '",\n';
 }
-
-/*
-function setupExporter(path) {
-	var exporter = new TextureAtlasExporter;
-
-	exporter.filePath = formatPath(path);
-	exporter.algorithm = "maxRects";
-	exporter.autoSize = true;
-	exporter.resolution = 1;
-	exporter.optimizeJson = false;
-	exporter.imageFormat = "RGB8888";
-	exporter.optimizeBitmap = true;
-	
-	return exporter;
-}*/
 
 function formatPath(path) {
 	return "file:///C|/" + path;
