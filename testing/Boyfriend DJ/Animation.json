@@ -1,5 +1,16 @@
 {
 "ANIMATION": {
+"StageInstance": {
+"SYMBOL_Instance": {
+"SYMBOL_name": "Boyfriend DJ",
+"firstFrame": 0,
+"Instance_Name": "",
+"symbolType": "graphic",
+"Matrix": [1,0,0,1,646.75,362.4],
+"blendMode": "normal",
+"filters": []
+}
+},
 "SYMBOL_name": "Boyfriend DJ",
 "TIMELINE": {
 "LAYERS": [

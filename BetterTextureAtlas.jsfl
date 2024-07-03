@@ -1,6 +1,17 @@
 ﻿///// CONFIGURATION
 
 var symbol = "";
+var meshExport = false; // If to use a spritemap or mesh vertex data
+
+/////
+
+var configDir = fl.configDirectory;
+var doc = fl.getDocumentDOM();
+var lib = doc.library;
+
+var spritemap = [];
+var smIndex = 0;
+
 var instance = null;
 if (doc.library.getSelectedItems().length > 0)
 {
@@ -9,16 +20,10 @@ if (doc.library.getSelectedItems().length > 0)
 else if (doc.selection.length > 0)
 {
 	instance = doc.selection[0];
-	
 	symbol = instance.libraryItem.name;
 }
 
-
-
-var meshExport = false; // If to use a spritemap or mesh vertex data
-
-/////
-if (symbol != "") // That means nothing was selected
+if (symbol.length > 0)
 {
 	// First ask for the export folder
 	var path = fl.browseForFolderURL("Select a folder.");
@@ -27,18 +32,12 @@ if (symbol != "") // That means nothing was selected
 		path += "/" + symbol;
 		FLfile.createFolder(path);
 
-		var configDir = fl.configDirectory;
-		var doc = fl.getDocumentDOM();
-		var lib = doc.library;
-
 		exportAtlas(path, symbol);
-
-		var spritemap = [];
-		var smIndex = 0;
 	}
 }
-else
-	fl.trace("ERROR: NOTHING IS SELECTED");
+else {
+	fl.trace("No symbol selected");
+}
 
 function exportAtlas(exportPath, symbolName)
 {
@@ -91,9 +90,11 @@ function generateAnimation(symbol) {
 	
 	// Add Animation
 	json += '"ANIMATION": {\n';
-	//json += '"StageInstance": {\n';
-	//json += parseSymbolInstance(symbol);
-	//json += '},\n';
+	if (instance != null) {
+		json += '"StageInstance": {\n';
+		json += parseSymbolInstance(instance);
+		json += '},\n';
+	}
 	json += parseSymbol(symbol);
 	json += '},\n';
 	
