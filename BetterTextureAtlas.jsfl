@@ -5,7 +5,6 @@ var meshExport = false; // If to use a spritemap or mesh vertex data
 
 /////
 
-var configDir = fl.configDirectory;
 var doc = fl.getDocumentDOM();
 var lib = doc.library;
 
@@ -13,9 +12,9 @@ var spritemap = [];
 var smIndex = 0;
 
 var instance = null;
-if (doc.library.getSelectedItems().length > 0)
+if (lib.getSelectedItems().length > 0)
 {
-	symbol = doc.library.getSelectedItems()[0].name;
+	symbol = lib.getSelectedItems()[0].name;
 }
 else if (doc.selection.length > 0)
 {
@@ -80,7 +79,7 @@ function exportAtlas(exportPath, symbolName)
 	// TODO: metadata is broken and not all shapes seem to be exporting..
 	// fix that crap
 	var meta = sm.exportSpriteSheet(smPath, smSettings, true);
-	fl.trace(meta);
+	//fl.trace(meta);
 	
 	fl.trace("Exported to folder: " + exportPath);
 }
@@ -99,14 +98,21 @@ function generateAnimation(symbol) {
 	json += '},\n';
 	
 	// Get the dictionary
-	var dictionary = findDictionary(symbol, []);
+	var dictionary = [];
+	findDictionary(symbol, dictionary);
+
+	//findDictionary
 	
 	// Add Symbol Dictionary
 	json += '"SYMBOL_DICTIONARY": {\n';
 	json += '"Symbols": [\n';
-	for (d = 0; d < dictionary.length; d++) {
+	for (d = 0; d < dictionary.length; d++)
+	{
+		var name = dictionary[d];
+		var symbol = lib.items[lib.findItemIndex(name)];
+		
 		json += '{\n';
-		json += parseSymbol(dictionary[d]);
+		json += parseSymbol(symbol);
 		json += (d < dictionary.length - 1) ? '},\n' : '}\n';
 	}
 	json += ']\n';
@@ -122,29 +128,34 @@ function generateAnimation(symbol) {
 }
 
 function findDictionary(symbol, dictionary)
-{	
-	for (l = 0; l < symbol.timeline.layers.length; l++)
+{
+	//fl.trace(symbol.name);
+	
+	for each(var layer in symbol.timeline.layers)
 	{
-		var layer = symbol.timeline.layers[l];
-		for (f = 0; f < layer.frames.length; f++)
+		var f = -1;
+		for each(var frame in layer.frames)
 		{
-			var frame = layer.frames[f];
-			for (e = 0; e < frame.elements.length; e++)
+			f++;
+			if (f == frame.startFrame)
 			{
-				var element = frame.elements[e];
-				if (element.elementType == "instance")
+				for each(var element in frame.elements)
 				{
-					var libraryItem = element.libraryItem;
-					if (dictionary.indexOf(libraryItem) == -1) {
-						dictionary.push(libraryItem);
-						findDictionary(libraryItem, dictionary);
+					var type = element.elementType;
+					if (type == "instance")
+					{
+						var libraryItem = element.libraryItem;
+						var itemName = libraryItem.name;
+						
+						if (dictionary.indexOf(itemName) == -1) {
+							dictionary.push(itemName);
+							findDictionary(libraryItem, dictionary);
+						}
 					}
 				}
 			}
 		}
 	}
-
-	return dictionary;
 }
 
 function parseSymbol(symbol)
@@ -170,7 +181,7 @@ function parseSymbol(symbol)
 	// Add Layers and Frames
 	for (l = 0; l < layers.length; l++)
 	{
-		var layer = layers[l];	
+		var layer = layers[l];
 		
 		var locked = layer.locked;
 		layer.locked = false;
@@ -272,7 +283,6 @@ function parseShape(shape, frameIndex, symbol)
 	
 	// TODO: do this diferently if its mesh mode
 	pushShapeSpritemap(shape, frameIndex, symbol);
-	smIndex++;
 	
 	json += '}\n';
 	return json;
@@ -291,14 +301,16 @@ function pushShapeSpritemap(shape, frameIndex, parentSymbol)
 	doc.getTimeline().pasteFrames();
 	
 	spritemap.push(lib.items[lib.findItemIndex(temp)]);
+	smIndex++;
 }
 
 function parseSymbolInstance(instance)
 {
 	var json = '"SYMBOL_Instance": {\n';
+	var item = instance.libraryItem;
 	
-	if (instance.libraryItem != undefined) {
-		json += jsonStr("SYMBOL_name", instance.libraryItem.name);
+	if (item != undefined) {
+		json += jsonStr("SYMBOL_name", item.name);
 	}
 
 	if (instance.firstFrame != undefined) {

@@ -27,7 +27,7 @@
 "firstFrame": 0,
 "Instance_Name": "",
 "symbolType": "graphic",
-"Matrix": [0.9929046630859375,-0.1156005859375,0.1156005859375,0.9929046630859375,-541.7,23.5],
+"Matrix": [0.9929046630859375,-0.1156005859375,0.1156005859375,0.9929046630859375,-541.7,25],
 "blendMode": "normal",
 "filters": []
 }
@@ -864,6 +864,30 @@
 }
 },
 {
+"SYMBOL_name": "boyfriend top head",
+"TIMELINE": {
+"LAYERS": [
+{
+"Layer_name": "Layer 1",
+"Frames": [
+{
+"index": 0,
+"duration": 1,
+"elements": [
+{
+"ATLAS_SPRITE_instance": {
+"Matrix": [1,0,0,1,0,0],
+"name": "2"
+}
+}
+]
+}
+]
+}
+]
+}
+},
+{
 "SYMBOL_name": "DJ arm",
 "TIMELINE": {
 "LAYERS": [
@@ -991,30 +1015,6 @@
 {
 "ATLAS_SPRITE_instance": {
 "Matrix": [1,0,0,1,0,0],
-"name": "2"
-}
-}
-]
-}
-]
-}
-]
-}
-},
-{
-"SYMBOL_name": "dj arm in",
-"TIMELINE": {
-"LAYERS": [
-{
-"Layer_name": "Layer 1",
-"Frames": [
-{
-"index": 0,
-"duration": 1,
-"elements": [
-{
-"ATLAS_SPRITE_instance": {
-"Matrix": [1,0,0,1,0,0],
 "name": "3"
 }
 }
@@ -1026,7 +1026,7 @@
 }
 },
 {
-"SYMBOL_name": "boyfriend bottom head",
+"SYMBOL_name": "dj arm in",
 "TIMELINE": {
 "LAYERS": [
 {
@@ -1212,6 +1212,30 @@
 }
 },
 {
+"SYMBOL_name": "boyfriend bottom head",
+"TIMELINE": {
+"LAYERS": [
+{
+"Layer_name": "Layer 1",
+"Frames": [
+{
+"index": 0,
+"duration": 1,
+"elements": [
+{
+"ATLAS_SPRITE_instance": {
+"Matrix": [1,0,0,1,0,0],
+"name": "7"
+}
+}
+]
+}
+]
+}
+]
+}
+},
+{
 "SYMBOL_name": "spinning disk",
 "TIMELINE": {
 "LAYERS": [
@@ -1225,7 +1249,7 @@
 {
 "ATLAS_SPRITE_instance": {
 "Matrix": [1,0,0,1,0,0],
-"name": "7"
+"name": "8"
 }
 }
 ]
@@ -1237,7 +1261,7 @@
 {
 "ATLAS_SPRITE_instance": {
 "Matrix": [1,0,0,1,0,0],
-"name": "8"
+"name": "9"
 }
 }
 ]
@@ -1249,7 +1273,7 @@
 {
 "ATLAS_SPRITE_instance": {
 "Matrix": [1,0,0,1,0,0],
-"name": "9"
+"name": "10"
 }
 }
 ]
@@ -1261,7 +1285,7 @@
 {
 "ATLAS_SPRITE_instance": {
 "Matrix": [1,0,0,1,0,0],
-"name": "10"
+"name": "11"
 }
 }
 ]
@@ -1278,7 +1302,7 @@
 {
 "ATLAS_SPRITE_instance": {
 "Matrix": [1,0,0,1,0,0],
-"name": "11"
+"name": "12"
 }
 }
 ]
@@ -1330,7 +1354,7 @@
 {
 "ATLAS_SPRITE_instance": {
 "Matrix": [1,0,0,1,0,0],
-"name": "12"
+"name": "13"
 }
 }
 ]
@@ -1347,7 +1371,7 @@
 {
 "ATLAS_SPRITE_instance": {
 "Matrix": [1,0,0,1,0,0],
-"name": "13"
+"name": "14"
 }
 }
 ]
@@ -1359,7 +1383,7 @@
 {
 "ATLAS_SPRITE_instance": {
 "Matrix": [1,0,0,1,0,0],
-"name": "14"
+"name": "15"
 }
 }
 ]
@@ -1371,7 +1395,7 @@
 {
 "ATLAS_SPRITE_instance": {
 "Matrix": [1,0,0,1,0,0],
-"name": "15"
+"name": "16"
 }
 }
 ]
@@ -1383,7 +1407,7 @@
 {
 "ATLAS_SPRITE_instance": {
 "Matrix": [1,0,0,1,0,0],
-"name": "16"
+"name": "17"
 }
 }
 ]
@@ -1395,7 +1419,7 @@
 {
 "ATLAS_SPRITE_instance": {
 "Matrix": [1,0,0,1,0,0],
-"name": "17"
+"name": "18"
 }
 }
 ]
@@ -1407,7 +1431,7 @@
 {
 "ATLAS_SPRITE_instance": {
 "Matrix": [1,0,0,1,0,0],
-"name": "18"
+"name": "19"
 }
 }
 ]
@@ -1431,7 +1455,7 @@
 {
 "ATLAS_SPRITE_instance": {
 "Matrix": [1,0,0,1,0,0],
-"name": "19"
+"name": "20"
 }
 }
 ]
@@ -1443,7 +1467,7 @@
 {
 "ATLAS_SPRITE_instance": {
 "Matrix": [1,0,0,1,0,0],
-"name": "20"
+"name": "21"
 }
 }
 ]
@@ -1455,7 +1479,7 @@
 {
 "ATLAS_SPRITE_instance": {
 "Matrix": [1,0,0,1,0,0],
-"name": "21"
+"name": "22"
 }
 }
 ]
@@ -1467,7 +1491,7 @@
 {
 "ATLAS_SPRITE_instance": {
 "Matrix": [1,0,0,1,0,0],
-"name": "22"
+"name": "23"
 }
 }
 ]
@@ -1479,7 +1503,7 @@
 {
 "ATLAS_SPRITE_instance": {
 "Matrix": [1,0,0,1,0,0],
-"name": "23"
+"name": "24"
 }
 }
 ]
@@ -1491,7 +1515,7 @@
 {
 "ATLAS_SPRITE_instance": {
 "Matrix": [1,0,0,1,0,0],
-"name": "24"
+"name": "25"
 }
 }
 ]
@@ -1515,7 +1539,7 @@
 {
 "ATLAS_SPRITE_instance": {
 "Matrix": [1,0,0,1,0,0],
-"name": "25"
+"name": "26"
 }
 }
 ]
