@@ -114,16 +114,16 @@ function generateAnimation(symbol) {
 		
 		json += '{\n';
 		json += parseSymbol(symbol);
-		json += (d < dictionary.length - 1) ? '},\n' : '}\n';
+		json += (d < dictionary.length - 1) ? '},' : '}';
 	}
-	json += ']\n';
+	json += ']';
 	json += '},\n';
 	
 	// Add Metadata
 	json += '"metadata": {\n';
 	json += jsonStr("version", "bta_1");
 	json += '"framerate": ' + doc.frameRate + "\n";
-	json += '}\n';
+	json += '}';
 	
 	json += "}";
 	return json;
@@ -200,15 +200,15 @@ function parseSymbol(symbol)
 		json += '{\n';
 		json += jsonStr("Layer_name", layer.name);
 		json += parseFrames(layer.frames, symbol);
-		json += (l < layers.length - 1) ? '},\n' : '}\n';
+		json += (l < layers.length - 1) ? '},' : '}';
 		
 		layer.locked = locked;
 	}
 
 	doc.exitEditMode();
 	
-	json += ']\n';
-	json += '}\n';
+	json += ']';
+	json += '}';
 	
 	return json;
 }
@@ -238,10 +238,10 @@ function parseFrames(frames, symbol)
 		json += jsonVar("index", frame.startFrame);
 		json += jsonVar("duration", frame.duration);
 		json += parseElements(frame.elements, frame.startFrame, symbol);
-		json += (f < startFrames.length - 1) ? '},\n' : '}\n';
+		json += (f < startFrames.length - 1) ? '},' : '}';
 	}
 	
-	json += ']\n';
+	json += ']';
 	return json;
 }
 
@@ -269,14 +269,14 @@ function parseElements(elements, frameIndex, symbol)
 		else if (type == "shapeObj") {
 		}
 			
-		json += "}\n";
+		json += "}";
 	
 		if (e < elements.length -1) {
 			json += ",";
 		}
 	}
 	
-	json += ']\n';
+	json += ']';
 	return json;
 }
 
@@ -291,7 +291,7 @@ function parseShape(shape, frameIndex, symbol)
 	// TODO: do this diferently if its mesh mode
 	pushShapeSpritemap(shape, frameIndex, symbol);
 	
-	json += '}\n';
+	json += '}';
 	return json;
 }
 
@@ -353,7 +353,7 @@ function parseSymbolInstance(instance)
 	}
 	
 	json += ']\n';
-	json += '}\n';
+	json += '}';
 
 	return json;
 }
