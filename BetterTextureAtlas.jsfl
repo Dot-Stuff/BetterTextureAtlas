@@ -1,9 +1,12 @@
 ﻿///// CONFIGURATION
-
+fl.outputPanel.clear(); // debug purposes
 var symbol = "";
 var meshExport = false; // If to use a spritemap or mesh vertex data
+var version = "bta_1"; // easy to modify
 var onlyVisibleLayers = true;
 var optimiseDimensions = true;
+var flattenSkewing = false;
+
 /////
 
 var doc = fl.getDocumentDOM();
@@ -13,27 +16,100 @@ var spritemap = [];
 var smIndex = 0;
 
 var instance = null;
-if (lib.getSelectedItems().length > 0)
-{
-	symbol = lib.getSelectedItems()[0].name;
-}
-else if (doc.selection.length > 0)
+
+if (doc.selection.length > 0)
 {
 	instance = doc.selection[0];
 	symbol = instance.libraryItem.name;
 }
+else if (lib.getSelectedItems().length > 0)
+{
+	symbol = lib.getSelectedItems()[0].name;
+}
 
 if (symbol.length > 0)
 {
-	// First ask for the export folder
-	var path = fl.browseForFolderURL("Select a folder.");
-	if (path != null) // not cancelled
+	var save = "";
+	var ShpPad = 0;
+	var BrdPad = 0;
+	var res = 1;
+	var optDimens = "true";
+	var optAn = "true";
+	var flatten = "false";
+	
+	if (FLfile.exists(fl.configURI + "Commands/saveBTA.txt"))
 	{
-		path += "/" + symbol;
+		
+		var file = FLfile.read(fl.configURI + "Commands/saveBTA.txt").split("\n");
+		save = file[0];
+		ShpPad = parseInt(file[1]);
+		BrdPad = parseInt(file[2]);
+		res = parseInt(file[3]);
+		optDimens = file[4];
+		optAn = file[5];
+		flatten = file[6];
+	}
+	var rawXML = FLfile.read(fl.configURI + "Commands/BTADialog.xml");
+	var str = save + "\\" + symbol;
+	if (save == "")
+		str = symbol;
+	
+	rawXML = rawXML.split("$FILEURI").join(str);
+	rawXML = rawXML.split("$SHP").join(ShpPad);
+	rawXML = rawXML.split("$BRD").join(BrdPad);
+	rawXML = rawXML.split("$RES").join(res);
+	rawXML = rawXML.split("$OPTDIM").join(optDimens);
+	rawXML = rawXML.split("$OPTAN").join(optAn);
+	rawXML = rawXML.split("$FLAT").join(flatten);
+
+	var xPan = fl.xmlPanelFromString(rawXML);
+	
+	if (xPan.dismiss == "accept")
+	{
+		var str = "";
+		str = xPan.saveBox;
+		
+		var arr = str.split("\\");
+		var name = arr[arr.length - 1];
+		arr.pop();
+		save = arr.join("\\");
+		ShpPad = xPan.ShpPad;
+		BrdPad = xPan.BrdPad;
+		res = xPan.ResSld;
+		optDimens = xPan.OptDimens;
+		optAn = xPan.OptAn;
+		flatten = xPan.FlatSke;
+		
+		optimiseDimension = optDimens == "true";
+		flattenSkewing = flatten == "true";
+
+		// First ask for the export folder
+		var path = save;
+		
+		if (path == null)
+		{
+			var arr = doc.path.split("/");
+			arr.pop();
+			path = arr.join("/");
+		}
+		
+		var arr = path.split(":");
+		
+		path = "file:///" + arr.join("|");
+		
+		path = path.split("\\").join("/");
+		 
+		path += "/" + name;
 		FLfile.createFolder(path);
 
 		exportAtlas(path, symbol);
+		
+		FLfile.write(fl.configURI + "Commands/saveBTA.txt", save + "\n" + ShpPad + "\n" + BrdPad +  "\n" + res +  "\n" + optDimens +  "\n" + optAn +  "\n" + flatten);
 	}
+	else
+		fl.trace("operation cancelled");
+	
+	fl.trace("DONE");
 }
 else {
 	fl.trace("No symbol selected");
