@@ -401,6 +401,19 @@ function pushShapeSpritemap(shape, frameIndex, parentSymbol)
 	lib.editItem(temp);
 	doc.getTimeline().setSelectedFrames(0,0);
 	doc.getTimeline().pasteFrames();
+	doc.getTimeline().setSelectedFrames(0,0);
+	
+	// Remove symbol instances we dont want in the shape symbol
+	doc.distributeToLayers();
+	
+	var f = -1;
+	for each (var layer in doc.getTimeline().layers) {
+		f++;
+		if (lib.itemExists(layer.name)) {
+			doc.getTimeline().setSelectedLayers(f);
+			doc.getTimeline().clearFrames();
+		}
+	}
 
 	var bs = doc.getTimeline().getBounds(0); // TODO/Reminder: in the future macro symbol, use smIndex instead of 0
 	w += bs.width;
@@ -408,15 +421,6 @@ function pushShapeSpritemap(shape, frameIndex, parentSymbol)
 	
 	spritemap.push(lib.items[lib.findItemIndex(temp)]);
 	smIndex++;
-	
-	// TODO: fix symbols and other crap we dont want in the frame >:(
-	
-	///var frameElements = doc.getTimeline().layers[0].frames[0].elements;
-	//for each (var element in frameElements) {
-	//	if (element.elementType !== 'shape') {
-	//		//gay shit
-	//	}
-	//}
 }
 
 function parseSymbolInstance(instance)
