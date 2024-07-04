@@ -857,7 +857,7 @@
 "SYMBOL_Instance": {
 "SYMBOL_name": "turntable lights",
 "Instance_Name": "",
-"symbolType": "movie clip",
+"symbolType": "movieclip",
 "Matrix": [1,0,0,1,0,0],
 "blendMode": "add",
 "filters": [

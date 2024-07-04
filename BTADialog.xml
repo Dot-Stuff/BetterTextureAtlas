@@ -1,0 +1,177 @@
+<?xml version="1.0"?>
+<dialog title="Generate a Texture Atlas" buttons="">
+
+	<vbox>
+		<label value="Export Settings"/>
+		
+		<separator/>
+		<spacer/>
+		<spacer/>
+
+		<grid>
+			<columns>
+				<column/>
+				<column/>
+			</columns>
+			<rows>
+				<row>
+					<grid>
+						<columns>
+							<column/>
+							<column/>
+							<column/>
+						</columns>
+						<rows>
+							<row align="center">
+								<label value="Image dimensions: " control="imgDims"/>
+								<menulist id="imgDims" value="128" >
+										<menupop>
+											<menuitem label="Automatic Size" value="auto"/>
+											<menuitem label="64x64" value="64"/>
+										<menuitem label="128x128" value="128"/>
+										<menuitem label="256x256" value="256"/>
+										<menuitem label="512x512" value="512"/>
+										<menuitem label="1024x1024" value="1024"/>
+										<menuitem label="128x128" value="128"/>
+										<menuitem label="256x256" value="256"/>
+										<menuitem label="512x512" value="512"/>
+										</menupop>
+									</menulist>
+								<checkbox id="OptDimens" checked="$OPTDIM" label="Optimize dimensions" />
+							</row>
+
+							<row align="center">
+								<label value="Image format: " control="imgFormat"/>
+								<menulist id="imgFormat">
+										<menupop>
+											<menuitem label="PNG 32 bits" value="32bits"/>
+										<menuitem label="PNG 8 bits" value="8bits"/>
+										</menupop>
+									</menulist>
+							</row>
+				
+							<row align="center">
+								<label value="(Only rasterised) Resolution: " control="ResSld"/>
+								<textbox id="ResSld" maxlength="3" value="$RES" width="50" />
+							</row>
+			
+						</rows>
+					</grid>
+
+					<grid>
+
+						<columns>
+							<column/>
+							<column/>
+						</columns>
+						<rows>
+							<row align="right">
+								<label value="Algorithm: " control="xScale"/>
+								<menulist id="algorithm">
+										<menupop>
+											<menuitem label="Basic" value="basic"/>
+											<menuitem label="MaxRects" value="maxRects"/>
+										</menupop>
+									</menulist>
+							</row>
+							<row align="right">
+								<label value="Data Format: " control="DFormat"/>
+								<menulist id="DFormat">
+										<menupop>
+											<menuitem label="Rasterised JSON" value="raster"/>
+											<menuitem label="Vectorised JSON" value="mesh"/>
+										</menupop>
+									</menulist>
+							</row>
+							<row align="right">
+								<label value=""/>
+								<checkbox id="Rotate" checked="true" label="Rotate" />
+							</row>
+							<row align="right">
+								<label value=""/>
+								<label value=""/>
+							</row>
+							<row align="center">
+								<label value="Shape padding: " control="ShpPad"/>
+								<textbox id="ShpPad" maxlength="3" value="$SHP" width="50" />
+							</row>
+							<row align="center">
+								<label value="Border padding: " control="BrdPad"/>
+								<textbox id="BrdPad" maxlength="3" value="$BRD" width="50" />
+							</row>
+						</rows>
+					</grid>
+				</row>
+			</rows>
+		</grid>
+
+			<spacer/>
+			<spacer/>
+			<spacer/>
+			<spacer/>
+			<spacer/>
+			<spacer/>
+			<spacer/>
+			<spacer/>
+			<spacer/>
+			<spacer/>
+
+		<separator/>
+
+		<checkbox id="OptAn" checked="$OPTAN" label="Optimize Animation.json file" />
+		<checkbox id="FlatSke" checked="$FLAT" label="Flatten skewed objects to bitmap" />
+
+		<separator/>
+		<hbox align="right" >
+			<grid>
+				<columns>
+					<column/>
+				</columns>
+				<rows>
+					<row>
+						<label value="Export Path" control="saveBox" />
+					</row>
+					<row>
+						<choosefile size="40" value="$FILEURI" required="true" pathtype="absolute" id="saveBox" type="save" />
+					</row>
+					<row>
+						<label value=" "/>
+					</row>
+					<row>
+						<label value=" "/>
+					</row>
+				</rows>
+			</grid>
+			
+			
+			<spacer/>
+			<spacer/>
+			<spacer/>
+			<spacer/>
+			<spacer/>
+			<spacer/>
+			<spacer/>
+			<spacer/>
+			<grid>
+				<columns>
+					<column/>
+					<column/>
+					<column/>
+				</columns>
+				<rows>
+					<row>
+						<button label="Export" oncommand="fl.xmlui.accept()" width="30"/>
+						<label value="" />
+						<button label="Cancel" oncommand="fl.xmlui.cancel()" width="30" />
+					</row>
+					<row>
+						<label value=" "/>
+					</row>
+				</rows>
+			</grid>
+			<spacer/>
+		</hbox>
+	</vbox>
+	
+	
+</dialog>
