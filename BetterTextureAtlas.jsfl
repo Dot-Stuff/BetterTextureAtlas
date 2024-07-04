@@ -275,10 +275,6 @@ function parseSymbol(symbol)
 		var locked = layer.locked;
 		layer.locked = false;
 		
-		lib.editItem(symbol.name);	
-		doc.getTimeline().setSelectedLayers(l);
-		doc.selectNone();
-		
 		json += '{\n';
 		json += jsonStr("Layer_name", layer.name);
 		
@@ -291,7 +287,7 @@ function parseSymbol(symbol)
 			break;
 		}
 		
-		json += parseFrames(layer.frames, symbol);
+		json += parseFrames(layer.frames, l, symbol);
 		json += (l < layers.length - 1) ? '},' : '}';
 		
 		layer.locked = locked;
@@ -305,7 +301,7 @@ function parseSymbol(symbol)
 	return json;
 }
 
-function parseFrames(frames, symbol)
+function parseFrames(frames, layerIndex, symbol)
 {
 	var json = '"Frames": [\n';
 	
@@ -329,7 +325,7 @@ function parseFrames(frames, symbol)
 		json += '{\n';
 		json += jsonVar("index", frame.startFrame);
 		json += jsonVar("duration", frame.duration);
-		json += parseElements(frame.elements, frame.startFrame, symbol);
+		json += parseElements(frame.elements, frame.startFrame, layerIndex, symbol);
 		json += (f < startFrames.length - 1) ? '},' : '}';
 	}
 	
@@ -337,7 +333,7 @@ function parseFrames(frames, symbol)
 	return json;
 }
 
-function parseElements(elements, frameIndex, symbol)
+function parseElements(elements, frameIndex, layerIndex, symbol)
 {
 	var json = '"elements": [\n';
 	
@@ -349,7 +345,7 @@ function parseElements(elements, frameIndex, symbol)
 		
 		switch (element.elementType) {
 			case "shape":
-				json += parseShape(element, frameIndex, symbol);
+				json += parseShape(element, frameIndex, layerIndex, symbol);
 			break;
 			case "instance":
 				json += parseSymbolInstance(element);
@@ -373,7 +369,7 @@ function parseElements(elements, frameIndex, symbol)
 	return json;
 }
 
-function parseShape(shape, frameIndex, symbol)
+function parseShape(shape, frameIndex, layerIndex, symbol)
 {
 	var json = '"ATLAS_SPRITE_instance": {\n';
 
@@ -382,7 +378,7 @@ function parseShape(shape, frameIndex, symbol)
 	json += '"name": "' + smIndex + '"\n';
 	
 	// TODO: do this diferently if its mesh mode
-	pushShapeSpritemap(shape, frameIndex, symbol);
+	pushShapeSpritemap(shape, frameIndex, layerIndex, symbol);
 	
 	json += '}';
 	return json;
@@ -390,9 +386,10 @@ function parseShape(shape, frameIndex, symbol)
 
 var w = 0;
 var h = 0;
-function pushShapeSpritemap(shape, frameIndex, parentSymbol)
+function pushShapeSpritemap(shape, frameIndex, layerIndex, parentSymbol)
 {	
 	lib.editItem(parentSymbol.name);
+	doc.getTimeline().setSelectedLayers(layerIndex);
 	doc.getTimeline().copyFrames(frameIndex, frameIndex);
 	
 	var temp = "_ta_temp_" + smIndex;
