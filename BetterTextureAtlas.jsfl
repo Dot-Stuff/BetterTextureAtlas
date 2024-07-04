@@ -205,6 +205,16 @@ function parseSymbol(symbol)
 		
 		json += '{\n';
 		json += jsonStr("Layer_name", layer.name);
+		
+		switch (layer.layerType) {
+			case "mask":
+				json += jsonStr("Layer_type", "Clipper");
+			break;
+			case "masked":
+				json += jsonStr("Clipped_by", layer.parentLayer.name);
+			break;
+		}
+		
 		json += parseFrames(layer.frames, symbol);
 		json += (l < layers.length - 1) ? '},' : '}';
 		
@@ -305,7 +315,7 @@ function parseShape(shape, frameIndex, symbol)
 var w = 0;
 var h = 0;
 function pushShapeSpritemap(shape, frameIndex, parentSymbol)
-{
+{	
 	lib.editItem(parentSymbol.name);
 	doc.getTimeline().copyFrames(frameIndex, frameIndex);
 	
@@ -322,6 +332,15 @@ function pushShapeSpritemap(shape, frameIndex, parentSymbol)
 	
 	spritemap.push(lib.items[lib.findItemIndex(temp)]);
 	smIndex++;
+	
+	// TODO: fix symbols and other crap we dont want in the frame >:(
+	
+	///var frameElements = doc.getTimeline().layers[0].frames[0].elements;
+	//for each (var element in frameElements) {
+	//	if (element.elementType !== 'shape') {
+	//		//gay shit
+	//	}
+	//}
 }
 
 function parseSymbolInstance(instance)
@@ -338,7 +357,7 @@ function parseSymbolInstance(instance)
 	}
 	
 	json += jsonStr("Instance_Name", instance.name);
-	json += jsonStr("symbolType", instance.symbolType);
+	json += jsonStr("symbolType", instance.symbolType.replace(" ", ""));
 	if (!instance.is3D)
 		json += jsonVar("Matrix", parseMatrix(instance.matrix));
 	else
