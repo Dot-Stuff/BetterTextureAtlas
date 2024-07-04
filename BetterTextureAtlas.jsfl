@@ -460,7 +460,13 @@ function parseSymbolInstance(instance)
 					case "blurFilter":
 						json += jsonVar("blurX", filter.blurX);
 						json += jsonVar("blurY", filter.blurY);
-						json += '"quality": ' + parseQuality(filter.quality) + '\n';
+						json += jsonVarEnd("quality", parseQuality(filter.quality));
+					break;
+					case "adjustColorFilter":
+						json += jsonVar("brightness", filter.brightness);
+						json += jsonVar("hue", filter.hue);
+						json += jsonVar("contrast", filter.contrast);
+						json += jsonVarEnd("saturation", filter.saturation);
 					break;
 				}
 				
@@ -529,8 +535,18 @@ function findSymbol(name) {
 	return null;
 }
 
+function jsonVarEnd(name, value) {
+	var str = jsonVar(name, value);
+	return str.substring(0, str.length - 2) + "\n";
+}
+
 function jsonVar(name, value) {
 	return '"' + name +'": ' + value + ',\n';
+}
+
+function jsonStrEnd(name, value) {
+	var str = jsonStr(name, value);
+	return str.substring(0, str.length - 2) + "\n";
 }
 
 function jsonStr(name, value) {
