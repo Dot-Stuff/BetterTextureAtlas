@@ -204,7 +204,7 @@ function generateAnimation(symbol) {
 	// Add Metadata
 	json += '"metadata": {\n';
 	json += jsonStr("version", "bta_1");
-	json += '"framerate": ' + doc.frameRate + "\n";
+	json += jsonVarEnd("framerate", doc.frameRate);
 	json += '}';
 	
 	json += "}";
@@ -374,8 +374,7 @@ function parseShape(shape, frameIndex, layerIndex, symbol)
 	var json = '"ATLAS_SPRITE_instance": {\n';
 
 	json += jsonVar("Matrix", parseMatrix(shape.matrix));
-
-	json += '"name": "' + smIndex + '"\n';
+	json += jsonStrEnd("name", smIndex);
 	
 	// TODO: do this diferently if its mesh mode
 	pushShapeSpritemap(shape, frameIndex, layerIndex, symbol);
@@ -398,20 +397,25 @@ function pushShapeSpritemap(shape, frameIndex, layerIndex, parentSymbol)
 	lib.editItem(temp);
 	doc.getTimeline().setSelectedFrames(0,0);
 	doc.getTimeline().pasteFrames();
-	doc.getTimeline().setSelectedFrames(0,0);
 	
-	// Remove symbol instances we dont want in the shape symbol
-	doc.distributeToLayers();
+	// Only check if theres too many elements in the shape
+	var elementsInShape = doc.getTimeline().layers[0].frames[0].elements.length;
+	if (elementsInShape > 1)
+	{
+		// Remove symbol instances we dont want in the shape symbol
+		doc.getTimeline().setSelectedFrames(0,0);
+		doc.distributeToLayers();
 	
-	var f = -1;
-	for each (var layer in doc.getTimeline().layers) {
-		f++;
-		if (lib.itemExists(layer.name)) {
-			doc.getTimeline().setSelectedLayers(f);
-			doc.getTimeline().clearFrames();
+		var f = -1;
+		for each (var layer in doc.getTimeline().layers) {
+			f++;
+			if (lib.itemExists(layer.name)) {
+				doc.getTimeline().setSelectedLayers(f);
+				doc.getTimeline().clearFrames();
+			}
 		}
 	}
-
+	
 	var bs = doc.getTimeline().getBounds(0); // TODO/Reminder: in the future macro symbol, use smIndex instead of 0
 	w += bs.width;
 	h += bs.height;
@@ -536,8 +540,7 @@ function findSymbol(name) {
 }
 
 function jsonVarEnd(name, value) {
-	var str = jsonVar(name, value);
-	return str.substring(0, str.length - 2) + "\n";
+	return '"' + name +'": ' + value + '\n';
 }
 
 function jsonVar(name, value) {
@@ -545,8 +548,7 @@ function jsonVar(name, value) {
 }
 
 function jsonStrEnd(name, value) {
-	var str = jsonStr(name, value);
-	return str.substring(0, str.length - 2) + "\n";
+	return '"' + name +'": "' + value + '"\n';
 }
 
 function jsonStr(name, value) {
