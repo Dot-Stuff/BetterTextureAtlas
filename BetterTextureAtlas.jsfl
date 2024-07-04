@@ -183,8 +183,6 @@ function generateAnimation(symbol) {
 	// Get the dictionary
 	var dictionary = [];
 	findDictionary(symbol, dictionary);
-
-	//findDictionary
 	
 	// Add Symbol Dictionary
 	json += '"SYMBOL_DICTIONARY": {\n';
@@ -203,11 +201,13 @@ function generateAnimation(symbol) {
 	
 	// Add Metadata
 	json += '"metadata": {\n';
-	json += jsonStr("version", "bta_1");
+	json += jsonStr("version", version);
 	json += jsonVarEnd("framerate", doc.frameRate);
 	json += '}';
 	
 	json += "}";
+	
+	doc.exitEditMode();
 	return json;
 }
 
@@ -292,8 +292,6 @@ function parseSymbol(symbol)
 		
 		layer.locked = locked;
 	}
-
-	doc.exitEditMode();
 	
 	json += ']';
 	json += '}';
@@ -317,11 +315,7 @@ function parseFrames(frames, layerIndex, symbol)
 
 	for (f = 0; f < startFrames.length; f++)
 	{
-		var frame = startFrames[f];
-
-		doc.getTimeline().setSelectedFrames(f, f);
-		doc.selectNone();
-		
+		var frame = startFrames[f];		
 		json += '{\n';
 		json += jsonVar("index", frame.startFrame);
 		json += jsonVar("duration", frame.duration);
