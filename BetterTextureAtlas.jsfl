@@ -151,11 +151,19 @@ function exportAtlas(exportPath, symbolName)
 
 	// OK this becomes SUPER bullshit but you gotta do what you gotta do
 
-	for (i = 0; i < spritemap.length; i++) {
-		var temp = "_ta_temp_" + i;
-		var item = lib.items[lib.findItemIndex(temp)];
-		sm.addSymbol(item);
-		lib.deleteItem(temp);
+	for (s = 0; s < spritemap.length; s++)
+	{
+		var smSprite = spritemap[s];
+		
+		if (lib.itemExists(smSprite.name)) // Found a symbol
+		{
+			lib.deleteItem(smSprite.name);
+			sm.addSymbol(smSprite);
+		}
+		else // Found a bitmap
+		{
+			sm.addBitmap(smSprite.libraryItem);
+		}
 	}
 
 	var smPath = exportPath + "/spritemap1";
@@ -176,6 +184,7 @@ function exportAtlas(exportPath, symbolName)
 	meta = meta.split("}").join("");
 	meta = meta.split(":").join("");
 
+	// TODO: fix this not working with bitmap instances
 	var foundLimbs = meta.split("_ta_temp_");
 	foundLimbs.splice(0, 1);
 
@@ -260,9 +269,7 @@ function generateAnimation(symbol) {
 }
 
 function findDictionary(symbol, dictionary)
-{
-	//fl.trace(symbol.name);
-	
+{	
 	for each(var layer in symbol.timeline.layers)
 	{
 		var f = -1;
@@ -279,9 +286,13 @@ function findDictionary(symbol, dictionary)
 						var libraryItem = element.libraryItem;
 						var itemName = libraryItem.name;
 						
-						if (dictionary.indexOf(itemName) == -1) {
-							dictionary.push(itemName);
-							findDictionary(libraryItem, dictionary);
+						if (dictionary.indexOf(itemName) == -1)
+						{
+							var itemType = libraryItem.itemType;
+							if (itemType == "graphic" || itemType == "movie clip") {
+								findDictionary(libraryItem, dictionary);
+								dictionary.push(itemName);
+							}
 						}
 					}
 				}
@@ -365,7 +376,10 @@ function parseFrames(frames, layerIndex, symbol)
 	{
 		var frame = startFrames[f];		
 		json += '{\n';
-		if (frame.name.length > 0) json += jsonStr("name", frame.name);
+		
+		if (frame.name.length > 0)
+			json += jsonStr("name", frame.name);
+		
 		json += jsonVar("index", frame.startFrame);
 		json += jsonVar("duration", frame.duration);
 		json += parseElements(frame.elements, frame.startFrame, layerIndex, symbol);
@@ -388,10 +402,17 @@ function parseElements(elements, frameIndex, layerIndex, symbol)
 		
 		switch (element.elementType) {
 			case "shape":
-				json += parseShape(element, frameIndex, layerIndex, symbol);
-			break;
+				json += parseAtlasInstance(element, "shape", frameIndex, layerIndex, symbol);
+			break
 			case "instance":
-				json += parseSymbolInstance(element);
+				switch (element.instanceType) {
+					case "symbol":
+						json += parseSymbolInstance(element);
+					break;
+					case "bitmap":
+						json += parseAtlasInstance(element, "bitmap", frameIndex, layerIndex, symbol);
+					break;
+				}
 			break;
 			case "text":
 			break;
@@ -412,15 +433,23 @@ function parseElements(elements, frameIndex, layerIndex, symbol)
 	return json;
 }
 
-function parseShape(shape, frameIndex, layerIndex, symbol)
+function parseAtlasInstance(instance, atlasType, frameIndex, layerIndex, symbol)
 {
 	var json = '"ATLAS_SPRITE_instance": {\n';
 
-	json += jsonVar("Matrix", parseMatrix(shape.matrix));
+	json += jsonVar("Matrix", parseMatrix(instance.matrix));
 	json += jsonStrEnd("name", smIndex);
 	
-	// TODO: do this diferently if its mesh mode
-	pushShapeSpritemap(shape, frameIndex, layerIndex, symbol);
+	switch (atlasType) {
+		case "shape":
+			// TODO: do this diferently if its mesh mode
+			pushShapeSpritemap(instance, frameIndex, layerIndex, symbol);
+		break;
+		case "bitmap":
+			spritemap.push(instance);
+			smIndex++;
+		break;
+	}
 	
 	json += '}';
 	return json;
@@ -428,6 +457,7 @@ function parseShape(shape, frameIndex, layerIndex, symbol)
 
 var w = 0;
 var h = 0;
+
 function pushShapeSpritemap(shape, frameIndex, layerIndex, parentSymbol)
 {	
 	lib.editItem(parentSymbol.name);
@@ -452,9 +482,12 @@ function pushShapeSpritemap(shape, frameIndex, layerIndex, parentSymbol)
 		var f = -1;
 		for each (var layer in doc.getTimeline().layers) {
 			f++;
-			if (lib.itemExists(layer.name)) {
-				doc.getTimeline().setSelectedLayers(f);
-				doc.getTimeline().clearFrames();
+			var elements = layerElementType = layer.frames[0].elements;
+			if (elements.length > 0) {
+				if (elements[0].elementType !== "shape") {
+					doc.getTimeline().setSelectedLayers(f);
+					doc.getTimeline().clearFrames();
+				}
 			}
 		}
 	}
@@ -472,16 +505,17 @@ function parseSymbolInstance(instance)
 	var json = '"SYMBOL_Instance": {\n';
 	var item = instance.libraryItem;
 	
-	if (item != undefined) {
+	if (item != undefined)
 		json += jsonStr("SYMBOL_name", item.name);
-	}
 
-	if (instance.firstFrame != undefined) {
+	if (instance.firstFrame != undefined)
 		json += jsonVar("firstFrame", instance.firstFrame);
-	}
+	
+	if (instance.symbolType != undefined)
+		json += jsonVar("symbolType", instance.symbolType.replace(" ", ""));
 	
 	json += jsonStr("Instance_Name", instance.name);
-	json += jsonStr("symbolType", instance.symbolType.replace(" ", ""));
+	
 	if (!instance.is3D)
 		json += jsonVar("Matrix", parseMatrix(instance.matrix));
 	else
