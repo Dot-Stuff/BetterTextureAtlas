@@ -365,6 +365,7 @@ function parseFrames(frames, layerIndex, symbol)
 	{
 		var frame = startFrames[f];		
 		json += '{\n';
+		if (frame.name.length > 0) json += jsonStr("name", frame.name);
 		json += jsonVar("index", frame.startFrame);
 		json += jsonVar("duration", frame.duration);
 		json += parseElements(frame.elements, frame.startFrame, layerIndex, symbol);
