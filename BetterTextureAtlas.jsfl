@@ -96,10 +96,17 @@ if (symbol.length > 0)
 		var arr = path.split(":");
 		
 		path = "file:///" + arr.join("|");
-		
 		path = path.split("\\").join("/");
-		 
 		path += "/" + name;
+	
+		// Remove leading spaces of the path
+		var endIndex = path.length - 1;
+		while (endIndex >= 0 && path[endIndex] === ' ') {
+			endIndex--;
+		}
+	
+		path = path.substring(0, endIndex + 1);
+	
 		FLfile.createFolder(path);
 
 		exportAtlas(path, symbol);
@@ -116,15 +123,10 @@ else {
 }
 
 function exportAtlas(exportPath, symbolName)
-{
+{	
 	var symbol = findSymbol(symbolName);
 	spritemap = [];
 	smIndex = 0;
-	
-	if (!(symbol.itemType == "graphic" || symbol.itemType == "movie clip")) { // What is this? DM - Cheems
-		fl.trace("Invalid symbol type: " + symbol.itemType);
-		return;
-	}
 
 	// Write Animation.json
 	var animJson = generateAnimation(symbol);
@@ -160,7 +162,6 @@ function exportAtlas(exportPath, symbolName)
 	var smSettings = {format:"png", bitDepth:32, backgroundColor:"#00000000"};
 
 	// Parse and change json to spritemap format
-
 	sm.exportSpriteSheet(smPath, smSettings, true);
 	var meta = FLfile.read(smPath + ".json");
 
