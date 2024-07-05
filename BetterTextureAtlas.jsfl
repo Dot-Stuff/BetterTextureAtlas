@@ -446,8 +446,7 @@ function parseAtlasInstance(instance, atlasType, frameIndex, layerIndex, symbol)
 			pushShapeSpritemap(instance, frameIndex, layerIndex, symbol);
 		break;
 		case "bitmap":
-			spritemap.push(instance);
-			smIndex++;
+			pushSpritemap(instance);
 		break;
 	}
 	
@@ -496,7 +495,11 @@ function pushShapeSpritemap(shape, frameIndex, layerIndex, parentSymbol)
 	w += bs.width;
 	h += bs.height;
 	
-	spritemap.push(lib.items[lib.findItemIndex(temp)]);
+	pushSpritemap(lib.items[lib.findItemIndex(temp)]);
+}
+
+function pushSpritemap(smSprite) {
+	spritemap.push(smSprite);
 	smIndex++;
 }
 
@@ -512,7 +515,7 @@ function parseSymbolInstance(instance)
 		json += jsonVar("firstFrame", instance.firstFrame);
 	
 	if (instance.symbolType != undefined)
-		json += jsonVar("symbolType", instance.symbolType.replace(" ", ""));
+		json += jsonStr("symbolType", instance.symbolType.replace(" ", ""));
 	
 	json += jsonStr("Instance_Name", instance.name);
 	
@@ -663,10 +666,8 @@ function parseQuality(quality) {
 }
 
 function findSymbol(name) {
-	var index = lib.findItemIndex(symbol);
-	if (index !== -1) {
-		return lib.items[index];
-	}
+	if (lib.itemExists(name))
+		return lib.items[lib.findItemIndex(name)];
 
 	fl.trace("Symbol not found: " + name);
 	return null;
