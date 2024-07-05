@@ -154,15 +154,17 @@ function exportAtlas(exportPath, symbolName)
 	for (s = 0; s < spritemap.length; s++)
 	{
 		var smSprite = spritemap[s];
+		var name = smSprite.name;		
+		var isSymbol = name.indexOf("_ta_temp_") > -1;
 		
-		if (lib.itemExists(smSprite.name)) // Found a symbol
+		if (isSymbol)
 		{
-			lib.deleteItem(smSprite.name);
 			sm.addSymbol(smSprite);
+			lib.deleteItem(name);
 		}
-		else // Found a bitmap
+		else
 		{
-			sm.addBitmap(smSprite.libraryItem);
+			sm.addBitmap(smSprite);
 		}
 	}
 
@@ -446,7 +448,8 @@ function parseAtlasInstance(instance, atlasType, frameIndex, layerIndex, symbol)
 			pushShapeSpritemap(instance, frameIndex, layerIndex, symbol);
 		break;
 		case "bitmap":
-			pushSpritemap(instance);
+			if (spritemap.indexOf(instance.libraryItem) == -1)
+				pushSpritemap(instance.libraryItem);
 		break;
 	}
 	
