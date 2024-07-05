@@ -158,11 +158,58 @@ function exportAtlas(exportPath, symbolName)
 
 	var smPath = exportPath + "/spritemap1";
 	var smSettings = {format:"png", bitDepth:32, backgroundColor:"#00000000"};
+
+	// Parse and change json to spritemap format
+
+	sm.exportSpriteSheet(smPath, smSettings, true);
+	var meta = FLfile.read(smPath + ".json");
+
+	meta = meta.split('"x"').join("");
+	meta = meta.split('"y"').join("");
+	meta = meta.split('"w"').join("");
+	meta = meta.split('"h"').join("");
+
+	meta = meta.split('"').join("");
+	meta = meta.split("\t").join("");
+	meta = meta.split("{").join("");
+	meta = meta.split("}").join("");
+	meta = meta.split(":").join("");
+
+	var foundLimbs = meta.split("_ta_temp_");
+	foundLimbs.splice(0, 1);
+
+	var smJson = '{"ATLAS":{"SPRITES":[\n';
 	
-	// TODO: metadata is broken and not all shapes seem to be exporting..
-	// fix that crap
-	var meta = sm.exportSpriteSheet(smPath, smSettings, true);
-	//fl.trace(meta);
+	var l = -1;
+	for each(var limb in foundLimbs)
+	{
+		l++;
+		var limbData = limb.split("\n");
+		
+		var name = limbData[0].slice(0, -4);
+		var frame = limbData[2].slice(6, 999).split(",");
+		var rotated = limbData[3].slice(8, 999).slice(0, -1);
+		
+		smJson += '{"SPRITE":{' +
+		'"name":"' 		+ name + '",' +
+		'"x":' 			+ frame[0] + ',' +
+		'"y":' 			+ frame[1] + ',' +
+		'"w":' 			+ frame[2] + ',' +
+		'"h":' 			+ frame[3] + ',' +
+		'"rotated":' 	+ rotated +
+		'}}';
+		
+		if (l < foundLimbs.length - 1)
+			smJson += ',\n';
+	}
+
+	smJson += "]}\n";
+
+	// TODO: add spritemap metadata
+
+	smJson += "}";
+
+	FLfile.write(smPath + ".json", smJson);
 	
 	fl.trace("Exported to folder: " + exportPath);
 }
@@ -570,14 +617,7 @@ function parseMatrix3D(mat) {
 }
 
 function parseColorArray(colorArray) {
-	var str = "[";
-	var i = -1;
-	for each(var color in colorArray) {
-		i++;
-		str += '"' + color + '"';
-		if (i < colorArray.length - 1) str += ",";
-	}
-	return str + "]";
+	return '["' + colorArray.join('","') +'"]';
 }
 
 function parseQuality(quality) {
