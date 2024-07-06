@@ -381,6 +381,7 @@ function parseAtlasInstance(instance, isItem, elementIndex, frameIndex, layerInd
 
 	if (isItem) {
 		prepareSpritemapFrame();
+		lib.editItem(TEMP_SPRITEMAP);
 		doc.addItem({x:0,y:0}, instance.libraryItem);
 	}
 	else {
@@ -395,9 +396,8 @@ var w = 0;
 var h = 0;
 
 function prepareSpritemapFrame()
-{
-	lib.editItem(TEMP_SPRITEMAP);
-	var tempTimeline = doc.getTimeline();
+{	
+	var tempTimeline = lib.items[lib.findItemIndex(TEMP_SPRITEMAP)].timeline;
 	tempTimeline.setSelectedLayers(0, true);
 
 	var targetFrame = tempTimeline.layers[0].frames.length;
@@ -419,11 +419,13 @@ function pushElementSpritemap(symbol, layerIndex, frameIndex, elementIndex)
 	var targetFrame = tempTimeline.currentFrame;
 	
 	tempTimeline.pasteFrames();
-	tempTimeline.setSelectedFrames(targetFrame, targetFrame);
 
 	var frameElements = tempTimeline.layers[0].frames[targetFrame].elements;	
 	if (frameElements.length > 1)
 	{
+		lib.editItem(TEMP_SPRITEMAP);
+		tempTimeline.setSelectedFrames(targetFrame, targetFrame);
+		
 		var removeElements = new Array();
 
 		var e = -1;
@@ -436,7 +438,10 @@ function pushElementSpritemap(symbol, layerIndex, frameIndex, elementIndex)
 	
 		doc.selectNone();
 		doc.selection = removeElements;
-		doc.deleteSelection();
+	
+		if (doc.selection.length > 0) {
+			doc.deleteSelection();
+		}
 	}
 
 	var bs = tempTimeline.getBounds(0); // TODO/Reminder: in the future macro symbol, use smIndex instead of 0
