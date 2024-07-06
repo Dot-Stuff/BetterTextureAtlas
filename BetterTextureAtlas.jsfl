@@ -12,10 +12,8 @@ var flattenSkewing = false;
 var doc = fl.getDocumentDOM();
 var lib = doc.library;
 
-var spritemap = [];
-var smIndex = 0;
-
 var instance = null;
+var smIndex = 0;
 
 if (doc.selection.length > 0)
 {
@@ -122,10 +120,14 @@ else {
 	fl.trace("No symbol selected");
 }
 
+var TEMP_SPRITEMAP = "_ta_temp_sm";
+
 function exportAtlas(exportPath, symbolName)
 {	
 	var symbol = findSymbol(symbolName);
-	spritemap = [];
+
+	lib.addNewItem("graphic", TEMP_SPRITEMAP);
+	lib.items[lib.findItemIndex(TEMP_SPRITEMAP)].timeline.removeFrames(0,0);
 	smIndex = 0;
 
 	// Write Animation.json
@@ -141,7 +143,7 @@ function exportAtlas(exportPath, symbolName)
 	sm.allowRotate = true;
 	sm.allowTrimming = true;
 	sm.stackDuplicate = true;
-	sm.layoutFormat = "JSON";
+	sm.layoutFormat = "JSON-Array";
 
 	if (optimiseDimensions)
 	{
@@ -149,79 +151,14 @@ function exportAtlas(exportPath, symbolName)
 		sm.maxSheetHeight = h + (sm.shapePadding * Math.max(smIndex - 1, 0)) + sm.borderPadding;
 	}
 
-	// OK this becomes SUPER bullshit but you gotta do what you gotta do
-
-	for (s = 0; s < spritemap.length; s++)
-	{
-		var smSprite = spritemap[s];
-		var name = smSprite.name;		
-		var isSymbol = name.indexOf("_ta_temp_") > -1;
-		
-		if (isSymbol)
-		{
-			sm.addSymbol(smSprite);
-			lib.deleteItem(name);
-		}
-		else
-		{
-			sm.addBitmap(smSprite);
-		}
-	}
+	sm.addSymbol(lib.items[lib.findItemIndex(TEMP_SPRITEMAP)]);
+	lib.deleteItem(TEMP_SPRITEMAP);
 
 	var smPath = exportPath + "/spritemap1";
 	var smSettings = {format:"png", bitDepth:32, backgroundColor:"#00000000"};
 
 	// Parse and change json to spritemap format
 	sm.exportSpriteSheet(smPath, smSettings, true);
-	var meta = FLfile.read(smPath + ".json");
-
-	meta = meta.split('"x"').join("");
-	meta = meta.split('"y"').join("");
-	meta = meta.split('"w"').join("");
-	meta = meta.split('"h"').join("");
-
-	meta = meta.split('"').join("");
-	meta = meta.split("\t").join("");
-	meta = meta.split("{").join("");
-	meta = meta.split("}").join("");
-	meta = meta.split(":").join("");
-
-	// TODO: fix this not working with bitmap instances
-	var foundLimbs = meta.split("_ta_temp_");
-	foundLimbs.splice(0, 1);
-
-	var smJson = '{"ATLAS":{"SPRITES":[\n';
-	
-	var l = -1;
-	for each(var limb in foundLimbs)
-	{
-		l++;
-		var limbData = limb.split("\n");
-		
-		var name = limbData[0].slice(0, -4);
-		var frame = limbData[2].slice(6, 999).split(",");
-		var rotated = limbData[3].slice(8, 999).slice(0, -1);
-		
-		smJson += '{"SPRITE":{' +
-		'"name":"' 		+ name + '",' +
-		'"x":' 			+ frame[0] + ',' +
-		'"y":' 			+ frame[1] + ',' +
-		'"w":' 			+ frame[2] + ',' +
-		'"h":' 			+ frame[3] + ',' +
-		'"rotated":' 	+ rotated +
-		'}}';
-		
-		if (l < foundLimbs.length - 1)
-			smJson += ',\n';
-	}
-
-	smJson += "]}\n";
-
-	// TODO: add spritemap metadata
-
-	smJson += "}";
-
-	FLfile.write(smPath + ".json", smJson);
 	
 	fl.trace("Exported to folder: " + exportPath);
 }
@@ -404,7 +341,7 @@ function parseElements(elements, frameIndex, layerIndex, symbol)
 		
 		switch (element.elementType) {
 			case "shape":
-				json += parseAtlasInstance(element, "shape", frameIndex, layerIndex, symbol);
+				json += parseAtlasInstance(element, e, frameIndex, layerIndex, symbol);
 			break
 			case "instance":
 				switch (element.instanceType) {
@@ -412,7 +349,7 @@ function parseElements(elements, frameIndex, layerIndex, symbol)
 						json += parseSymbolInstance(element);
 					break;
 					case "bitmap":
-						json += parseAtlasInstance(element, "bitmap", frameIndex, layerIndex, symbol);
+						json += parseAtlasInstance(element, e, frameIndex, layerIndex, symbol);
 					break;
 				}
 			break;
@@ -435,23 +372,14 @@ function parseElements(elements, frameIndex, layerIndex, symbol)
 	return json;
 }
 
-function parseAtlasInstance(instance, atlasType, frameIndex, layerIndex, symbol)
+function parseAtlasInstance(instance, elementIndex, frameIndex, layerIndex, symbol)
 {
 	var json = '"ATLAS_SPRITE_instance": {\n';
 
 	json += jsonVar("Matrix", parseMatrix(instance.matrix));
 	json += jsonStrEnd("name", smIndex);
-	
-	switch (atlasType) {
-		case "shape":
-			// TODO: do this diferently if its mesh mode
-			pushShapeSpritemap(instance, frameIndex, layerIndex, symbol);
-		break;
-		case "bitmap":
-			if (spritemap.indexOf(instance.libraryItem) == -1)
-				pushSpritemap(instance.libraryItem);
-		break;
-	}
+
+	pushElementSpritemap(symbol, layerIndex, frameIndex, elementIndex);
 	
 	json += '}';
 	return json;
@@ -460,50 +388,45 @@ function parseAtlasInstance(instance, atlasType, frameIndex, layerIndex, symbol)
 var w = 0;
 var h = 0;
 
-function pushShapeSpritemap(shape, frameIndex, layerIndex, parentSymbol)
-{	
-	lib.editItem(parentSymbol.name);
-	doc.getTimeline().setSelectedLayers(layerIndex);
+function pushElementSpritemap(symbol, layerIndex, frameIndex, elementIndex)
+{
+	lib.editItem(symbol.name);
+	doc.getTimeline().setSelectedLayers(layerIndex, true);
 	doc.getTimeline().copyFrames(frameIndex, frameIndex);
-	
-	var temp = "_ta_temp_" + smIndex;
-	lib.addNewItem("graphic", temp);
-	
-	lib.editItem(temp);
-	doc.getTimeline().setSelectedFrames(0,0);
-	doc.getTimeline().pasteFrames();
-	
-	// Only check if theres too many elements in the shape
-	var elementsInShape = doc.getTimeline().layers[0].frames[0].elements.length;
-	if (elementsInShape > 1)
+
+	lib.editItem(TEMP_SPRITEMAP);
+	var tempTimeline = doc.getTimeline();
+	tempTimeline.setSelectedLayers(0, true);
+
+	var targetFrame = tempTimeline.layers[0].frames.length;
+	tempTimeline.setSelectedLayers(0, true);
+	tempTimeline.insertBlankKeyframe(targetFrame);
+	tempTimeline.setSelectedFrames(targetFrame, targetFrame);
+	tempTimeline.pasteFrames();
+	tempTimeline.setSelectedFrames(targetFrame, targetFrame);
+	smIndex++;
+
+	var frameElements = tempTimeline.layers[0].frames[targetFrame].elements;	
+	if (frameElements.length > 1)
 	{
-		// Remove symbol instances we dont want in the shape symbol
-		doc.getTimeline().setSelectedFrames(0,0);
-		doc.distributeToLayers();
-	
-		var f = -1;
-		for each (var layer in doc.getTimeline().layers) {
-			f++;
-			var elements = layerElementType = layer.frames[0].elements;
-			if (elements.length > 0) {
-				if (elements[0].elementType !== "shape") {
-					doc.getTimeline().setSelectedLayers(f);
-					doc.getTimeline().clearFrames();
-				}
+		var removeElements = new Array();
+
+		var e = -1;
+		for each (var element in tempTimeline.layers[0].frames[targetFrame].elements) {
+			e++;
+			if (e != elementIndex) {
+				removeElements.push(element);
 			}
 		}
-	}
 	
-	var bs = doc.getTimeline().getBounds(0); // TODO/Reminder: in the future macro symbol, use smIndex instead of 0
+		doc.selectNone();
+		doc.selection = removeElements;
+		//doc.deleteSelection(); // TODO: fix this shit :(
+	}
+
+	var bs = tempTimeline.getBounds(0); // TODO/Reminder: in the future macro symbol, use smIndex instead of 0
 	w += bs.width;
 	h += bs.height;
-	
-	pushSpritemap(lib.items[lib.findItemIndex(temp)]);
-}
-
-function pushSpritemap(smSprite) {
-	spritemap.push(smSprite);
-	smIndex++;
 }
 
 function parseSymbolInstance(instance)
