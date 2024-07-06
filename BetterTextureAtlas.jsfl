@@ -421,7 +421,7 @@ function pushElementSpritemap(symbol, layerIndex, frameIndex, elementIndex)
 	
 		doc.selectNone();
 		doc.selection = removeElements;
-		//doc.deleteSelection(); // TODO: fix this shit :(
+		doc.deleteSelection(); // TODO: this crashes with bitmap instances, fix later
 	}
 
 	var bs = tempTimeline.getBounds(0); // TODO/Reminder: in the future macro symbol, use smIndex instead of 0
