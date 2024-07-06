@@ -341,7 +341,7 @@ function parseElements(elements, frameIndex, layerIndex, symbol)
 		
 		switch (element.elementType) {
 			case "shape":
-				json += parseAtlasInstance(element, e, frameIndex, layerIndex, symbol);
+				json += parseAtlasInstance(element, false, e, frameIndex, layerIndex, symbol);
 			break
 			case "instance":
 				switch (element.instanceType) {
@@ -349,7 +349,7 @@ function parseElements(elements, frameIndex, layerIndex, symbol)
 						json += parseSymbolInstance(element);
 					break;
 					case "bitmap":
-						json += parseAtlasInstance(element, e, frameIndex, layerIndex, symbol);
+						json += parseAtlasInstance(element, true, e, frameIndex, layerIndex, symbol);
 					break;
 				}
 			break;
@@ -372,14 +372,20 @@ function parseElements(elements, frameIndex, layerIndex, symbol)
 	return json;
 }
 
-function parseAtlasInstance(instance, elementIndex, frameIndex, layerIndex, symbol)
+function parseAtlasInstance(instance, isItem, elementIndex, frameIndex, layerIndex, symbol)
 {
 	var json = '"ATLAS_SPRITE_instance": {\n';
 
 	json += jsonVar("Matrix", parseMatrix(instance.matrix));
 	json += jsonStrEnd("name", smIndex);
 
-	pushElementSpritemap(symbol, layerIndex, frameIndex, elementIndex);
+	if (isItem) {
+		prepareSpritemapFrame();
+		lib.addItemToDocument({x:0,y:0}, instance.libraryItem.name);
+	}
+	else {
+		pushElementSpritemap(symbol, layerIndex, frameIndex, elementIndex);
+	}
 	
 	json += '}';
 	return json;
@@ -388,12 +394,8 @@ function parseAtlasInstance(instance, elementIndex, frameIndex, layerIndex, symb
 var w = 0;
 var h = 0;
 
-function pushElementSpritemap(symbol, layerIndex, frameIndex, elementIndex)
+function prepareSpritemapFrame()
 {
-	lib.editItem(symbol.name);
-	doc.getTimeline().setSelectedLayers(layerIndex, true);
-	doc.getTimeline().copyFrames(frameIndex, frameIndex);
-
 	lib.editItem(TEMP_SPRITEMAP);
 	var tempTimeline = doc.getTimeline();
 	tempTimeline.setSelectedLayers(0, true);
@@ -402,9 +404,22 @@ function pushElementSpritemap(symbol, layerIndex, frameIndex, elementIndex)
 	tempTimeline.setSelectedLayers(0, true);
 	tempTimeline.insertBlankKeyframe(targetFrame);
 	tempTimeline.setSelectedFrames(targetFrame, targetFrame);
+	smIndex++;
+	
+	return tempTimeline;
+}
+
+function pushElementSpritemap(symbol, layerIndex, frameIndex, elementIndex)
+{
+	var itemTimeline = symbol.timeline;
+	itemTimeline.setSelectedLayers(layerIndex, true);
+	itemTimeline.copyFrames(frameIndex, frameIndex);
+
+	var tempTimeline = prepareSpritemapFrame();
+	var targetFrame = tempTimeline.currentFrame;
+	
 	tempTimeline.pasteFrames();
 	tempTimeline.setSelectedFrames(targetFrame, targetFrame);
-	smIndex++;
 
 	var frameElements = tempTimeline.layers[0].frames[targetFrame].elements;	
 	if (frameElements.length > 1)
@@ -412,7 +427,7 @@ function pushElementSpritemap(symbol, layerIndex, frameIndex, elementIndex)
 		var removeElements = new Array();
 
 		var e = -1;
-		for each (var element in tempTimeline.layers[0].frames[targetFrame].elements) {
+		for each (var element in frameElements) {
 			e++;
 			if (e != elementIndex) {
 				removeElements.push(element);
@@ -421,7 +436,7 @@ function pushElementSpritemap(symbol, layerIndex, frameIndex, elementIndex)
 	
 		doc.selectNone();
 		doc.selection = removeElements;
-		doc.deleteSelection(); // TODO: this crashes with bitmap instances, fix later
+		doc.deleteSelection();
 	}
 
 	var bs = tempTimeline.getBounds(0); // TODO/Reminder: in the future macro symbol, use smIndex instead of 0
