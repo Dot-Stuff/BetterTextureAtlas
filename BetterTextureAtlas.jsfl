@@ -381,7 +381,7 @@ function parseAtlasInstance(instance, isItem, elementIndex, frameIndex, layerInd
 
 	if (isItem) {
 		prepareSpritemapFrame();
-		lib.addItemToDocument({x:0,y:0}, instance.libraryItem.name);
+		doc.addItem({x:0,y:0}, instance.libraryItem);
 	}
 	else {
 		pushElementSpritemap(symbol, layerIndex, frameIndex, elementIndex);
