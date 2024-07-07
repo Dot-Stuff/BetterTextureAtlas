@@ -162,6 +162,41 @@ function exportAtlas(exportPath, symbolName)
 	// Parse and change json to spritemap format
 	sm.exportSpriteSheet(smPath, smSettings, true);
 	
+	var meta = FLfile.read(smPath + ".json");
+	meta = meta.split("\t").join("");
+	meta = meta.split("{").join("");
+	meta = meta.split("}").join("");
+	meta = meta.split(" ").join("");
+
+	var atlasLimbs = meta.split(TEMP_SPRITEMAP);
+	atlasLimbs.splice(0, 1);
+
+	var smJson = '{"ATLAS":{"SPRITES":[\n';
+
+	var l = -1;
+	for each (var limb in atlasLimbs)
+	{
+		var limbData = limb.split("\n");
+		l++;
+		
+		var name = formatLimbName(limbData[0].slice(0, -2));
+		var frame = limbData[1].split('"frame":').join("");
+		var rotated = limbData[2].slice(0, -1);
+		
+		smJson += '{"SPRITE":{"name":"' + name + '",' + frame + rotated + '}}';
+		
+		if (l < atlasLimbs.length - 1)
+			smJson += ',\n';
+	}
+
+	smJson += "]}\n";
+	
+	// TODO: add spritemap metadata
+	
+	smJson += "}";
+	
+	FLfile.write(smPath + ".json", smJson);
+	
 	fl.trace("Exported to folder: " + exportPath);
 }
 
@@ -584,6 +619,14 @@ function parseQuality(quality) {
 	if (quality == "low") return 1;
 	if (quality == "medium") return 2;
 	return 3;
+}
+
+function formatLimbName(numStr) {
+    var i = 0;
+    while (i < numStr.length && numStr[i] === '0') {
+        i++;
+    }
+    return i === numStr.length ? "0" : numStr.slice(i);
 }
 
 function findSymbol(name) {
