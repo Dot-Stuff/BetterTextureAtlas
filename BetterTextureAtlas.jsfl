@@ -13,6 +13,7 @@ var doc = fl.getDocumentDOM();
 var lib = doc.library;
 
 var instance = null;
+var smItems = [];
 var smIndex = 0;
 
 if (doc.selection.length > 0)
@@ -129,6 +130,7 @@ function exportAtlas(exportPath, symbolName)
 	lib.addNewItem("graphic", TEMP_SPRITEMAP);
 	lib.items[lib.findItemIndex(TEMP_SPRITEMAP)].timeline.removeFrames(0,0);
 	smIndex = 0;
+	smItems = [];
 
 	// Write Animation.json
 	var animJson = generateAnimation(symbol);
@@ -375,18 +377,31 @@ function parseElements(elements, frameIndex, layerIndex, symbol)
 function parseAtlasInstance(instance, isItem, elementIndex, frameIndex, layerIndex, symbol)
 {
 	var json = '"ATLAS_SPRITE_instance": {\n';
+	var instanceIndex = smIndex;
 
 	json += jsonVar("Matrix", parseMatrix(instance.matrix));
-	json += jsonStrEnd("name", smIndex);
 
 	if (isItem) {
-		prepareSpritemapFrame();
-		lib.editItem(TEMP_SPRITEMAP);
-		doc.addItem({x:0,y:0}, instance.libraryItem);
+		var itemName = instance.libraryItem.name;
+		if (smItems[itemName] == null)
+		{
+			// Ok fuck time to add the item i guess
+			smItems[itemName] = smIndex;
+			prepareSpritemapFrame();
+			lib.editItem(TEMP_SPRITEMAP);
+			doc.addItem({x:0,y:0}, instance.libraryItem);
+		}
+		else
+		{
+			// Item was already added to spritemap lol
+			instanceIndex = smItems[itemName];
+		}
 	}
 	else {
 		pushElementSpritemap(symbol, layerIndex, frameIndex, elementIndex);
 	}
+
+	json += jsonStrEnd("name", instanceIndex);
 	
 	json += '}';
 	return json;
@@ -417,30 +432,17 @@ function pushElementSpritemap(symbol, layerIndex, frameIndex, elementIndex)
 
 	var tempTimeline = prepareSpritemapFrame();
 	var targetFrame = tempTimeline.currentFrame;
-	
 	tempTimeline.pasteFrames();
 
 	var frameElements = tempTimeline.layers[0].frames[targetFrame].elements;	
 	if (frameElements.length > 1)
 	{
-		lib.editItem(TEMP_SPRITEMAP);
-		tempTimeline.setSelectedFrames(targetFrame, targetFrame);
-		
-		var removeElements = new Array();
-
 		var e = -1;
 		for each (var element in frameElements) {
 			e++;
 			if (e != elementIndex) {
-				removeElements.push(element);
+				element.scaleX = 0; // very shitty way of hiding the element, i really dont wanna edit the item :(
 			}
-		}
-	
-		doc.selectNone();
-		doc.selection = removeElements;
-	
-		if (doc.selection.length > 0) {
-			doc.deleteSelection();
 		}
 	}
 
