@@ -121,10 +121,12 @@ else {
 	fl.trace("No symbol selected");
 }
 
-var TEMP_SPRITEMAP = "_ta_temp_sm";
+var TEMP_SPRITEMAP;
 
 function exportAtlas(exportPath, symbolName)
 {	
+	TEMP_SPRITEMAP = "_ta_temp_sm";
+
 	var symbol = findSymbol(symbolName);
 
 	lib.addNewItem("graphic", TEMP_SPRITEMAP);
@@ -441,7 +443,7 @@ function pushElementSpritemap(symbol, layerIndex, frameIndex, elementIndex)
 		for each (var element in frameElements) {
 			e++;
 			if (e != elementIndex) {
-				element.scaleX = 0; // very shitty way of hiding the element, i really dont wanna edit the item :(
+				element.scaleX = element.scaleY = 0; // very shitty way of hiding the element, i really dont wanna edit the item :(
 			}
 		}
 	}
