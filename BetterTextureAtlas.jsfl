@@ -77,8 +77,8 @@ if (symbol.length > 0)
 		optAn = xPan.OptAn;
 		flatten = xPan.FlatSke;
 		
-		optimiseDimension = optDimens == "true";
-		flattenSkewing = flatten == "true";
+		optimiseDimensions = (optDimens == "true");
+		flattenSkewing = (flatten == "true");
 
 		// First ask for the export folder
 		var path = save;
@@ -400,17 +400,10 @@ function pushElementSpritemap(symbol, layerIndex, frameIndex, elementIndex)
 	itemTimeline.copyFrames(frameIndex, frameIndex);
 
 	var tempTimeline = lib.items[lib.findItemIndex(TEMP_SPRITEMAP)].timeline;
-	tempTimeline.setSelectedLayers(0, true);
-
-	var targetFrame = tempTimeline.layers[0].frames.length;
-	tempTimeline.setSelectedLayers(0, true);
-	tempTimeline.insertBlankKeyframe(targetFrame);
-	tempTimeline.setSelectedFrames(targetFrame, targetFrame);
-	smIndex++;
-
+	tempTimeline.insertBlankKeyframe(smIndex);
 	tempTimeline.pasteFrames();
 
-	var frameElements = tempTimeline.layers[0].frames[targetFrame].elements;	
+	var frameElements = tempTimeline.layers[0].frames[smIndex].elements;	
 	if (frameElements.length > 1)
 	{
 		var e = -1;
@@ -427,6 +420,8 @@ function pushElementSpritemap(symbol, layerIndex, frameIndex, elementIndex)
 		w += bs.width;
 		h += bs.height;
 	}
+
+	smIndex++;
 }
 
 function parseSymbolInstance(instance)
