@@ -13,8 +13,6 @@ var doc = fl.getDocumentDOM();
 var lib = doc.library;
 
 var instance = null;
-var smItems = [];
-var smIndex = 0;
 
 if (doc.selection.length > 0)
 {
@@ -122,17 +120,17 @@ else {
 }
 
 var TEMP_SPRITEMAP;
+var smIndex;
 
 function exportAtlas(exportPath, symbolName)
 {	
 	TEMP_SPRITEMAP = "_ta_temp_sm";
+	smIndex = 0;
 
 	var symbol = findSymbol(symbolName);
 
 	lib.addNewItem("graphic", TEMP_SPRITEMAP);
 	lib.items[lib.findItemIndex(TEMP_SPRITEMAP)].timeline.removeFrames(0,0);
-	smIndex = 0;
-	smItems = [];
 
 	// Write Animation.json
 	var animJson = generateAnimation(symbol);
@@ -345,7 +343,7 @@ function parseElements(elements, frameIndex, layerIndex, symbol)
 		
 		switch (element.elementType) {
 			case "shape":
-				json += parseAtlasInstance(element, false, e, frameIndex, layerIndex, symbol);
+				json += parseAtlasInstance(element, e, frameIndex, layerIndex, symbol);
 			break
 			case "instance":
 				switch (element.instanceType) {
@@ -353,7 +351,10 @@ function parseElements(elements, frameIndex, layerIndex, symbol)
 						json += parseSymbolInstance(element);
 					break;
 					case "bitmap":
-						json += parseAtlasInstance(element, true, e, frameIndex, layerIndex, symbol);
+						// TODO: for bitmap instances we prob want to export the item rather than the instance
+						// cuz it may make fucky wucky with matrix stuff + more limbs than neccesary in the spritemap
+						// Maybe recalculate the element to be at matrix ident
+						json += parseAtlasInstance(element, e, frameIndex, layerIndex, symbol);
 					break;
 				}
 			break;
@@ -376,34 +377,14 @@ function parseElements(elements, frameIndex, layerIndex, symbol)
 	return json;
 }
 
-function parseAtlasInstance(instance, isItem, elementIndex, frameIndex, layerIndex, symbol)
+function parseAtlasInstance(instance, elementIndex, frameIndex, layerIndex, symbol)
 {
 	var json = '"ATLAS_SPRITE_instance": {\n';
-	var instanceIndex = smIndex;
 
 	json += jsonVar("Matrix", parseMatrix(instance.matrix));
+	json += jsonStrEnd("name", smIndex);
 
-	if (isItem) {
-		var itemName = instance.libraryItem.name;
-		if (smItems[itemName] == null)
-		{
-			// Ok fuck time to add the item i guess
-			smItems[itemName] = smIndex;
-			prepareSpritemapFrame();
-			lib.editItem(TEMP_SPRITEMAP);
-			doc.addItem({x:0,y:0}, instance.libraryItem);
-		}
-		else
-		{
-			// Item was already added to spritemap lol
-			instanceIndex = smItems[itemName];
-		}
-	}
-	else {
-		pushElementSpritemap(symbol, layerIndex, frameIndex, elementIndex);
-	}
-
-	json += jsonStrEnd("name", instanceIndex);
+	pushElementSpritemap(symbol, layerIndex, frameIndex, elementIndex);
 	
 	json += '}';
 	return json;
@@ -412,8 +393,12 @@ function parseAtlasInstance(instance, isItem, elementIndex, frameIndex, layerInd
 var w = 0;
 var h = 0;
 
-function prepareSpritemapFrame()
-{	
+function pushElementSpritemap(symbol, layerIndex, frameIndex, elementIndex)
+{
+	var itemTimeline = symbol.timeline;
+	itemTimeline.setSelectedLayers(layerIndex, true);
+	itemTimeline.copyFrames(frameIndex, frameIndex);
+
 	var tempTimeline = lib.items[lib.findItemIndex(TEMP_SPRITEMAP)].timeline;
 	tempTimeline.setSelectedLayers(0, true);
 
@@ -422,18 +407,7 @@ function prepareSpritemapFrame()
 	tempTimeline.insertBlankKeyframe(targetFrame);
 	tempTimeline.setSelectedFrames(targetFrame, targetFrame);
 	smIndex++;
-	
-	return tempTimeline;
-}
 
-function pushElementSpritemap(symbol, layerIndex, frameIndex, elementIndex)
-{
-	var itemTimeline = symbol.timeline;
-	itemTimeline.setSelectedLayers(layerIndex, true);
-	itemTimeline.copyFrames(frameIndex, frameIndex);
-
-	var tempTimeline = prepareSpritemapFrame();
-	var targetFrame = tempTimeline.currentFrame;
 	tempTimeline.pasteFrames();
 
 	var frameElements = tempTimeline.layers[0].frames[targetFrame].elements;	
@@ -448,9 +422,11 @@ function pushElementSpritemap(symbol, layerIndex, frameIndex, elementIndex)
 		}
 	}
 
-	var bs = tempTimeline.getBounds(0); // TODO/Reminder: in the future macro symbol, use smIndex instead of 0
-	w += bs.width;
-	h += bs.height;
+	if (optimiseDimensions) {
+		var bs = tempTimeline.getBounds(smIndex);
+		w += bs.width;
+		h += bs.height;
+	}
 }
 
 function parseSymbolInstance(instance)
