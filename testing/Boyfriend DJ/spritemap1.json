@@ -25,5 +25,13 @@
 {"SPRITE":{"name":"23","x":966,"y":278,"w":52,"h":98,"rotated":true}},
 {"SPRITE":{"name":"24","x":807,"y":284,"w":98,"h":52,"rotated":false}},
 {"SPRITE":{"name":"25","x":908,"y":284,"w":52,"h":98,"rotated":true}},
-{"SPRITE":{"name":"26","x":400,"y":3,"w":221,"h":223,"rotated":false}}]}
+{"SPRITE":{"name":"26","x":400,"y":3,"w":221,"h":223,"rotated":false}}]},
+"meta":{
+"app":"AdobeAnimate",
+"version":"24.0.3.19",
+"image":"spritemap1.png",
+"format":"RGBA8888",
+"size":{"w":1024,"h":512},
+"resolution":"1"
+}
 }

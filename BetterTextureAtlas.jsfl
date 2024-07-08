@@ -46,6 +46,7 @@ if (symbol.length > 0)
 		optAn = file[5];
 		flatten = file[6];
 	}
+
 	var rawXML = FLfile.read(fl.configURI + "Commands/BTADialog.xml");
 	var str = save + "\\" + symbol;
 	if (save == "")
@@ -164,8 +165,6 @@ function exportAtlas(exportPath, symbolName)
 	
 	var meta = FLfile.read(smPath + ".json");
 	meta = meta.split("\t").join("");
-	meta = meta.split("{").join("");
-	meta = meta.split("}").join("");
 	meta = meta.split(" ").join("");
 
 	var atlasLimbs = meta.split(TEMP_SPRITEMAP);
@@ -176,6 +175,7 @@ function exportAtlas(exportPath, symbolName)
 	var l = -1;
 	for each (var limb in atlasLimbs)
 	{
+		limb = limb.split("{").join("").split("}").join("");
 		var limbData = limb.split("\n");
 		l++;
 		
@@ -189,11 +189,10 @@ function exportAtlas(exportPath, symbolName)
 			smJson += ',\n';
 	}
 
-	smJson += "]}\n";
-	
-	// TODO: add spritemap metadata
-	
-	smJson += "}";
+	smJson += ']},\n"meta":';
+
+	var metaData = atlasLimbs.pop().split('"meta":')[1];
+	smJson += metaData.split("scale").join("resolution").slice(0, -1);
 	
 	FLfile.write(smPath + ".json", smJson);
 	
