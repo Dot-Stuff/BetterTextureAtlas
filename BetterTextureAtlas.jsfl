@@ -4,7 +4,7 @@ var symbol = "";
 var meshExport = false; // If to use a spritemap or mesh vertex data
 var version = "bta_1"; // easy to modify
 var onlyVisibleLayers = true;
-var optimiseDimensions = true;
+var optimiseDimensions = true; // TODO: doesnt work yet
 var flattenSkewing = false;
 
 /////
@@ -162,30 +162,14 @@ function exportAtlas(exportPath, symbolName)
 	sm.stackDuplicate = true;
 	sm.layoutFormat = "JSON-Array";
 
-	if (optimiseDimensions)
-	{
-		var w = 0;
-		var h = 0;
-
-		for (i = 0; i < TEMP_TIMELINE.frameCount; i++) {
-			var bounds = TEMP_TIMELINE.getBounds(i);
-			w += bounds.width;
-			h += bounds.height;
-		}
-
-		sm.maxSheetWidth = w + (sm.shapePadding * Math.max(smIndex - 1, 0)) + sm.borderPadding; 
-		sm.maxSheetHeight = h + (sm.shapePadding * Math.max(smIndex - 1, 0)) + sm.borderPadding;
-	}
-
 	sm.addSymbol(TEMP_ITEM);
 	lib.deleteItem(TEMP_SPRITEMAP);
-
+	
 	var smPath = exportPath + "/spritemap1";
 	var smSettings = {format:"png", bitDepth:32, backgroundColor:"#00000000"};
+	sm.exportSpriteSheet(smPath, smSettings, true);
 
 	// Parse and change json to spritemap format
-	sm.exportSpriteSheet(smPath, smSettings, true);
-	
 	var meta = FLfile.read(smPath + ".json");
 	meta = meta.split("\t").join("");
 	meta = meta.split(" ").join("");
@@ -302,33 +286,20 @@ function findDictionary(symbol, dictionary)
 function parseSymbol(symbol)
 {
 	var json = '';
-	
 	var timeline = symbol.timeline;
 	
 	json += jsonStr("SYMBOL_name", symbol.name);
-	
 	json += '"TIMELINE": {\n';
 	json += '"LAYERS": [\n';
 	
-	var layers;
-	if (onlyVisibleLayers) // We only need the visible layers
-	{
-		layers = [];
-		for (l = 0; l < timeline.layers.length; l++) {
-			var layer = timeline.layers[l];
-			if (layer.visible)
-				layers.push(layer);
-		}
-	}
-	else {
-		layers = timeline.layers;
-	}
-	
 	// Add Layers and Frames
-	for (l = 0; l < layers.length; l++)
+	var l = -1;
+	for each (var layer in timeline.layers)
 	{
-		var layer = layers[l];
-		
+		l++;
+		if (onlyVisibleLayers && !layer.visible)
+			continue;
+
 		var locked = layer.locked;
 		layer.locked = false;
 		
@@ -344,8 +315,8 @@ function parseSymbol(symbol)
 			break;
 		}
 		
-		json += parseFrames(layer.frames, l, symbol);
-		json += (l < layers.length - 1) ? '},' : '}';
+		json += parseFrames(layer.frames, l, timeline);
+		json += (l < timeline.layers.length - 1) ? '},' : '}';
 		
 		layer.locked = locked;
 	}
@@ -356,7 +327,7 @@ function parseSymbol(symbol)
 	return json;
 }
 
-function parseFrames(frames, layerIndex, symbol)
+function parseFrames(frames, layerIndex, timeline)
 {
 	var json = '"Frames": [\n';
 	
@@ -380,7 +351,7 @@ function parseFrames(frames, layerIndex, symbol)
 		
 		json += jsonVar("index", frame.startFrame);
 		json += jsonVar("duration", frame.duration);
-		json += parseElements(frame.elements, frame.startFrame, layerIndex, symbol);
+		json += parseElements(frame.elements, frame.startFrame, layerIndex, timeline);
 		json += (f < startFrames.length - 1) ? '},' : '}';
 	}
 	
@@ -388,7 +359,7 @@ function parseFrames(frames, layerIndex, symbol)
 	return json;
 }
 
-function parseElements(elements, frameIndex, layerIndex, symbol)
+function parseElements(elements, frameIndex, layerIndex, timeline)
 {
 	var json = '"elements": [\n';
 	
@@ -400,7 +371,7 @@ function parseElements(elements, frameIndex, layerIndex, symbol)
 		
 		switch (element.elementType) {
 			case "shape":
-				json += parseAtlasInstance(element, false, e, frameIndex, layerIndex, symbol);
+				json += parseAtlasInstance(element, false, e, frameIndex, layerIndex, timeline);
 			break
 			case "instance":
 				switch (element.instanceType) {
@@ -408,10 +379,7 @@ function parseElements(elements, frameIndex, layerIndex, symbol)
 						json += parseSymbolInstance(element);
 					break;
 					case "bitmap":
-						// TODO: for bitmap instances we prob want to export the item rather than the instance
-						// cuz it may make fucky wucky with matrix stuff + more limbs than neccesary in the spritemap
-						// Maybe recalculate the element to be at matrix ident
-						json += parseAtlasInstance(element, true, e, frameIndex, layerIndex, symbol);
+						json += parseAtlasInstance(element, true, e, frameIndex, layerIndex, timeline);
 					break;
 				}
 			break;
@@ -422,31 +390,33 @@ function parseElements(elements, frameIndex, layerIndex, symbol)
 			case "shapeObj":
 			break;
 		}
-			
-		json += "}";
-	
-		if (e < elements.length -1) {
-			json += ",";
-		}
+
+		json += (e < elements.length -1) ? "}," : "}";
 	}
 	
 	json += ']';
 	return json;
 }
 
-function parseAtlasInstance(instance, isItem, elementIndex, frameIndex, layerIndex, symbol)
+function parseAtlasInstance(instance, isItem, elementIndex, frameIndex, layerIndex, timeline)
 {
 	var json = '"ATLAS_SPRITE_instance": {\n';
-
-	json += jsonVar("Matrix", parseMatrix(instance.matrix));
 	
-	if (isItem) {
+	if (isItem)
+	{
 		var itemIndex = pushItemSpritemap(instance.libraryItem);
+		
+		json += jsonVar("Matrix", parseMatrix(instance.matrix));
 		json += jsonStrEnd("name", itemIndex);
 	}
-	else {
+	else
+	{
+		var tx = (instance.x - (instance.width / 2));
+		var ty = (instance.y - (instance.height / 2));
+		
+		json += jsonVar("Matrix", parseMatrix({a:1, b:0, c:0, d:1, tx:tx, ty:ty}));
 		json += jsonStrEnd("name", smIndex);
-		pushElementSpritemap(symbol, layerIndex, frameIndex, elementIndex);
+		pushElementSpritemap(timeline, layerIndex, frameIndex, elementIndex);
 	}
 	
 	json += '}';
@@ -466,11 +436,10 @@ function pushItemSpritemap(item)
 	return itemQueue[name];
 }
 
-function pushElementSpritemap(symbol, layerIndex, frameIndex, elementIndex)
+function pushElementSpritemap(timeline, layerIndex, frameIndex, elementIndex)
 {
-	var itemTimeline = symbol.timeline;
-	itemTimeline.setSelectedLayers(layerIndex, true);
-	itemTimeline.copyFrames(frameIndex, frameIndex);
+	timeline.setSelectedLayers(layerIndex, true);
+	timeline.copyFrames(frameIndex, frameIndex);
 
 	TEMP_TIMELINE.insertBlankKeyframe(smIndex);
 	TEMP_TIMELINE.pasteFrames();
@@ -608,6 +577,7 @@ function parseSymbolInstance(instance)
 
 	return json;
 }
+
 function parseMatrix(mat) {
 	var str = '['
 	str += mat.a + ",";
@@ -622,22 +592,22 @@ function parseMatrix(mat) {
 
 function parseMatrix3D(mat) {
 	var str = '[\n'
-	str += "\t" + mat.m00 + ",\n";
-	str += "\t" + mat.m01 + ",\n";
-	str += "\t" + mat.m02 + ",\n";
-	str += "\t" + mat.m03 + ",\n";
-	str += "\t" + mat.m10 + ",\n";
-	str += "\t" + mat.m11 + ",\n";
-	str += "\t" + mat.m12 + ",\n";
-	str += "\t" + mat.m13 + ",\n";
-	str += "\t" + mat.m20 + ",\n";
-	str += "\t" + mat.m21 + ",\n";
-	str += "\t" + mat.m22 + ",\n";
-	str += "\t" + mat.m23 + ",\n";
-	str += "\t" + mat.m30 + ",\n";
-	str += "\t" + mat.m31 + ",\n";
-	str += "\t" + mat.m32 + ",\n";
-	str += "\t" + mat.m33;
+	str += mat.m00 + ",";
+	str += mat.m01 + ",";
+	str += mat.m02 + ",";
+	str += mat.m03 + ",";
+	str += mat.m10 + ",";
+	str += mat.m11 + ",";
+	str += mat.m12 + ",";
+	str += mat.m13 + ",";
+	str += mat.m20 + ",";
+	str += mat.m21 + ",";
+	str += mat.m22 + ",";
+	str += mat.m23 + ",";
+	str += mat.m30 + ",";
+	str += mat.m31 + ",";
+	str += mat.m32 + ",";
+	str += mat.m33;
 	str += "\n]";
 	return str;
 }

@@ -539,7 +539,7 @@
 "elements": [
 {
 "ATLAS_SPRITE_instance": {
-"Matrix": [1,0,0,1,0,0],
+"Matrix": [1,0,0,1,-0.025000000000005684,-0.02499999999999858],
 "name": "0"
 }}]}]}]}},{
 "SYMBOL_name": "bf mouth 1",
@@ -554,7 +554,7 @@
 "elements": [
 {
 "ATLAS_SPRITE_instance": {
-"Matrix": [1,0,0,1,0,0],
+"Matrix": [1,0,0,1,0,-0.025000000000000355],
 "name": "1"
 }}]}]}]}},{
 "SYMBOL_name": "boyfriend top head",
@@ -599,7 +599,7 @@
 "elements": [
 {
 "ATLAS_SPRITE_instance": {
-"Matrix": [1,0,0,1,0,0],
+"Matrix": [1,0,0,1,-0.024999999999991473,0],
 "name": "4"
 }}]}]}]}},{
 "SYMBOL_name": "DJ arm",
@@ -790,7 +790,7 @@
 "elements": [
 {
 "ATLAS_SPRITE_instance": {
-"Matrix": [1,0,0,1,0,0],
+"Matrix": [1,0,0,1,-0.024999999999991473,-0.02499999999999858],
 "name": "7"
 }}]}]}]}},{
 "SYMBOL_name": "spinning disk",
@@ -805,7 +805,7 @@
 "elements": [
 {
 "ATLAS_SPRITE_instance": {
-"Matrix": [1,0,0,1,0,0],
+"Matrix": [1,0,0,1,27.074999999999996,4.099999999999998],
 "name": "8"
 }}]},{
 "index": 2,
@@ -813,7 +813,7 @@
 "elements": [
 {
 "ATLAS_SPRITE_instance": {
-"Matrix": [1,0,0,1,0,0],
+"Matrix": [1,0,0,1,24.375,3.1000000000000014],
 "name": "9"
 }}]},{
 "index": 4,
@@ -821,7 +821,7 @@
 "elements": [
 {
 "ATLAS_SPRITE_instance": {
-"Matrix": [1,0,0,1,0,0],
+"Matrix": [1,0,0,1,30.199999999999996,2.8000000000000007],
 "name": "10"
 }}]},{
 "index": 6,
@@ -829,7 +829,7 @@
 "elements": [
 {
 "ATLAS_SPRITE_instance": {
-"Matrix": [1,0,0,1,0,0],
+"Matrix": [1,0,0,1,31.075000000000003,2.6000000000000014],
 "name": "11"
 }}]}]},{
 "Layer_name": "Layer 1",
@@ -840,7 +840,7 @@
 "elements": [
 {
 "ATLAS_SPRITE_instance": {
-"Matrix": [1,0,0,1,0,0],
+"Matrix": [1,0,0,1,5.8999999999999915,-0.7249999999999979],
 "name": "12"
 }}]}]}]}},{
 "SYMBOL_name": "turntable lights",
@@ -855,7 +855,7 @@
 "elements": [
 {
 "ATLAS_SPRITE_instance": {
-"Matrix": [1,0,0,1,0,0],
+"Matrix": [1,0,0,1,142.85000000000002,12.274999999999999],
 "name": "13"
 }}]},{
 "index": 2,
@@ -863,7 +863,7 @@
 "elements": [
 {
 "ATLAS_SPRITE_instance": {
-"Matrix": [1,0,0,1,0,0],
+"Matrix": [1,0,0,1,142.85000000000002,12.274999999999999],
 "name": "14"
 }}]},{
 "index": 4,
@@ -871,7 +871,7 @@
 "elements": [
 {
 "ATLAS_SPRITE_instance": {
-"Matrix": [1,0,0,1,0,0],
+"Matrix": [1,0,0,1,142.85000000000002,12.274999999999999],
 "name": "15"
 }}]},{
 "index": 6,
@@ -879,7 +879,7 @@
 "elements": [
 {
 "ATLAS_SPRITE_instance": {
-"Matrix": [1,0,0,1,0,0],
+"Matrix": [1,0,0,1,142.85000000000002,12.274999999999999],
 "name": "16"
 }}]},{
 "index": 8,
@@ -887,7 +887,7 @@
 "elements": [
 {
 "ATLAS_SPRITE_instance": {
-"Matrix": [1,0,0,1,0,0],
+"Matrix": [1,0,0,1,142.85000000000002,12.274999999999999],
 "name": "17"
 }}]},{
 "index": 10,
@@ -895,7 +895,7 @@
 "elements": [
 {
 "ATLAS_SPRITE_instance": {
-"Matrix": [1,0,0,1,0,0],
+"Matrix": [1,0,0,1,142.85000000000002,12.274999999999999],
 "name": "18"
 }}]}]}]}},{
 "SYMBOL_name": "turn table",
@@ -943,7 +943,7 @@
 "elements": [
 {
 "ATLAS_SPRITE_instance": {
-"Matrix": [1,0,0,1,0,0],
+"Matrix": [1,0,0,1,142.85000000000002,12.274999999999999],
 "name": "20"
 }}]},{
 "index": 2,
@@ -951,7 +951,7 @@
 "elements": [
 {
 "ATLAS_SPRITE_instance": {
-"Matrix": [1,0,0,1,0,0],
+"Matrix": [1,0,0,1,142.85000000000002,12.274999999999999],
 "name": "21"
 }}]},{
 "index": 4,
@@ -959,7 +959,7 @@
 "elements": [
 {
 "ATLAS_SPRITE_instance": {
-"Matrix": [1,0,0,1,0,0],
+"Matrix": [1,0,0,1,142.85000000000002,12.274999999999999],
 "name": "22"
 }}]},{
 "index": 6,
@@ -967,7 +967,7 @@
 "elements": [
 {
 "ATLAS_SPRITE_instance": {
-"Matrix": [1,0,0,1,0,0],
+"Matrix": [1,0,0,1,142.85000000000002,12.274999999999999],
 "name": "23"
 }}]},{
 "index": 8,
@@ -975,7 +975,7 @@
 "elements": [
 {
 "ATLAS_SPRITE_instance": {
-"Matrix": [1,0,0,1,0,0],
+"Matrix": [1,0,0,1,142.85000000000002,12.274999999999999],
 "name": "24"
 }}]},{
 "index": 10,
@@ -983,7 +983,7 @@
 "elements": [
 {
 "ATLAS_SPRITE_instance": {
-"Matrix": [1,0,0,1,0,0],
+"Matrix": [1,0,0,1,142.85000000000002,12.274999999999999],
 "name": "25"
 }}]}]}]}},{
 "SYMBOL_name": "boyfriend dj body",
@@ -998,7 +998,7 @@
 "elements": [
 {
 "ATLAS_SPRITE_instance": {
-"Matrix": [1,0,0,1,0,0],
+"Matrix": [1,0,0,1,-0.024999999999991473,-0.025000000000005684],
 "name": "26"
 }}]}]}]}}]},
 "metadata": {
