@@ -145,9 +145,10 @@ function exportAtlas(exportPath, symbolName)
 
 	// Add library items from queue (if any exist)
 	lib.editItem(TEMP_SPRITEMAP);
+	var pos = {x:0, y:0};
 	for (var item in itemQueue) {
 		TEMP_TIMELINE.currentFrame = itemQueue[item];
-		doc.addItem({x:0,y:0}, lib.items[lib.findItemIndex(item)]);
+		lib.addItemToDocument(pos, item);
 	}
 
 	// Generate Spritemap
