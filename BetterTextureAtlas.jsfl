@@ -121,21 +121,34 @@ else {
 }
 
 var TEMP_SPRITEMAP;
+var TEMP_ITEM;
+var TEMP_TIMELINE;
+var itemQueue;
 var smIndex;
 
 function exportAtlas(exportPath, symbolName)
 {	
 	TEMP_SPRITEMAP = "_ta_temp_sm";
+	itemQueue = {};
 	smIndex = 0;
 
 	var symbol = findSymbol(symbolName);
 
 	lib.addNewItem("graphic", TEMP_SPRITEMAP);
-	lib.items[lib.findItemIndex(TEMP_SPRITEMAP)].timeline.removeFrames(0,0);
+	TEMP_ITEM = lib.items[lib.findItemIndex(TEMP_SPRITEMAP)];
+	TEMP_TIMELINE = TEMP_ITEM.timeline;
+	TEMP_TIMELINE.removeFrames(0,0);
 
 	// Write Animation.json
 	var animJson = generateAnimation(symbol);
 	FLfile.write(path + "/Animation.json", animJson);
+
+	// Add library items from queue (if any exist)
+	lib.editItem(TEMP_SPRITEMAP);
+	for (var item in itemQueue) {
+		TEMP_TIMELINE.currentFrame = itemQueue[item];
+		doc.addItem({x:0,y:0}, lib.items[lib.findItemIndex(item)]);
+	}
 
 	// Generate Spritemap
 	var sm = new SpriteSheetExporter;
@@ -150,11 +163,20 @@ function exportAtlas(exportPath, symbolName)
 
 	if (optimiseDimensions)
 	{
+		var w = 0;
+		var h = 0;
+
+		for (i = 0; i < TEMP_TIMELINE.frameCount; i++) {
+			var bounds = TEMP_TIMELINE.getBounds(i);
+			w += bounds.width;
+			h += bounds.height;
+		}
+
 		sm.maxSheetWidth = w + (sm.shapePadding * Math.max(smIndex - 1, 0)) + sm.borderPadding; 
 		sm.maxSheetHeight = h + (sm.shapePadding * Math.max(smIndex - 1, 0)) + sm.borderPadding;
 	}
 
-	sm.addSymbol(lib.items[lib.findItemIndex(TEMP_SPRITEMAP)]);
+	sm.addSymbol(TEMP_ITEM);
 	lib.deleteItem(TEMP_SPRITEMAP);
 
 	var smPath = exportPath + "/spritemap1";
@@ -196,6 +218,7 @@ function exportAtlas(exportPath, symbolName)
 	
 	FLfile.write(smPath + ".json", smJson);
 	
+	doc.exitEditMode();
 	fl.trace("Exported to folder: " + exportPath);
 }
 
@@ -239,7 +262,6 @@ function generateAnimation(symbol) {
 	
 	json += "}";
 	
-	doc.exitEditMode();
 	return json;
 }
 
@@ -377,7 +399,7 @@ function parseElements(elements, frameIndex, layerIndex, symbol)
 		
 		switch (element.elementType) {
 			case "shape":
-				json += parseAtlasInstance(element, e, frameIndex, layerIndex, symbol);
+				json += parseAtlasInstance(element, false, e, frameIndex, layerIndex, symbol);
 			break
 			case "instance":
 				switch (element.instanceType) {
@@ -388,7 +410,7 @@ function parseElements(elements, frameIndex, layerIndex, symbol)
 						// TODO: for bitmap instances we prob want to export the item rather than the instance
 						// cuz it may make fucky wucky with matrix stuff + more limbs than neccesary in the spritemap
 						// Maybe recalculate the element to be at matrix ident
-						json += parseAtlasInstance(element, e, frameIndex, layerIndex, symbol);
+						json += parseAtlasInstance(element, true, e, frameIndex, layerIndex, symbol);
 					break;
 				}
 			break;
@@ -411,21 +433,37 @@ function parseElements(elements, frameIndex, layerIndex, symbol)
 	return json;
 }
 
-function parseAtlasInstance(instance, elementIndex, frameIndex, layerIndex, symbol)
+function parseAtlasInstance(instance, isItem, elementIndex, frameIndex, layerIndex, symbol)
 {
 	var json = '"ATLAS_SPRITE_instance": {\n';
 
 	json += jsonVar("Matrix", parseMatrix(instance.matrix));
-	json += jsonStrEnd("name", smIndex);
-
-	pushElementSpritemap(symbol, layerIndex, frameIndex, elementIndex);
+	
+	if (isItem) {
+		var itemIndex = pushItemSpritemap(instance.libraryItem);
+		json += jsonStrEnd("name", itemIndex);
+	}
+	else {
+		json += jsonStrEnd("name", smIndex);
+		pushElementSpritemap(symbol, layerIndex, frameIndex, elementIndex);
+	}
 	
 	json += '}';
 	return json;
 }
 
-var w = 0;
-var h = 0;
+function pushItemSpritemap(item)
+{
+	var name = item.name;
+	
+	if (itemQueue[name] == null) {
+		TEMP_TIMELINE.insertBlankKeyframe(smIndex);
+		itemQueue[name] = smIndex;
+		smIndex++;
+	}
+
+	return itemQueue[name];
+}
 
 function pushElementSpritemap(symbol, layerIndex, frameIndex, elementIndex)
 {
@@ -433,11 +471,10 @@ function pushElementSpritemap(symbol, layerIndex, frameIndex, elementIndex)
 	itemTimeline.setSelectedLayers(layerIndex, true);
 	itemTimeline.copyFrames(frameIndex, frameIndex);
 
-	var tempTimeline = lib.items[lib.findItemIndex(TEMP_SPRITEMAP)].timeline;
-	tempTimeline.insertBlankKeyframe(smIndex);
-	tempTimeline.pasteFrames();
+	TEMP_TIMELINE.insertBlankKeyframe(smIndex);
+	TEMP_TIMELINE.pasteFrames();
 
-	var frameElements = tempTimeline.layers[0].frames[smIndex].elements;	
+	var frameElements = TEMP_TIMELINE.layers[0].frames[smIndex].elements;	
 	if (frameElements.length > 1)
 	{
 		var e = -1;
@@ -447,12 +484,6 @@ function pushElementSpritemap(symbol, layerIndex, frameIndex, elementIndex)
 				element.scaleX = element.scaleY = 0; // very shitty way of hiding the element, i really dont wanna edit the item :(
 			}
 		}
-	}
-
-	if (optimiseDimensions) {
-		var bs = tempTimeline.getBounds(smIndex);
-		w += bs.width;
-		h += bs.height;
 	}
 
 	smIndex++;
