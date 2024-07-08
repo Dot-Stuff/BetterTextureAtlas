@@ -472,6 +472,40 @@ function parseSymbolInstance(instance)
 	
 	if (instance.symbolType != undefined)
 		json += jsonStr("symbolType", instance.symbolType.replace(" ", ""));
+
+	if (instance.colorMode != "none") {
+		json += '"color": {\n';
+		var mode = instance.colorMode;
+		
+		switch (mode) {
+			case "brightness":
+				json += jsonStr("mode", "Brightness");
+				json += jsonVarEnd("brightness", instance.brightness);
+			break;
+			case "tint":
+				json += jsonStr("mode", "Tint");
+				json += jsonStr("tintColor", instance.tintColor);
+				json += jsonVarEnd("tintMultiplier", instance.tintPercent / 100);
+			break;
+			case "alpha":
+				json += jsonStr("mode", "Alpha");
+				json += jsonVarEnd("alphaMultiplier", instance.colorAlphaPercent / 100);
+			break;
+			case "advanced":
+				json += jsonStr("mode", "Advanced");
+				json += jsonVar("RedMultiplier", instance.colorRedPercent / 100);
+				json += jsonVar("greenMultiplier", instance.colorGreenPercent / 100);
+				json += jsonVar("blueMultiplier", instance.colorBluePercent / 100);
+				json += jsonVar("alphaMultiplier", instance.colorAlphaPercent / 100);
+				json += jsonVar("redOffset", instance.colorRedAmount);
+				json += jsonVar("greenOffset", instance.colorGreenAmount);
+				json += jsonVar("blueOffset", instance.colorBlueAmount);
+				json += jsonVarEnd("AlphaOffset", instance.colorAlphaAmount);
+			break;
+		}
+
+		json += '},\n';
+	}
 	
 	json += jsonStr("Instance_Name", instance.name);
 	
