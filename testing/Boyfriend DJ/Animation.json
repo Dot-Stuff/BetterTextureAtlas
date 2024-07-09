@@ -1,919 +1,919 @@
 {
-"ANIMATION": {
-"StageInstance": {
-"SYMBOL_Instance": {
-"SYMBOL_name": "Boyfriend DJ",
-"firstFrame": 0,
-"symbolType": "graphic",
-"loop": "loop",
-"Matrix": [1,0,0,1,646.75,362.4]
+"AN": {
+"STI": {
+"SI": {
+"SN": "Boyfriend DJ",
+"FF": 0,
+"ST": "graphic",
+"LP": "loop",
+"MX": [1,0,0,1,646.75,362.4]
 }},
-"SYMBOL_name": "Boyfriend DJ",
-"TIMELINE": {
-"LAYERS": [
+"SN": "Boyfriend DJ",
+"TL": {
+"L": [
 {
-"Layer_name": "bf face",
-"Frames": [
+"LN": "bf face",
+"FR": [
 {
-"index": 0,
-"duration": 2,
-"elements": [
+"I": 0,
+"DU": 2,
+"E": [
 {
-"SYMBOL_Instance": {
-"SYMBOL_name": "bf eyes 1",
-"firstFrame": 0,
-"symbolType": "graphic",
-"loop": "loop",
-"Matrix": [0.9929046630859375,-0.1156005859375,0.1156005859375,0.9929046630859375,-541.7,23.5]
+"SI": {
+"SN": "bf eyes 1",
+"FF": 0,
+"ST": "graphic",
+"LP": "loop",
+"MX": [0.9929046630859375,-0.1156005859375,0.1156005859375,0.9929046630859375,-541.7,23.5]
 }}]},{
-"index": 2,
-"duration": 2,
-"elements": [
+"I": 2,
+"DU": 2,
+"E": [
 {
-"SYMBOL_Instance": {
-"SYMBOL_name": "bf eyes 1",
-"firstFrame": 0,
-"symbolType": "graphic",
-"loop": "loop",
-"Matrix": [0.9874114990234375,-0.1548614501953125,0.1548614501953125,0.9874114990234375,-542.5,25.6]
+"SI": {
+"SN": "bf eyes 1",
+"FF": 0,
+"ST": "graphic",
+"LP": "loop",
+"MX": [0.9874114990234375,-0.1548614501953125,0.1548614501953125,0.9874114990234375,-542.5,25.6]
 }}]},{
-"index": 4,
-"duration": 2,
-"elements": [
+"I": 4,
+"DU": 2,
+"E": [
 {
-"SYMBOL_Instance": {
-"SYMBOL_name": "bf eyes 1",
-"firstFrame": 0,
-"symbolType": "graphic",
-"loop": "loop",
-"Matrix": [0.9827728271484375,-0.1814422607421875,0.1814422607421875,0.9827728271484375,-541.75,25.9]
+"SI": {
+"SN": "bf eyes 1",
+"FF": 0,
+"ST": "graphic",
+"LP": "loop",
+"MX": [0.9827728271484375,-0.1814422607421875,0.1814422607421875,0.9827728271484375,-541.75,25.9]
 }}]},{
-"index": 6,
-"duration": 2,
-"elements": [
+"I": 6,
+"DU": 2,
+"E": [
 {
-"SYMBOL_Instance": {
-"SYMBOL_name": "bf eyes 1",
-"firstFrame": 0,
-"symbolType": "graphic",
-"loop": "loop",
-"Matrix": [0.999664306640625,-0.02239990234375,0.02239990234375,0.999664306640625,-527.45,7.45]
+"SI": {
+"SN": "bf eyes 1",
+"FF": 0,
+"ST": "graphic",
+"LP": "loop",
+"MX": [0.999664306640625,-0.02239990234375,0.02239990234375,0.999664306640625,-527.45,7.45]
 }},{
-"SYMBOL_Instance": {
-"SYMBOL_name": "bf mouth 1",
-"firstFrame": 0,
-"symbolType": "graphic",
-"loop": "loop",
-"Matrix": [0.999664306640625,-0.02239990234375,0.02239990234375,0.999664306640625,-483.9,74.15]
+"SI": {
+"SN": "bf mouth 1",
+"FF": 0,
+"ST": "graphic",
+"LP": "loop",
+"MX": [0.999664306640625,-0.02239990234375,0.02239990234375,0.999664306640625,-483.9,74.15]
 }}]},{
-"index": 8,
-"duration": 5,
-"elements": [
+"I": 8,
+"DU": 5,
+"E": [
 {
-"SYMBOL_Instance": {
-"SYMBOL_name": "bf eyes 1",
-"firstFrame": 0,
-"symbolType": "graphic",
-"loop": "loop",
-"Matrix": [1,0,0,1,-525.5,3.5]
+"SI": {
+"SN": "bf eyes 1",
+"FF": 0,
+"ST": "graphic",
+"LP": "loop",
+"MX": [1,0,0,1,-525.5,3.5]
 }},{
-"SYMBOL_Instance": {
-"SYMBOL_name": "bf mouth 1",
-"firstFrame": 0,
-"symbolType": "graphic",
-"loop": "loop",
-"Matrix": [1,0,0,1,-483.45,71.2]
+"SI": {
+"SN": "bf mouth 1",
+"FF": 0,
+"ST": "graphic",
+"LP": "loop",
+"MX": [1,0,0,1,-483.45,71.2]
 }}]},{
-"index": 13,
-"duration": 1,
-"elements": [
+"I": 13,
+"DU": 1,
+"E": [
 {
-"SYMBOL_Instance": {
-"SYMBOL_name": "bf eyes 1",
-"firstFrame": 0,
-"symbolType": "graphic",
-"loop": "loop",
-"Matrix": [1,0,0,1,-525.5,3.5]
+"SI": {
+"SN": "bf eyes 1",
+"FF": 0,
+"ST": "graphic",
+"LP": "loop",
+"MX": [1,0,0,1,-525.5,3.5]
 }},{
-"SYMBOL_Instance": {
-"SYMBOL_name": "bf mouth 1",
-"firstFrame": 0,
-"symbolType": "graphic",
-"loop": "loop",
-"Matrix": [1,0,0,1,-483.45,71.2]
+"SI": {
+"SN": "bf mouth 1",
+"FF": 0,
+"ST": "graphic",
+"LP": "loop",
+"MX": [1,0,0,1,-483.45,71.2]
 }}]}]},{
-"Layer_name": "bf top head",
-"Frames": [
+"LN": "bf top head",
+"FR": [
 {
-"index": 0,
-"duration": 2,
-"elements": [
+"I": 0,
+"DU": 2,
+"E": [
 {
-"SYMBOL_Instance": {
-"SYMBOL_name": "boyfriend top head",
-"firstFrame": 0,
-"symbolType": "graphic",
-"loop": "loop",
-"Matrix": [0.9929046630859375,-0.1156005859375,0.1156005859375,0.9929046630859375,-594.75,-23.1]
+"SI": {
+"SN": "boyfriend top head",
+"FF": 0,
+"ST": "graphic",
+"LP": "loop",
+"MX": [0.9929046630859375,-0.1156005859375,0.1156005859375,0.9929046630859375,-594.75,-23.1]
 }}]},{
-"index": 2,
-"duration": 2,
-"elements": [
+"I": 2,
+"DU": 2,
+"E": [
 {
-"SYMBOL_Instance": {
-"SYMBOL_name": "boyfriend top head",
-"firstFrame": 0,
-"symbolType": "graphic",
-"loop": "loop",
-"Matrix": [0.9874114990234375,-0.1548614501953125,0.1548614501953125,0.9874114990234375,-597.35,-18.85]
+"SI": {
+"SN": "boyfriend top head",
+"FF": 0,
+"ST": "graphic",
+"LP": "loop",
+"MX": [0.9874114990234375,-0.1548614501953125,0.1548614501953125,0.9874114990234375,-597.35,-18.85]
 }}]},{
-"index": 4,
-"duration": 2,
-"elements": [
+"I": 4,
+"DU": 2,
+"E": [
 {
-"SYMBOL_Instance": {
-"SYMBOL_name": "boyfriend top head",
-"firstFrame": 0,
-"symbolType": "graphic",
-"loop": "loop",
-"Matrix": [0.9827728271484375,-0.1814422607421875,0.1814422607421875,0.9827728271484375,-597.75,-17]
+"SI": {
+"SN": "boyfriend top head",
+"FF": 0,
+"ST": "graphic",
+"LP": "loop",
+"MX": [0.9827728271484375,-0.1814422607421875,0.1814422607421875,0.9827728271484375,-597.75,-17]
 }}]},{
-"index": 6,
-"duration": 2,
-"elements": [
+"I": 6,
+"DU": 2,
+"E": [
 {
-"SYMBOL_Instance": {
-"SYMBOL_name": "boyfriend top head",
-"firstFrame": 0,
-"symbolType": "graphic",
-"loop": "loop",
-"Matrix": [0.999664306640625,-0.02239990234375,0.02239990234375,0.999664306640625,-575.9,-43.95]
+"SI": {
+"SN": "boyfriend top head",
+"FF": 0,
+"ST": "graphic",
+"LP": "loop",
+"MX": [0.999664306640625,-0.02239990234375,0.02239990234375,0.999664306640625,-575.9,-43.95]
 }}]},{
-"index": 8,
-"duration": 5,
-"elements": [
+"I": 8,
+"DU": 5,
+"E": [
 {
-"SYMBOL_Instance": {
-"SYMBOL_name": "boyfriend top head",
-"firstFrame": 0,
-"symbolType": "graphic",
-"loop": "loop",
-"Matrix": [1,0,0,1,-572.8,-48.95]
+"SI": {
+"SN": "boyfriend top head",
+"FF": 0,
+"ST": "graphic",
+"LP": "loop",
+"MX": [1,0,0,1,-572.8,-48.95]
 }}]},{
-"index": 13,
-"duration": 1,
-"elements": [
+"I": 13,
+"DU": 1,
+"E": [
 {
-"SYMBOL_Instance": {
-"SYMBOL_name": "boyfriend top head",
-"firstFrame": 0,
-"symbolType": "graphic",
-"loop": "loop",
-"Matrix": [1,0,0,1,-572.8,-48.95]
+"SI": {
+"SN": "boyfriend top head",
+"FF": 0,
+"ST": "graphic",
+"LP": "loop",
+"MX": [1,0,0,1,-572.8,-48.95]
 }}]}]},{
-"Layer_name": "bf arms",
-"Frames": [
+"LN": "bf arms",
+"FR": [
 {
-"index": 0,
-"duration": 2,
-"elements": [
+"I": 0,
+"DU": 2,
+"E": [
 {
-"SYMBOL_Instance": {
-"SYMBOL_name": "DJ arm",
-"firstFrame": 0,
-"symbolType": "graphic",
-"loop": "loop",
-"Matrix": [1,0,0,1,-539.3,69.25]
+"SI": {
+"SN": "DJ arm",
+"FF": 0,
+"ST": "graphic",
+"LP": "loop",
+"MX": [1,0,0,1,-539.3,69.25]
 }},{
-"SYMBOL_Instance": {
-"SYMBOL_name": "rave hand",
-"firstFrame": 0,
-"symbolType": "graphic",
-"loop": "loop",
-"Matrix": [1,0,0,1,-625.6,-71.95]
+"SI": {
+"SN": "rave hand",
+"FF": 0,
+"ST": "graphic",
+"LP": "loop",
+"MX": [1,0,0,1,-625.6,-71.95]
 }}]},{
-"index": 2,
-"duration": 2,
-"elements": [
+"I": 2,
+"DU": 2,
+"E": [
 {
-"SYMBOL_Instance": {
-"SYMBOL_name": "DJ arm",
-"firstFrame": 2,
-"symbolType": "graphic",
-"loop": "loop",
-"Matrix": [1,0,0,1,-539.3,69.25]
+"SI": {
+"SN": "DJ arm",
+"FF": 2,
+"ST": "graphic",
+"LP": "loop",
+"MX": [1,0,0,1,-539.3,69.25]
 }},{
-"SYMBOL_Instance": {
-"SYMBOL_name": "rave hand",
-"firstFrame": 2,
-"symbolType": "graphic",
-"loop": "loop",
-"Matrix": [1,0,0,1,-625.6,-71.95]
+"SI": {
+"SN": "rave hand",
+"FF": 2,
+"ST": "graphic",
+"LP": "loop",
+"MX": [1,0,0,1,-625.6,-71.95]
 }}]},{
-"index": 4,
-"duration": 2,
-"elements": [
+"I": 4,
+"DU": 2,
+"E": [
 {
-"SYMBOL_Instance": {
-"SYMBOL_name": "DJ arm",
-"firstFrame": 4,
-"symbolType": "graphic",
-"loop": "loop",
-"Matrix": [1,0,0,1,-539.3,69.25]
+"SI": {
+"SN": "DJ arm",
+"FF": 4,
+"ST": "graphic",
+"LP": "loop",
+"MX": [1,0,0,1,-539.3,69.25]
 }},{
-"SYMBOL_Instance": {
-"SYMBOL_name": "rave hand",
-"firstFrame": 4,
-"symbolType": "graphic",
-"loop": "loop",
-"Matrix": [1,0,0,1,-625.6,-71.95]
+"SI": {
+"SN": "rave hand",
+"FF": 4,
+"ST": "graphic",
+"LP": "loop",
+"MX": [1,0,0,1,-625.6,-71.95]
 }}]},{
-"index": 6,
-"duration": 2,
-"elements": [
+"I": 6,
+"DU": 2,
+"E": [
 {
-"SYMBOL_Instance": {
-"SYMBOL_name": "DJ arm",
-"firstFrame": 6,
-"symbolType": "graphic",
-"loop": "loop",
-"Matrix": [1,0,0,1,-539.3,69.25]
+"SI": {
+"SN": "DJ arm",
+"FF": 6,
+"ST": "graphic",
+"LP": "loop",
+"MX": [1,0,0,1,-539.3,69.25]
 }},{
-"SYMBOL_Instance": {
-"SYMBOL_name": "rave hand",
-"firstFrame": 6,
-"symbolType": "graphic",
-"loop": "loop",
-"Matrix": [1,0,0,1,-625.6,-71.95]
+"SI": {
+"SN": "rave hand",
+"FF": 6,
+"ST": "graphic",
+"LP": "loop",
+"MX": [1,0,0,1,-625.6,-71.95]
 }}]},{
-"index": 8,
-"duration": 5,
-"elements": [
+"I": 8,
+"DU": 5,
+"E": [
 {
-"SYMBOL_Instance": {
-"SYMBOL_name": "DJ arm",
-"firstFrame": 8,
-"symbolType": "graphic",
-"loop": "loop",
-"Matrix": [1,0,0,1,-539.3,69.25]
+"SI": {
+"SN": "DJ arm",
+"FF": 8,
+"ST": "graphic",
+"LP": "loop",
+"MX": [1,0,0,1,-539.3,69.25]
 }},{
-"SYMBOL_Instance": {
-"SYMBOL_name": "rave hand",
-"firstFrame": 8,
-"symbolType": "graphic",
-"loop": "loop",
-"Matrix": [1,0,0,1,-625.6,-71.95]
+"SI": {
+"SN": "rave hand",
+"FF": 8,
+"ST": "graphic",
+"LP": "loop",
+"MX": [1,0,0,1,-625.6,-71.95]
 }}]},{
-"index": 13,
-"duration": 1,
-"elements": [
+"I": 13,
+"DU": 1,
+"E": [
 {
-"SYMBOL_Instance": {
-"SYMBOL_name": "DJ arm",
-"firstFrame": 13,
-"symbolType": "graphic",
-"loop": "loop",
-"Matrix": [1,0,0,1,-539.3,69.25]
+"SI": {
+"SN": "DJ arm",
+"FF": 13,
+"ST": "graphic",
+"LP": "loop",
+"MX": [1,0,0,1,-539.3,69.25]
 }},{
-"SYMBOL_Instance": {
-"SYMBOL_name": "rave hand",
-"firstFrame": 13,
-"symbolType": "graphic",
-"loop": "loop",
-"Matrix": [1,0,0,1,-625.6,-71.95]
+"SI": {
+"SN": "rave hand",
+"FF": 13,
+"ST": "graphic",
+"LP": "loop",
+"MX": [1,0,0,1,-625.6,-71.95]
 }}]}]},{
-"Layer_name": "Layer 4",
-"Frames": [
+"LN": "Layer 4",
+"FR": [
 {
-"index": 0,
-"duration": 2,
-"elements": [
+"I": 0,
+"DU": 2,
+"E": [
 {
-"SYMBOL_Instance": {
-"SYMBOL_name": "bf mouth 1",
-"firstFrame": 0,
-"symbolType": "graphic",
-"loop": "loop",
-"Matrix": [0.9929046630859375,-0.1156005859375,0.1156005859375,0.9929046630859375,-492.05,85.9]
+"SI": {
+"SN": "bf mouth 1",
+"FF": 0,
+"ST": "graphic",
+"LP": "loop",
+"MX": [0.9929046630859375,-0.1156005859375,0.1156005859375,0.9929046630859375,-492.05,85.9]
 }}]},{
-"index": 2,
-"duration": 2,
-"elements": [
+"I": 2,
+"DU": 2,
+"E": [
 {
-"SYMBOL_Instance": {
-"SYMBOL_name": "bf mouth 1",
-"firstFrame": 0,
-"symbolType": "graphic",
-"loop": "loop",
-"Matrix": [0.9874114990234375,-0.1548614501953125,0.1548614501953125,0.9874114990234375,-490.4,86]
+"SI": {
+"SN": "bf mouth 1",
+"FF": 0,
+"ST": "graphic",
+"LP": "loop",
+"MX": [0.9874114990234375,-0.1548614501953125,0.1548614501953125,0.9874114990234375,-490.4,86]
 }}]},{
-"index": 4,
-"duration": 2,
-"elements": [
+"I": 4,
+"DU": 2,
+"E": [
 {
-"SYMBOL_Instance": {
-"SYMBOL_name": "bf mouth 1",
-"firstFrame": 0,
-"symbolType": "graphic",
-"loop": "loop",
-"Matrix": [0.9827728271484375,-0.1814422607421875,0.1814422607421875,0.9827728271484375,-488,84.9]
+"SI": {
+"SN": "bf mouth 1",
+"FF": 0,
+"ST": "graphic",
+"LP": "loop",
+"MX": [0.9827728271484375,-0.1814422607421875,0.1814422607421875,0.9827728271484375,-488,84.9]
 }}]},{
-"index": 6,
-"duration": 8,
-"elements": [
+"I": 6,
+"DU": 8,
+"E": [
 ]}]},{
-"Layer_name": "bf bottom head",
-"Frames": [
+"LN": "bf bottom head",
+"FR": [
 {
-"index": 0,
-"duration": 2,
-"elements": [
+"I": 0,
+"DU": 2,
+"E": [
 {
-"SYMBOL_Instance": {
-"SYMBOL_name": "boyfriend bottom head",
-"firstFrame": 0,
-"symbolType": "graphic",
-"loop": "loop",
-"Matrix": [0.9929046630859375,-0.1156005859375,0.1156005859375,0.9929046630859375,-545.9,62.85]
+"SI": {
+"SN": "boyfriend bottom head",
+"FF": 0,
+"ST": "graphic",
+"LP": "loop",
+"MX": [0.9929046630859375,-0.1156005859375,0.1156005859375,0.9929046630859375,-545.9,62.85]
 }}]},{
-"index": 2,
-"duration": 2,
-"elements": [
+"I": 2,
+"DU": 2,
+"E": [
 {
-"SYMBOL_Instance": {
-"SYMBOL_name": "boyfriend bottom head",
-"firstFrame": 0,
-"symbolType": "graphic",
-"loop": "loop",
-"Matrix": [0.9874114990234375,-0.1548614501953125,0.1548614501953125,0.9874114990234375,-545.15,65.05]
+"SI": {
+"SN": "boyfriend bottom head",
+"FF": 0,
+"ST": "graphic",
+"LP": "loop",
+"MX": [0.9874114990234375,-0.1548614501953125,0.1548614501953125,0.9874114990234375,-545.15,65.05]
 }}]},{
-"index": 4,
-"duration": 2,
-"elements": [
+"I": 4,
+"DU": 2,
+"E": [
 {
-"SYMBOL_Instance": {
-"SYMBOL_name": "boyfriend bottom head",
-"firstFrame": 0,
-"symbolType": "graphic",
-"loop": "loop",
-"Matrix": [0.9827728271484375,-0.1814422607421875,0.1814422607421875,0.9827728271484375,-543.35,65.45]
+"SI": {
+"SN": "boyfriend bottom head",
+"FF": 0,
+"ST": "graphic",
+"LP": "loop",
+"MX": [0.9827728271484375,-0.1814422607421875,0.1814422607421875,0.9827728271484375,-543.35,65.45]
 }}]},{
-"index": 6,
-"duration": 2,
-"elements": [
+"I": 6,
+"DU": 2,
+"E": [
 {
-"SYMBOL_Instance": {
-"SYMBOL_name": "boyfriend bottom head",
-"firstFrame": 0,
-"symbolType": "graphic",
-"loop": "loop",
-"Matrix": [0.999664306640625,-0.02239990234375,0.02239990234375,0.999664306640625,-535.4,46.15]
+"SI": {
+"SN": "boyfriend bottom head",
+"FF": 0,
+"ST": "graphic",
+"LP": "loop",
+"MX": [0.999664306640625,-0.02239990234375,0.02239990234375,0.999664306640625,-535.4,46.15]
 }}]},{
-"index": 8,
-"duration": 5,
-"elements": [
+"I": 8,
+"DU": 5,
+"E": [
 {
-"SYMBOL_Instance": {
-"SYMBOL_name": "boyfriend bottom head",
-"firstFrame": 0,
-"symbolType": "graphic",
-"loop": "loop",
-"Matrix": [1,0,0,1,-534.3,42.05]
+"SI": {
+"SN": "boyfriend bottom head",
+"FF": 0,
+"ST": "graphic",
+"LP": "loop",
+"MX": [1,0,0,1,-534.3,42.05]
 }}]},{
-"index": 13,
-"duration": 1,
-"elements": [
+"I": 13,
+"DU": 1,
+"E": [
 {
-"SYMBOL_Instance": {
-"SYMBOL_name": "boyfriend bottom head",
-"firstFrame": 0,
-"symbolType": "graphic",
-"loop": "loop",
-"Matrix": [1,0,0,1,-534.3,42.05]
+"SI": {
+"SN": "boyfriend bottom head",
+"FF": 0,
+"ST": "graphic",
+"LP": "loop",
+"MX": [1,0,0,1,-534.3,42.05]
 }}]}]},{
-"Layer_name": "Layer 6",
-"Frames": [
+"LN": "Layer 6",
+"FR": [
 {
-"index": 0,
-"duration": 13,
-"elements": [
+"I": 0,
+"DU": 13,
+"E": [
 {
-"SYMBOL_Instance": {
-"SYMBOL_name": "spinning disk",
-"firstFrame": 0,
-"symbolType": "graphic",
-"loop": "loop",
-"Matrix": [0.9892730712890625,0.135223388671875,-0.135223388671875,0.9892730712890625,-610.15,152.65]
+"SI": {
+"SN": "spinning disk",
+"FF": 0,
+"ST": "graphic",
+"LP": "loop",
+"MX": [0.9892730712890625,0.135223388671875,-0.135223388671875,0.9892730712890625,-610.15,152.65]
 }}]},{
-"index": 13,
-"duration": 1,
-"elements": [
+"I": 13,
+"DU": 1,
+"E": [
 {
-"SYMBOL_Instance": {
-"SYMBOL_name": "spinning disk",
-"firstFrame": 5,
-"symbolType": "graphic",
-"loop": "loop",
-"Matrix": [0.9892730712890625,0.135223388671875,-0.135223388671875,0.9892730712890625,-610.15,152.65]
+"SI": {
+"SN": "spinning disk",
+"FF": 5,
+"ST": "graphic",
+"LP": "loop",
+"MX": [0.9892730712890625,0.135223388671875,-0.135223388671875,0.9892730712890625,-610.15,152.65]
 }}]}]},{
-"Layer_name": "Layer 7",
-"Frames": [
+"LN": "Layer 7",
+"FR": [
 {
-"index": 0,
-"duration": 13,
-"elements": [
+"I": 0,
+"DU": 13,
+"E": [
 {
-"SYMBOL_Instance": {
-"SYMBOL_name": "spinning disk",
-"firstFrame": 0,
-"symbolType": "graphic",
-"loop": "loop",
-"Matrix": [1,0,0,1,-446.15,161.3]
+"SI": {
+"SN": "spinning disk",
+"FF": 0,
+"ST": "graphic",
+"LP": "loop",
+"MX": [1,0,0,1,-446.15,161.3]
 }}]},{
-"index": 13,
-"duration": 1,
-"elements": [
+"I": 13,
+"DU": 1,
+"E": [
 {
-"SYMBOL_Instance": {
-"SYMBOL_name": "spinning disk",
-"firstFrame": 5,
-"symbolType": "graphic",
-"loop": "loop",
-"Matrix": [1,0,0,1,-446.15,161.3]
+"SI": {
+"SN": "spinning disk",
+"FF": 5,
+"ST": "graphic",
+"LP": "loop",
+"MX": [1,0,0,1,-446.15,161.3]
 }}]}]},{
-"Layer_name": "turntable",
-"Frames": [
+"LN": "turntable",
+"FR": [
 {
-"index": 0,
-"duration": 13,
-"elements": [
+"I": 0,
+"DU": 13,
+"E": [
 {
-"SYMBOL_Instance": {
-"SYMBOL_name": "turn table",
-"firstFrame": 0,
-"symbolType": "graphic",
-"loop": "loop",
-"Matrix": [1,0,0,1,-649.4,158]
+"SI": {
+"SN": "turn table",
+"FF": 0,
+"ST": "graphic",
+"LP": "loop",
+"MX": [1,0,0,1,-649.4,158]
 }}]},{
-"index": 13,
-"duration": 1,
-"elements": [
+"I": 13,
+"DU": 1,
+"E": [
 {
-"SYMBOL_Instance": {
-"SYMBOL_name": "turn table",
-"firstFrame": 13,
-"symbolType": "graphic",
-"loop": "loop",
-"Matrix": [1,0,0,1,-649.4,158]
+"SI": {
+"SN": "turn table",
+"FF": 13,
+"ST": "graphic",
+"LP": "loop",
+"MX": [1,0,0,1,-649.4,158]
 }}]}]},{
-"Layer_name": "bf body",
-"Frames": [
+"LN": "bf body",
+"FR": [
 {
-"index": 0,
-"duration": 2,
-"elements": [
+"I": 0,
+"DU": 2,
+"E": [
 {
-"SYMBOL_Instance": {
-"SYMBOL_name": "boyfriend dj body",
-"firstFrame": 0,
-"symbolType": "graphic",
-"loop": "loop",
-"Matrix": [1.0217437744140625,0.0269317626953125,-0.0388336181640625,0.9765472412109375,-601.95,80.75]
+"SI": {
+"SN": "boyfriend dj body",
+"FF": 0,
+"ST": "graphic",
+"LP": "loop",
+"MX": [1.0217437744140625,0.0269317626953125,-0.0388336181640625,0.9765472412109375,-601.95,80.75]
 }}]},{
-"index": 2,
-"duration": 2,
-"elements": [
+"I": 2,
+"DU": 2,
+"E": [
 {
-"SYMBOL_Instance": {
-"SYMBOL_name": "boyfriend dj body",
-"firstFrame": 0,
-"symbolType": "graphic",
-"loop": "loop",
-"Matrix": [1.0220184326171875,0.00921630859375,-0.022216796875,0.9911041259765625,-604.3,81.05]
+"SI": {
+"SN": "boyfriend dj body",
+"FF": 0,
+"ST": "graphic",
+"LP": "loop",
+"MX": [1.0220184326171875,0.00921630859375,-0.022216796875,0.9911041259765625,-604.3,81.05]
 }}]},{
-"index": 4,
-"duration": 2,
-"elements": [
+"I": 4,
+"DU": 2,
+"E": [
 {
-"SYMBOL_Instance": {
-"SYMBOL_name": "boyfriend dj body",
-"firstFrame": 0,
-"symbolType": "graphic",
-"loop": "loop",
-"Matrix": [1.0219879150390625,-0.0048065185546875,-0.0087738037109375,1.0091400146484375,-607.4,79.05]
+"SI": {
+"SN": "boyfriend dj body",
+"FF": 0,
+"ST": "graphic",
+"LP": "loop",
+"MX": [1.0219879150390625,-0.0048065185546875,-0.0087738037109375,1.0091400146484375,-607.4,79.05]
 }}]},{
-"index": 6,
-"duration": 7,
-"elements": [
+"I": 6,
+"DU": 7,
+"E": [
 {
-"SYMBOL_Instance": {
-"SYMBOL_name": "boyfriend dj body",
-"firstFrame": 0,
-"symbolType": "graphic",
-"loop": "loop",
-"Matrix": [1,0,0,1,-606.25,77.5]
+"SI": {
+"SN": "boyfriend dj body",
+"FF": 0,
+"ST": "graphic",
+"LP": "loop",
+"MX": [1,0,0,1,-606.25,77.5]
 }}]},{
-"index": 13,
-"duration": 1,
-"elements": [
+"I": 13,
+"DU": 1,
+"E": [
 {
-"SYMBOL_Instance": {
-"SYMBOL_name": "boyfriend dj body",
-"firstFrame": 0,
-"symbolType": "graphic",
-"loop": "loop",
-"Matrix": [1,0,0,1,-606.25,77.5]
+"SI": {
+"SN": "boyfriend dj body",
+"FF": 0,
+"ST": "graphic",
+"LP": "loop",
+"MX": [1,0,0,1,-606.25,77.5]
 }}]}]}]}},
-"SYMBOL_DICTIONARY": {
-"Symbols": [
+"SD": {
+"S": [
 {
-"SYMBOL_name": "bf eyes 1",
-"TIMELINE": {
-"LAYERS": [
+"SN": "bf eyes 1",
+"TL": {
+"L": [
 {
-"Layer_name": "Layer 1",
-"Frames": [
+"LN": "Layer 1",
+"FR": [
 {
-"index": 0,
-"duration": 1,
-"elements": [
+"I": 0,
+"DU": 1,
+"E": [
 {
-"ATLAS_SPRITE_instance": {
-"Matrix": [1,0,0,1,-0.025000000000005684,-0.02499999999999858],
-"name": "0"
+"ASI": {
+"MX": [1,0,0,1,-0.025000000000005684,-0.02499999999999858],
+"N": "0"
 }}]}]}]}},{
-"SYMBOL_name": "bf mouth 1",
-"TIMELINE": {
-"LAYERS": [
+"SN": "bf mouth 1",
+"TL": {
+"L": [
 {
-"Layer_name": "Layer 1",
-"Frames": [
+"LN": "Layer 1",
+"FR": [
 {
-"index": 0,
-"duration": 1,
-"elements": [
+"I": 0,
+"DU": 1,
+"E": [
 {
-"ATLAS_SPRITE_instance": {
-"Matrix": [1,0,0,1,0,-0.025000000000000355],
-"name": "1"
+"ASI": {
+"MX": [1,0,0,1,0,-0.025000000000000355],
+"N": "1"
 }}]}]}]}},{
-"SYMBOL_name": "boyfriend top head",
-"TIMELINE": {
-"LAYERS": [
+"SN": "boyfriend top head",
+"TL": {
+"L": [
 {
-"Layer_name": "Layer 1",
-"Frames": [
+"LN": "Layer 1",
+"FR": [
 {
-"index": 0,
-"duration": 1,
-"elements": [
+"I": 0,
+"DU": 1,
+"E": [
 {
-"ATLAS_SPRITE_instance": {
-"Matrix": [1,0,0,1,0,0],
-"name": "2"
+"ASI": {
+"MX": [1,0,0,1,0,0],
+"N": "2"
 }}]}]}]}},{
-"SYMBOL_name": "dj arm out",
-"TIMELINE": {
-"LAYERS": [
+"SN": "dj arm out",
+"TL": {
+"L": [
 {
-"Layer_name": "Layer 1",
-"Frames": [
+"LN": "Layer 1",
+"FR": [
 {
-"index": 0,
-"duration": 1,
-"elements": [
+"I": 0,
+"DU": 1,
+"E": [
 {
-"ATLAS_SPRITE_instance": {
-"Matrix": [1,0,0,1,0,0],
-"name": "3"
+"ASI": {
+"MX": [1,0,0,1,0,0],
+"N": "3"
 }}]}]}]}},{
-"SYMBOL_name": "dj arm in",
-"TIMELINE": {
-"LAYERS": [
+"SN": "dj arm in",
+"TL": {
+"L": [
 {
-"Layer_name": "Layer 1",
-"Frames": [
+"LN": "Layer 1",
+"FR": [
 {
-"index": 0,
-"duration": 1,
-"elements": [
+"I": 0,
+"DU": 1,
+"E": [
 {
-"ATLAS_SPRITE_instance": {
-"Matrix": [1,0,0,1,-0.024999999999991473,0],
-"name": "4"
+"ASI": {
+"MX": [1,0,0,1,-0.024999999999991473,0],
+"N": "4"
 }}]}]}]}},{
-"SYMBOL_name": "DJ arm",
-"TIMELINE": {
-"LAYERS": [
+"SN": "DJ arm",
+"TL": {
+"L": [
 {
-"Layer_name": "Layer 1",
-"Frames": [
+"LN": "Layer 1",
+"FR": [
 {
-"index": 0,
-"duration": 2,
-"elements": [
+"I": 0,
+"DU": 2,
+"E": [
 {
-"SYMBOL_Instance": {
-"SYMBOL_name": "dj arm out",
-"firstFrame": 0,
-"symbolType": "graphic",
-"loop": "loop",
-"Matrix": [1,0,0,1,-41.05,3.5]
+"SI": {
+"SN": "dj arm out",
+"FF": 0,
+"ST": "graphic",
+"LP": "loop",
+"MX": [1,0,0,1,-41.05,3.5]
 }}]},{
-"index": 2,
-"duration": 2,
-"elements": [
+"I": 2,
+"DU": 2,
+"E": [
 {
-"SYMBOL_Instance": {
-"SYMBOL_name": "dj arm out",
-"firstFrame": 0,
-"symbolType": "graphic",
-"loop": "loop",
-"Matrix": [0.9997711181640625,0.0183563232421875,-0.0183563232421875,0.9997711181640625,-36.25,2.85]
+"SI": {
+"SN": "dj arm out",
+"FF": 0,
+"ST": "graphic",
+"LP": "loop",
+"MX": [0.9997711181640625,0.0183563232421875,-0.0183563232421875,0.9997711181640625,-36.25,2.85]
 }}]},{
-"index": 4,
-"duration": 2,
-"elements": [
+"I": 4,
+"DU": 2,
+"E": [
 {
-"SYMBOL_Instance": {
-"SYMBOL_name": "dj arm out",
-"firstFrame": 0,
-"symbolType": "graphic",
-"loop": "loop",
-"Matrix": [0.9986419677734375,-0.0488739013671875,0.0488739013671875,0.9986419677734375,-35.35,10]
+"SI": {
+"SN": "dj arm out",
+"FF": 0,
+"ST": "graphic",
+"LP": "loop",
+"MX": [0.9986419677734375,-0.0488739013671875,0.0488739013671875,0.9986419677734375,-35.35,10]
 }}]},{
-"index": 6,
-"duration": 2,
-"elements": [
+"I": 6,
+"DU": 2,
+"E": [
 {
-"SYMBOL_Instance": {
-"SYMBOL_name": "dj arm in",
-"firstFrame": 0,
-"symbolType": "graphic",
-"loop": "loop",
-"Matrix": [0.9992218017578125,-0.036102294921875,0.0046234130859375,1.0003662109375,1.55,4.8]
+"SI": {
+"SN": "dj arm in",
+"FF": 0,
+"ST": "graphic",
+"LP": "loop",
+"MX": [0.9992218017578125,-0.036102294921875,0.0046234130859375,1.0003662109375,1.55,4.8]
 }}]},{
-"index": 8,
-"duration": 2,
-"elements": [
+"I": 8,
+"DU": 2,
+"E": [
 {
-"SYMBOL_Instance": {
-"SYMBOL_name": "dj arm in",
-"firstFrame": 0,
-"symbolType": "graphic",
-"loop": "loop",
-"Matrix": [0.9997711181640625,-0.0184173583984375,0.01025390625,0.9999237060546875,1.4,2.4]
+"SI": {
+"SN": "dj arm in",
+"FF": 0,
+"ST": "graphic",
+"LP": "loop",
+"MX": [0.9997711181640625,-0.0184173583984375,0.01025390625,0.9999237060546875,1.4,2.4]
 }}]},{
-"index": 10,
-"duration": 4,
-"elements": [
+"I": 10,
+"DU": 4,
+"E": [
 {
-"SYMBOL_Instance": {
-"SYMBOL_name": "dj arm in",
-"firstFrame": 0,
-"symbolType": "graphic",
-"loop": "loop",
-"Matrix": [1,0,0,1,1.45,0]
+"SI": {
+"SN": "dj arm in",
+"FF": 0,
+"ST": "graphic",
+"LP": "loop",
+"MX": [1,0,0,1,1.45,0]
 }}]}]}]}},{
-"SYMBOL_name": "hand out",
-"TIMELINE": {
-"LAYERS": [
+"SN": "hand out",
+"TL": {
+"L": [
 {
-"Layer_name": "Layer 1",
-"Frames": [
+"LN": "Layer 1",
+"FR": [
 {
-"index": 0,
-"duration": 1,
-"elements": [
+"I": 0,
+"DU": 1,
+"E": [
 {
-"ATLAS_SPRITE_instance": {
-"Matrix": [1,0,0,1,0,0],
-"name": "5"
+"ASI": {
+"MX": [1,0,0,1,0,0],
+"N": "5"
 }}]}]}]}},{
-"SYMBOL_name": "hand in",
-"TIMELINE": {
-"LAYERS": [
+"SN": "hand in",
+"TL": {
+"L": [
 {
-"Layer_name": "Layer 1",
-"Frames": [
+"LN": "Layer 1",
+"FR": [
 {
-"index": 0,
-"duration": 1,
-"elements": [
+"I": 0,
+"DU": 1,
+"E": [
 {
-"ATLAS_SPRITE_instance": {
-"Matrix": [1,0,0,1,0,0],
-"name": "6"
+"ASI": {
+"MX": [1,0,0,1,0,0],
+"N": "6"
 }}]}]}]}},{
-"SYMBOL_name": "rave hand",
-"TIMELINE": {
-"LAYERS": [
+"SN": "rave hand",
+"TL": {
+"L": [
 {
-"Layer_name": "Layer 1",
-"Frames": [
+"LN": "Layer 1",
+"FR": [
 {
-"index": 0,
-"duration": 2,
-"elements": [
+"I": 0,
+"DU": 2,
+"E": [
 {
-"SYMBOL_Instance": {
-"SYMBOL_name": "hand out",
-"firstFrame": 0,
-"symbolType": "graphic",
-"loop": "loop",
-"Matrix": [0.999847412109375,-0.0137939453125,0.0137939453125,0.999847412109375,-8.65,15.35]
+"SI": {
+"SN": "hand out",
+"FF": 0,
+"ST": "graphic",
+"LP": "loop",
+"MX": [0.999847412109375,-0.0137939453125,0.0137939453125,0.999847412109375,-8.65,15.35]
 }}]},{
-"index": 2,
-"duration": 2,
-"elements": [
+"I": 2,
+"DU": 2,
+"E": [
 {
-"SYMBOL_Instance": {
-"SYMBOL_name": "hand out",
-"firstFrame": 0,
-"symbolType": "graphic",
-"loop": "loop",
-"Matrix": [0.99261474609375,-0.1179351806640625,0.2176513671875,0.98077392578125,-14.85,24.2]
+"SI": {
+"SN": "hand out",
+"FF": 0,
+"ST": "graphic",
+"LP": "loop",
+"MX": [0.99261474609375,-0.1179351806640625,0.2176513671875,0.98077392578125,-14.85,24.2]
 }}]},{
-"index": 4,
-"duration": 2,
-"elements": [
+"I": 4,
+"DU": 2,
+"E": [
 {
-"SYMBOL_Instance": {
-"SYMBOL_name": "hand out",
-"firstFrame": 0,
-"symbolType": "graphic",
-"loop": "loop",
-"Matrix": [0.997528076171875,0.0668792724609375,-0.0668792724609375,0.997528076171875,8.4,-4.1]
+"SI": {
+"SN": "hand out",
+"FF": 0,
+"ST": "graphic",
+"LP": "loop",
+"MX": [0.997528076171875,0.0668792724609375,-0.0668792724609375,0.997528076171875,8.4,-4.1]
 }}]},{
-"index": 6,
-"duration": 2,
-"elements": [
+"I": 6,
+"DU": 2,
+"E": [
 {
-"SYMBOL_Instance": {
-"SYMBOL_name": "hand in",
-"firstFrame": 0,
-"symbolType": "graphic",
-"loop": "loop",
-"Matrix": [0.998443603515625,-0.05242919921875,0.05242919921875,0.998443603515625,53.2,0.2]
+"SI": {
+"SN": "hand in",
+"FF": 0,
+"ST": "graphic",
+"LP": "loop",
+"MX": [0.998443603515625,-0.05242919921875,0.05242919921875,0.998443603515625,53.2,0.2]
 }}]},{
-"index": 8,
-"duration": 2,
-"elements": [
+"I": 8,
+"DU": 2,
+"E": [
 {
-"SYMBOL_Instance": {
-"SYMBOL_name": "hand in",
-"firstFrame": 0,
-"symbolType": "graphic",
-"loop": "loop",
-"Matrix": [1,0,0,1,62.45,2.75]
+"SI": {
+"SN": "hand in",
+"FF": 0,
+"ST": "graphic",
+"LP": "loop",
+"MX": [1,0,0,1,62.45,2.75]
 }}]},{
-"index": 10,
-"duration": 4,
-"elements": [
+"I": 10,
+"DU": 4,
+"E": [
 {
-"SYMBOL_Instance": {
-"SYMBOL_name": "hand in",
-"firstFrame": 0,
-"symbolType": "graphic",
-"loop": "loop",
-"Matrix": [0.9995574951171875,0.026611328125,-0.026611328125,0.9995574951171875,65.15,2.55]
+"SI": {
+"SN": "hand in",
+"FF": 0,
+"ST": "graphic",
+"LP": "loop",
+"MX": [0.9995574951171875,0.026611328125,-0.026611328125,0.9995574951171875,65.15,2.55]
 }}]}]}]}},{
-"SYMBOL_name": "boyfriend bottom head",
-"TIMELINE": {
-"LAYERS": [
+"SN": "boyfriend bottom head",
+"TL": {
+"L": [
 {
-"Layer_name": "Layer 1",
-"Frames": [
+"LN": "Layer 1",
+"FR": [
 {
-"index": 0,
-"duration": 1,
-"elements": [
+"I": 0,
+"DU": 1,
+"E": [
 {
-"ATLAS_SPRITE_instance": {
-"Matrix": [1,0,0,1,-0.024999999999991473,-0.02499999999999858],
-"name": "7"
+"ASI": {
+"MX": [1,0,0,1,-0.024999999999991473,-0.02499999999999858],
+"N": "7"
 }}]}]}]}},{
-"SYMBOL_name": "spinning disk",
-"TIMELINE": {
-"LAYERS": [
+"SN": "spinning disk",
+"TL": {
+"L": [
 {
-"Layer_name": "Layer 2",
-"Frames": [
+"LN": "Layer 2",
+"FR": [
 {
-"index": 0,
-"duration": 2,
-"elements": [
+"I": 0,
+"DU": 2,
+"E": [
 {
-"ATLAS_SPRITE_instance": {
-"Matrix": [1,0,0,1,27.074999999999996,4.099999999999998],
-"name": "8"
+"ASI": {
+"MX": [1,0,0,1,27.074999999999996,4.099999999999998],
+"N": "8"
 }}]},{
-"index": 2,
-"duration": 2,
-"elements": [
+"I": 2,
+"DU": 2,
+"E": [
 {
-"ATLAS_SPRITE_instance": {
-"Matrix": [1,0,0,1,24.375,3.1000000000000014],
-"name": "9"
+"ASI": {
+"MX": [1,0,0,1,24.375,3.1000000000000014],
+"N": "9"
 }}]},{
-"index": 4,
-"duration": 2,
-"elements": [
+"I": 4,
+"DU": 2,
+"E": [
 {
-"ATLAS_SPRITE_instance": {
-"Matrix": [1,0,0,1,30.199999999999996,2.8000000000000007],
-"name": "10"
+"ASI": {
+"MX": [1,0,0,1,30.199999999999996,2.8000000000000007],
+"N": "10"
 }}]},{
-"index": 6,
-"duration": 2,
-"elements": [
+"I": 6,
+"DU": 2,
+"E": [
 {
-"ATLAS_SPRITE_instance": {
-"Matrix": [1,0,0,1,31.075000000000003,2.6000000000000014],
-"name": "11"
+"ASI": {
+"MX": [1,0,0,1,31.075000000000003,2.6000000000000014],
+"N": "11"
 }}]}]},{
-"Layer_name": "Layer 1",
-"Frames": [
+"LN": "Layer 1",
+"FR": [
 {
-"index": 0,
-"duration": 8,
-"elements": [
+"I": 0,
+"DU": 8,
+"E": [
 {
-"ATLAS_SPRITE_instance": {
-"Matrix": [1,0,0,1,5.8999999999999915,-0.7249999999999979],
-"name": "12"
+"ASI": {
+"MX": [1,0,0,1,5.8999999999999915,-0.7249999999999979],
+"N": "12"
 }}]}]}]}},{
-"SYMBOL_name": "turntable lights",
-"TIMELINE": {
-"LAYERS": [
+"SN": "turntable lights",
+"TL": {
+"L": [
 {
-"Layer_name": "Layer 1",
-"Frames": [
+"LN": "Layer 1",
+"FR": [
 {
-"index": 0,
-"duration": 2,
-"elements": [
+"I": 0,
+"DU": 2,
+"E": [
 {
-"ATLAS_SPRITE_instance": {
-"Matrix": [1,0,0,1,142.85000000000002,12.274999999999999],
-"name": "13"
+"ASI": {
+"MX": [1,0,0,1,142.85000000000002,12.274999999999999],
+"N": "13"
 }}]},{
-"index": 2,
-"duration": 2,
-"elements": [
+"I": 2,
+"DU": 2,
+"E": [
 {
-"ATLAS_SPRITE_instance": {
-"Matrix": [1,0,0,1,142.85000000000002,12.274999999999999],
-"name": "14"
+"ASI": {
+"MX": [1,0,0,1,142.85000000000002,12.274999999999999],
+"N": "14"
 }}]},{
-"index": 4,
-"duration": 2,
-"elements": [
+"I": 4,
+"DU": 2,
+"E": [
 {
-"ATLAS_SPRITE_instance": {
-"Matrix": [1,0,0,1,142.85000000000002,12.274999999999999],
-"name": "15"
+"ASI": {
+"MX": [1,0,0,1,142.85000000000002,12.274999999999999],
+"N": "15"
 }}]},{
-"index": 6,
-"duration": 2,
-"elements": [
+"I": 6,
+"DU": 2,
+"E": [
 {
-"ATLAS_SPRITE_instance": {
-"Matrix": [1,0,0,1,142.85000000000002,12.274999999999999],
-"name": "16"
+"ASI": {
+"MX": [1,0,0,1,142.85000000000002,12.274999999999999],
+"N": "16"
 }}]},{
-"index": 8,
-"duration": 2,
-"elements": [
+"I": 8,
+"DU": 2,
+"E": [
 {
-"ATLAS_SPRITE_instance": {
-"Matrix": [1,0,0,1,142.85000000000002,12.274999999999999],
-"name": "17"
+"ASI": {
+"MX": [1,0,0,1,142.85000000000002,12.274999999999999],
+"N": "17"
 }}]},{
-"index": 10,
-"duration": 4,
-"elements": [
+"I": 10,
+"DU": 4,
+"E": [
 {
-"ATLAS_SPRITE_instance": {
-"Matrix": [1,0,0,1,142.85000000000002,12.274999999999999],
-"name": "18"
+"ASI": {
+"MX": [1,0,0,1,142.85000000000002,12.274999999999999],
+"N": "18"
 }}]}]}]}},{
-"SYMBOL_name": "turn table",
-"TIMELINE": {
-"LAYERS": [
+"SN": "turn table",
+"TL": {
+"L": [
 {
-"Layer_name": "turntable lights Layer",
-"Frames": [
+"LN": "turntable lights Layer",
+"FR": [
 {
-"index": 0,
-"duration": 14,
-"elements": [
+"I": 0,
+"DU": 14,
+"E": [
 {
-"SYMBOL_Instance": {
-"SYMBOL_name": "turntable lights",
-"symbolType": "movieclip",
-"Matrix": [1,0,0,1,0,0],
-"blendMode": "add",
+"SI": {
+"SN": "turntable lights",
+"ST": "movieclip",
+"MX": [1,0,0,1,0,0],
+"B": "add",
 "filters": [
 {
 "name": "blurFilter",
@@ -923,84 +923,84 @@
 }
 ]
 }}]}]},{
-"Layer_name": "Layer 1",
-"Frames": [
+"LN": "Layer 1",
+"FR": [
 {
-"index": 0,
-"duration": 14,
-"elements": [
+"I": 0,
+"DU": 14,
+"E": [
 {
-"ATLAS_SPRITE_instance": {
-"Matrix": [1,0,0,1,0,0],
-"name": "19"
+"ASI": {
+"MX": [1,0,0,1,0,0],
+"N": "19"
 }}]}]},{
-"Layer_name": "Layer 2",
-"Frames": [
+"LN": "Layer 2",
+"FR": [
 {
-"index": 0,
-"duration": 2,
-"elements": [
+"I": 0,
+"DU": 2,
+"E": [
 {
-"ATLAS_SPRITE_instance": {
-"Matrix": [1,0,0,1,142.85000000000002,12.274999999999999],
-"name": "20"
+"ASI": {
+"MX": [1,0,0,1,142.85000000000002,12.274999999999999],
+"N": "20"
 }}]},{
-"index": 2,
-"duration": 2,
-"elements": [
+"I": 2,
+"DU": 2,
+"E": [
 {
-"ATLAS_SPRITE_instance": {
-"Matrix": [1,0,0,1,142.85000000000002,12.274999999999999],
-"name": "21"
+"ASI": {
+"MX": [1,0,0,1,142.85000000000002,12.274999999999999],
+"N": "21"
 }}]},{
-"index": 4,
-"duration": 2,
-"elements": [
+"I": 4,
+"DU": 2,
+"E": [
 {
-"ATLAS_SPRITE_instance": {
-"Matrix": [1,0,0,1,142.85000000000002,12.274999999999999],
-"name": "22"
+"ASI": {
+"MX": [1,0,0,1,142.85000000000002,12.274999999999999],
+"N": "22"
 }}]},{
-"index": 6,
-"duration": 2,
-"elements": [
+"I": 6,
+"DU": 2,
+"E": [
 {
-"ATLAS_SPRITE_instance": {
-"Matrix": [1,0,0,1,142.85000000000002,12.274999999999999],
-"name": "23"
+"ASI": {
+"MX": [1,0,0,1,142.85000000000002,12.274999999999999],
+"N": "23"
 }}]},{
-"index": 8,
-"duration": 2,
-"elements": [
+"I": 8,
+"DU": 2,
+"E": [
 {
-"ATLAS_SPRITE_instance": {
-"Matrix": [1,0,0,1,142.85000000000002,12.274999999999999],
-"name": "24"
+"ASI": {
+"MX": [1,0,0,1,142.85000000000002,12.274999999999999],
+"N": "24"
 }}]},{
-"index": 10,
-"duration": 4,
-"elements": [
+"I": 10,
+"DU": 4,
+"E": [
 {
-"ATLAS_SPRITE_instance": {
-"Matrix": [1,0,0,1,142.85000000000002,12.274999999999999],
-"name": "25"
+"ASI": {
+"MX": [1,0,0,1,142.85000000000002,12.274999999999999],
+"N": "25"
 }}]}]}]}},{
-"SYMBOL_name": "boyfriend dj body",
-"TIMELINE": {
-"LAYERS": [
+"SN": "boyfriend dj body",
+"TL": {
+"L": [
 {
-"Layer_name": "Layer 1",
-"Frames": [
+"LN": "Layer 1",
+"FR": [
 {
-"index": 0,
-"duration": 1,
-"elements": [
+"I": 0,
+"DU": 1,
+"E": [
 {
-"ATLAS_SPRITE_instance": {
-"Matrix": [1,0,0,1,-0.024999999999991473,-0.025000000000005684],
-"name": "26"
+"ASI": {
+"MX": [1,0,0,1,-0.024999999999991473,-0.025000000000005684],
+"N": "26"
 }}]}]}]}}]},
-"metadata": {
-"version": "bta_1",
-"framerate": 24
+"MD": {
+"V": "bta_1",
+"FRT": 24
 }}
