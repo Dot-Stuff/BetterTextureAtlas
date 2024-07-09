@@ -507,7 +507,11 @@ function parseSymbolInstance(instance)
 		json += '},\n';
 	}
 	
-	json += jsonStr("Instance_Name", instance.name);
+	if (instance.name.length > 0)
+		json += jsonStr("Instance_Name", instance.name);
+	
+	if (instance.loop != undefined)
+		json += jsonVar("loop", instance.loop.replace(" ", ""));
 	
 	if (!instance.is3D)
 		json += jsonVar("Matrix", parseMatrix(instance.matrix));
@@ -516,7 +520,8 @@ function parseSymbolInstance(instance)
 
 	if (instance.symbolType != "graphic")
 	{
-		json += jsonStr("blendMode", instance.blendMode);
+		if (instance.blendMode != "normal")
+			json += jsonStr("blendMode", instance.blendMode);
 		
 		// Add Filters
 		json += '"filters": [';
