@@ -5,7 +5,7 @@
 "SYMBOL_name": "Boyfriend DJ",
 "firstFrame": 0,
 "symbolType": "graphic",
-"loop": loop,
+"loop": "loop",
 "Matrix": [1,0,0,1,646.75,362.4]
 }},
 "SYMBOL_name": "Boyfriend DJ",
@@ -23,7 +23,7 @@
 "SYMBOL_name": "bf eyes 1",
 "firstFrame": 0,
 "symbolType": "graphic",
-"loop": loop,
+"loop": "loop",
 "Matrix": [0.9929046630859375,-0.1156005859375,0.1156005859375,0.9929046630859375,-541.7,23.5]
 }}]},{
 "index": 2,
@@ -34,7 +34,7 @@
 "SYMBOL_name": "bf eyes 1",
 "firstFrame": 0,
 "symbolType": "graphic",
-"loop": loop,
+"loop": "loop",
 "Matrix": [0.9874114990234375,-0.1548614501953125,0.1548614501953125,0.9874114990234375,-542.5,25.6]
 }}]},{
 "index": 4,
@@ -45,7 +45,7 @@
 "SYMBOL_name": "bf eyes 1",
 "firstFrame": 0,
 "symbolType": "graphic",
-"loop": loop,
+"loop": "loop",
 "Matrix": [0.9827728271484375,-0.1814422607421875,0.1814422607421875,0.9827728271484375,-541.75,25.9]
 }}]},{
 "index": 6,
@@ -56,14 +56,14 @@
 "SYMBOL_name": "bf eyes 1",
 "firstFrame": 0,
 "symbolType": "graphic",
-"loop": loop,
+"loop": "loop",
 "Matrix": [0.999664306640625,-0.02239990234375,0.02239990234375,0.999664306640625,-527.45,7.45]
 }},{
 "SYMBOL_Instance": {
 "SYMBOL_name": "bf mouth 1",
 "firstFrame": 0,
 "symbolType": "graphic",
-"loop": loop,
+"loop": "loop",
 "Matrix": [0.999664306640625,-0.02239990234375,0.02239990234375,0.999664306640625,-483.9,74.15]
 }}]},{
 "index": 8,
@@ -74,14 +74,14 @@
 "SYMBOL_name": "bf eyes 1",
 "firstFrame": 0,
 "symbolType": "graphic",
-"loop": loop,
+"loop": "loop",
 "Matrix": [1,0,0,1,-525.5,3.5]
 }},{
 "SYMBOL_Instance": {
 "SYMBOL_name": "bf mouth 1",
 "firstFrame": 0,
 "symbolType": "graphic",
-"loop": loop,
+"loop": "loop",
 "Matrix": [1,0,0,1,-483.45,71.2]
 }}]},{
 "index": 13,
@@ -92,14 +92,14 @@
 "SYMBOL_name": "bf eyes 1",
 "firstFrame": 0,
 "symbolType": "graphic",
-"loop": loop,
+"loop": "loop",
 "Matrix": [1,0,0,1,-525.5,3.5]
 }},{
 "SYMBOL_Instance": {
 "SYMBOL_name": "bf mouth 1",
 "firstFrame": 0,
 "symbolType": "graphic",
-"loop": loop,
+"loop": "loop",
 "Matrix": [1,0,0,1,-483.45,71.2]
 }}]}]},{
 "Layer_name": "bf top head",
@@ -113,7 +113,7 @@
 "SYMBOL_name": "boyfriend top head",
 "firstFrame": 0,
 "symbolType": "graphic",
-"loop": loop,
+"loop": "loop",
 "Matrix": [0.9929046630859375,-0.1156005859375,0.1156005859375,0.9929046630859375,-594.75,-23.1]
 }}]},{
 "index": 2,
@@ -124,7 +124,7 @@
 "SYMBOL_name": "boyfriend top head",
 "firstFrame": 0,
 "symbolType": "graphic",
-"loop": loop,
+"loop": "loop",
 "Matrix": [0.9874114990234375,-0.1548614501953125,0.1548614501953125,0.9874114990234375,-597.35,-18.85]
 }}]},{
 "index": 4,
@@ -135,7 +135,7 @@
 "SYMBOL_name": "boyfriend top head",
 "firstFrame": 0,
 "symbolType": "graphic",
-"loop": loop,
+"loop": "loop",
 "Matrix": [0.9827728271484375,-0.1814422607421875,0.1814422607421875,0.9827728271484375,-597.75,-17]
 }}]},{
 "index": 6,
@@ -146,7 +146,7 @@
 "SYMBOL_name": "boyfriend top head",
 "firstFrame": 0,
 "symbolType": "graphic",
-"loop": loop,
+"loop": "loop",
 "Matrix": [0.999664306640625,-0.02239990234375,0.02239990234375,0.999664306640625,-575.9,-43.95]
 }}]},{
 "index": 8,
@@ -157,7 +157,7 @@
 "SYMBOL_name": "boyfriend top head",
 "firstFrame": 0,
 "symbolType": "graphic",
-"loop": loop,
+"loop": "loop",
 "Matrix": [1,0,0,1,-572.8,-48.95]
 }}]},{
 "index": 13,
@@ -168,7 +168,7 @@
 "SYMBOL_name": "boyfriend top head",
 "firstFrame": 0,
 "symbolType": "graphic",
-"loop": loop,
+"loop": "loop",
 "Matrix": [1,0,0,1,-572.8,-48.95]
 }}]}]},{
 "Layer_name": "bf arms",
@@ -182,14 +182,14 @@
 "SYMBOL_name": "DJ arm",
 "firstFrame": 0,
 "symbolType": "graphic",
-"loop": loop,
+"loop": "loop",
 "Matrix": [1,0,0,1,-539.3,69.25]
 }},{
 "SYMBOL_Instance": {
 "SYMBOL_name": "rave hand",
 "firstFrame": 0,
 "symbolType": "graphic",
-"loop": loop,
+"loop": "loop",
 "Matrix": [1,0,0,1,-625.6,-71.95]
 }}]},{
 "index": 2,
@@ -200,14 +200,14 @@
 "SYMBOL_name": "DJ arm",
 "firstFrame": 2,
 "symbolType": "graphic",
-"loop": loop,
+"loop": "loop",
 "Matrix": [1,0,0,1,-539.3,69.25]
 }},{
 "SYMBOL_Instance": {
 "SYMBOL_name": "rave hand",
 "firstFrame": 2,
 "symbolType": "graphic",
-"loop": loop,
+"loop": "loop",
 "Matrix": [1,0,0,1,-625.6,-71.95]
 }}]},{
 "index": 4,
@@ -218,14 +218,14 @@
 "SYMBOL_name": "DJ arm",
 "firstFrame": 4,
 "symbolType": "graphic",
-"loop": loop,
+"loop": "loop",
 "Matrix": [1,0,0,1,-539.3,69.25]
 }},{
 "SYMBOL_Instance": {
 "SYMBOL_name": "rave hand",
 "firstFrame": 4,
 "symbolType": "graphic",
-"loop": loop,
+"loop": "loop",
 "Matrix": [1,0,0,1,-625.6,-71.95]
 }}]},{
 "index": 6,
@@ -236,14 +236,14 @@
 "SYMBOL_name": "DJ arm",
 "firstFrame": 6,
 "symbolType": "graphic",
-"loop": loop,
+"loop": "loop",
 "Matrix": [1,0,0,1,-539.3,69.25]
 }},{
 "SYMBOL_Instance": {
 "SYMBOL_name": "rave hand",
 "firstFrame": 6,
 "symbolType": "graphic",
-"loop": loop,
+"loop": "loop",
 "Matrix": [1,0,0,1,-625.6,-71.95]
 }}]},{
 "index": 8,
@@ -254,14 +254,14 @@
 "SYMBOL_name": "DJ arm",
 "firstFrame": 8,
 "symbolType": "graphic",
-"loop": loop,
+"loop": "loop",
 "Matrix": [1,0,0,1,-539.3,69.25]
 }},{
 "SYMBOL_Instance": {
 "SYMBOL_name": "rave hand",
 "firstFrame": 8,
 "symbolType": "graphic",
-"loop": loop,
+"loop": "loop",
 "Matrix": [1,0,0,1,-625.6,-71.95]
 }}]},{
 "index": 13,
@@ -272,14 +272,14 @@
 "SYMBOL_name": "DJ arm",
 "firstFrame": 13,
 "symbolType": "graphic",
-"loop": loop,
+"loop": "loop",
 "Matrix": [1,0,0,1,-539.3,69.25]
 }},{
 "SYMBOL_Instance": {
 "SYMBOL_name": "rave hand",
 "firstFrame": 13,
 "symbolType": "graphic",
-"loop": loop,
+"loop": "loop",
 "Matrix": [1,0,0,1,-625.6,-71.95]
 }}]}]},{
 "Layer_name": "Layer 4",
@@ -293,7 +293,7 @@
 "SYMBOL_name": "bf mouth 1",
 "firstFrame": 0,
 "symbolType": "graphic",
-"loop": loop,
+"loop": "loop",
 "Matrix": [0.9929046630859375,-0.1156005859375,0.1156005859375,0.9929046630859375,-492.05,85.9]
 }}]},{
 "index": 2,
@@ -304,7 +304,7 @@
 "SYMBOL_name": "bf mouth 1",
 "firstFrame": 0,
 "symbolType": "graphic",
-"loop": loop,
+"loop": "loop",
 "Matrix": [0.9874114990234375,-0.1548614501953125,0.1548614501953125,0.9874114990234375,-490.4,86]
 }}]},{
 "index": 4,
@@ -315,7 +315,7 @@
 "SYMBOL_name": "bf mouth 1",
 "firstFrame": 0,
 "symbolType": "graphic",
-"loop": loop,
+"loop": "loop",
 "Matrix": [0.9827728271484375,-0.1814422607421875,0.1814422607421875,0.9827728271484375,-488,84.9]
 }}]},{
 "index": 6,
@@ -333,7 +333,7 @@
 "SYMBOL_name": "boyfriend bottom head",
 "firstFrame": 0,
 "symbolType": "graphic",
-"loop": loop,
+"loop": "loop",
 "Matrix": [0.9929046630859375,-0.1156005859375,0.1156005859375,0.9929046630859375,-545.9,62.85]
 }}]},{
 "index": 2,
@@ -344,7 +344,7 @@
 "SYMBOL_name": "boyfriend bottom head",
 "firstFrame": 0,
 "symbolType": "graphic",
-"loop": loop,
+"loop": "loop",
 "Matrix": [0.9874114990234375,-0.1548614501953125,0.1548614501953125,0.9874114990234375,-545.15,65.05]
 }}]},{
 "index": 4,
@@ -355,7 +355,7 @@
 "SYMBOL_name": "boyfriend bottom head",
 "firstFrame": 0,
 "symbolType": "graphic",
-"loop": loop,
+"loop": "loop",
 "Matrix": [0.9827728271484375,-0.1814422607421875,0.1814422607421875,0.9827728271484375,-543.35,65.45]
 }}]},{
 "index": 6,
@@ -366,7 +366,7 @@
 "SYMBOL_name": "boyfriend bottom head",
 "firstFrame": 0,
 "symbolType": "graphic",
-"loop": loop,
+"loop": "loop",
 "Matrix": [0.999664306640625,-0.02239990234375,0.02239990234375,0.999664306640625,-535.4,46.15]
 }}]},{
 "index": 8,
@@ -377,7 +377,7 @@
 "SYMBOL_name": "boyfriend bottom head",
 "firstFrame": 0,
 "symbolType": "graphic",
-"loop": loop,
+"loop": "loop",
 "Matrix": [1,0,0,1,-534.3,42.05]
 }}]},{
 "index": 13,
@@ -388,7 +388,7 @@
 "SYMBOL_name": "boyfriend bottom head",
 "firstFrame": 0,
 "symbolType": "graphic",
-"loop": loop,
+"loop": "loop",
 "Matrix": [1,0,0,1,-534.3,42.05]
 }}]}]},{
 "Layer_name": "Layer 6",
@@ -402,7 +402,7 @@
 "SYMBOL_name": "spinning disk",
 "firstFrame": 0,
 "symbolType": "graphic",
-"loop": loop,
+"loop": "loop",
 "Matrix": [0.9892730712890625,0.135223388671875,-0.135223388671875,0.9892730712890625,-610.15,152.65]
 }}]},{
 "index": 13,
@@ -413,7 +413,7 @@
 "SYMBOL_name": "spinning disk",
 "firstFrame": 5,
 "symbolType": "graphic",
-"loop": loop,
+"loop": "loop",
 "Matrix": [0.9892730712890625,0.135223388671875,-0.135223388671875,0.9892730712890625,-610.15,152.65]
 }}]}]},{
 "Layer_name": "Layer 7",
@@ -427,7 +427,7 @@
 "SYMBOL_name": "spinning disk",
 "firstFrame": 0,
 "symbolType": "graphic",
-"loop": loop,
+"loop": "loop",
 "Matrix": [1,0,0,1,-446.15,161.3]
 }}]},{
 "index": 13,
@@ -438,7 +438,7 @@
 "SYMBOL_name": "spinning disk",
 "firstFrame": 5,
 "symbolType": "graphic",
-"loop": loop,
+"loop": "loop",
 "Matrix": [1,0,0,1,-446.15,161.3]
 }}]}]},{
 "Layer_name": "turntable",
@@ -452,7 +452,7 @@
 "SYMBOL_name": "turn table",
 "firstFrame": 0,
 "symbolType": "graphic",
-"loop": loop,
+"loop": "loop",
 "Matrix": [1,0,0,1,-649.4,158]
 }}]},{
 "index": 13,
@@ -463,7 +463,7 @@
 "SYMBOL_name": "turn table",
 "firstFrame": 13,
 "symbolType": "graphic",
-"loop": loop,
+"loop": "loop",
 "Matrix": [1,0,0,1,-649.4,158]
 }}]}]},{
 "Layer_name": "bf body",
@@ -477,7 +477,7 @@
 "SYMBOL_name": "boyfriend dj body",
 "firstFrame": 0,
 "symbolType": "graphic",
-"loop": loop,
+"loop": "loop",
 "Matrix": [1.0217437744140625,0.0269317626953125,-0.0388336181640625,0.9765472412109375,-601.95,80.75]
 }}]},{
 "index": 2,
@@ -488,7 +488,7 @@
 "SYMBOL_name": "boyfriend dj body",
 "firstFrame": 0,
 "symbolType": "graphic",
-"loop": loop,
+"loop": "loop",
 "Matrix": [1.0220184326171875,0.00921630859375,-0.022216796875,0.9911041259765625,-604.3,81.05]
 }}]},{
 "index": 4,
@@ -499,7 +499,7 @@
 "SYMBOL_name": "boyfriend dj body",
 "firstFrame": 0,
 "symbolType": "graphic",
-"loop": loop,
+"loop": "loop",
 "Matrix": [1.0219879150390625,-0.0048065185546875,-0.0087738037109375,1.0091400146484375,-607.4,79.05]
 }}]},{
 "index": 6,
@@ -510,7 +510,7 @@
 "SYMBOL_name": "boyfriend dj body",
 "firstFrame": 0,
 "symbolType": "graphic",
-"loop": loop,
+"loop": "loop",
 "Matrix": [1,0,0,1,-606.25,77.5]
 }}]},{
 "index": 13,
@@ -521,7 +521,7 @@
 "SYMBOL_name": "boyfriend dj body",
 "firstFrame": 0,
 "symbolType": "graphic",
-"loop": loop,
+"loop": "loop",
 "Matrix": [1,0,0,1,-606.25,77.5]
 }}]}]}]}},
 "SYMBOL_DICTIONARY": {
@@ -617,7 +617,7 @@
 "SYMBOL_name": "dj arm out",
 "firstFrame": 0,
 "symbolType": "graphic",
-"loop": loop,
+"loop": "loop",
 "Matrix": [1,0,0,1,-41.05,3.5]
 }}]},{
 "index": 2,
@@ -628,7 +628,7 @@
 "SYMBOL_name": "dj arm out",
 "firstFrame": 0,
 "symbolType": "graphic",
-"loop": loop,
+"loop": "loop",
 "Matrix": [0.9997711181640625,0.0183563232421875,-0.0183563232421875,0.9997711181640625,-36.25,2.85]
 }}]},{
 "index": 4,
@@ -639,7 +639,7 @@
 "SYMBOL_name": "dj arm out",
 "firstFrame": 0,
 "symbolType": "graphic",
-"loop": loop,
+"loop": "loop",
 "Matrix": [0.9986419677734375,-0.0488739013671875,0.0488739013671875,0.9986419677734375,-35.35,10]
 }}]},{
 "index": 6,
@@ -650,7 +650,7 @@
 "SYMBOL_name": "dj arm in",
 "firstFrame": 0,
 "symbolType": "graphic",
-"loop": loop,
+"loop": "loop",
 "Matrix": [0.9992218017578125,-0.036102294921875,0.0046234130859375,1.0003662109375,1.55,4.8]
 }}]},{
 "index": 8,
@@ -661,7 +661,7 @@
 "SYMBOL_name": "dj arm in",
 "firstFrame": 0,
 "symbolType": "graphic",
-"loop": loop,
+"loop": "loop",
 "Matrix": [0.9997711181640625,-0.0184173583984375,0.01025390625,0.9999237060546875,1.4,2.4]
 }}]},{
 "index": 10,
@@ -672,7 +672,7 @@
 "SYMBOL_name": "dj arm in",
 "firstFrame": 0,
 "symbolType": "graphic",
-"loop": loop,
+"loop": "loop",
 "Matrix": [1,0,0,1,1.45,0]
 }}]}]}]}},{
 "SYMBOL_name": "hand out",
@@ -720,7 +720,7 @@
 "SYMBOL_name": "hand out",
 "firstFrame": 0,
 "symbolType": "graphic",
-"loop": loop,
+"loop": "loop",
 "Matrix": [0.999847412109375,-0.0137939453125,0.0137939453125,0.999847412109375,-8.65,15.35]
 }}]},{
 "index": 2,
@@ -731,7 +731,7 @@
 "SYMBOL_name": "hand out",
 "firstFrame": 0,
 "symbolType": "graphic",
-"loop": loop,
+"loop": "loop",
 "Matrix": [0.99261474609375,-0.1179351806640625,0.2176513671875,0.98077392578125,-14.85,24.2]
 }}]},{
 "index": 4,
@@ -742,7 +742,7 @@
 "SYMBOL_name": "hand out",
 "firstFrame": 0,
 "symbolType": "graphic",
-"loop": loop,
+"loop": "loop",
 "Matrix": [0.997528076171875,0.0668792724609375,-0.0668792724609375,0.997528076171875,8.4,-4.1]
 }}]},{
 "index": 6,
@@ -753,7 +753,7 @@
 "SYMBOL_name": "hand in",
 "firstFrame": 0,
 "symbolType": "graphic",
-"loop": loop,
+"loop": "loop",
 "Matrix": [0.998443603515625,-0.05242919921875,0.05242919921875,0.998443603515625,53.2,0.2]
 }}]},{
 "index": 8,
@@ -764,7 +764,7 @@
 "SYMBOL_name": "hand in",
 "firstFrame": 0,
 "symbolType": "graphic",
-"loop": loop,
+"loop": "loop",
 "Matrix": [1,0,0,1,62.45,2.75]
 }}]},{
 "index": 10,
@@ -775,7 +775,7 @@
 "SYMBOL_name": "hand in",
 "firstFrame": 0,
 "symbolType": "graphic",
-"loop": loop,
+"loop": "loop",
 "Matrix": [0.9995574951171875,0.026611328125,-0.026611328125,0.9995574951171875,65.15,2.55]
 }}]}]}]}},{
 "SYMBOL_name": "boyfriend bottom head",

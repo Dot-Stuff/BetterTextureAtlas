@@ -511,7 +511,7 @@ function parseSymbolInstance(instance)
 		json += jsonStr("Instance_Name", instance.name);
 	
 	if (instance.loop != undefined)
-		json += jsonVar("loop", instance.loop.replace(" ", ""));
+		json += jsonStr("loop", instance.loop.replace(" ", ""));
 	
 	if (!instance.is3D)
 		json += jsonVar("Matrix", parseMatrix(instance.matrix));
