@@ -7,13 +7,14 @@ var onlyVisibleLayers = true;
 var optimiseDimensions = true; // TODO: doesnt work yet
 var optimizeJson = true; // TODO: theres still some variable names left to change for optimized lmao
 var flattenSkewing = false;
-
+var resolution = 1.0;
 /////
 
 var doc = fl.getDocumentDOM();
 var lib = doc.library;
 
 var instance = null;
+var resScale = 1.0;
 
 if (doc.selection.length > 0)
 {
@@ -30,7 +31,7 @@ if (symbol.length > 0)
 	var save = "";
 	var ShpPad = 0;
 	var BrdPad = 0;
-	var res = 1;
+	var res = 1.0;
 	var optDimens = "true";
 	var optAn = "true";
 	var flatten = "false";
@@ -42,7 +43,7 @@ if (symbol.length > 0)
 		save = file[0];
 		ShpPad = parseInt(file[1]);
 		BrdPad = parseInt(file[2]);
-		res = parseInt(file[3]);
+		res = parseFloat(file[3]);
 		optDimens = file[4];
 		optAn = file[5];
 		flatten = file[6];
@@ -82,6 +83,8 @@ if (symbol.length > 0)
 		optimiseDimensions = (optDimens == "true");
 		optimizeJson = (optAn == "true");
 		flattenSkewing = (flatten == "true");
+		resolution = parseFloat(res);
+		resScale =  1 / resolution;
 
 		// First ask for the export folder
 		var path = save;
@@ -125,6 +128,7 @@ else {
 var TEMP_SPRITEMAP;
 var TEMP_ITEM;
 var TEMP_TIMELINE;
+var TEMP_LAYER;
 var itemQueue;
 var smIndex;
 
@@ -139,6 +143,7 @@ function exportAtlas(exportPath, symbolName)
 	lib.addNewItem("graphic", TEMP_SPRITEMAP);
 	TEMP_ITEM = lib.items[lib.findItemIndex(TEMP_SPRITEMAP)];
 	TEMP_TIMELINE = TEMP_ITEM.timeline;
+	TEMP_LAYER = TEMP_TIMELINE.layers[0];
 	TEMP_TIMELINE.removeFrames(0,0);
 
 	// Write Animation.json
@@ -148,9 +153,17 @@ function exportAtlas(exportPath, symbolName)
 	// Add library items from queue (if any exist)
 	lib.editItem(TEMP_SPRITEMAP);
 	var pos = {x:0, y:0};
-	for (var item in itemQueue) {
-		TEMP_TIMELINE.currentFrame = itemQueue[item];
+	for (var item in itemQueue)
+	{
+		var index =  itemQueue[item];
+		TEMP_TIMELINE.currentFrame = index;
 		lib.addItemToDocument(pos, item);
+
+		// You only want scaled down bitmaps, you dont really gain anything from upscaling lol
+		if (resolution < 1) {
+			var instance = TEMP_LAYER.frames[index].elements[0];
+			instance.scaleX = instance.scaleY = resolution;
+		}
 	}
 
 	// Generate Spritemap
@@ -403,20 +416,30 @@ function parseElements(elements, frameIndex, layerIndex, timeline)
 function parseAtlasInstance(instance, isItem, elementIndex, frameIndex, layerIndex, timeline)
 {
 	var json = '"' + key("ATLAS_SPRITE_instance", "ASI") +'": {\n';
+
+	var m = instance.matrix;
+	var matrix = {a:m.a, b:m.b, c:m.c, d:m.d, tx:m.tx, ty:m.ty};
 	
 	if (isItem)
 	{
 		var itemIndex = pushItemSpritemap(instance.libraryItem);
+
+		if (resolution < 1) {
+			matrix.a *= resScale;
+			matrix.d *= resScale;
+		}
 		
-		json += jsonVar(key("Matrix", "MX"), parseMatrix(instance.matrix));
+		json += jsonVar(key("Matrix", "MX"), parseMatrix(matrix));
 		json += jsonStrEnd(key("name", "N"), itemIndex);
 	}
 	else
 	{
-		var tx = (instance.x - (instance.width / 2));
-		var ty = (instance.y - (instance.height / 2));
+		// TODO: maybe should change this for group shapes
+		matrix.a = matrix.d = resScale;
+		matrix.tx = (instance.x - (instance.width / 2));
+		matrix.ty = (instance.y - (instance.height / 2));
 		
-		json += jsonVar(key("Matrix", "MX"), parseMatrix({a:1, b:0, c:0, d:1, tx:tx, ty:ty}));
+		json += jsonVar(key("Matrix", "MX"), parseMatrix(matrix));
 		json += jsonStrEnd(key("name", "N"), smIndex);
 		pushElementSpritemap(timeline, layerIndex, frameIndex, elementIndex);
 	}
@@ -446,18 +469,14 @@ function pushElementSpritemap(timeline, layerIndex, frameIndex, elementIndex)
 	TEMP_TIMELINE.insertBlankKeyframe(smIndex);
 	TEMP_TIMELINE.pasteFrames();
 
-	var frameElements = TEMP_TIMELINE.layers[0].frames[smIndex].elements;	
-	if (frameElements.length > 1)
-	{
-		var e = -1;
-		for each (var element in frameElements) {
-			e++;
-			if (e != elementIndex) {
-				element.scaleX = element.scaleY = 0; // very shitty way of hiding the element, i really dont wanna edit the item :(
-			}
-		}
+	var frameElements = TEMP_LAYER.frames[smIndex].elements;	
+	var e = 0;
+	while (e < frameElements.length) {
+		var element = frameElements[e];
+		// TODO: fix lines made with the pencil tool not scaling with resolution
+		element.scaleX = element.scaleY = (e != elementIndex) ? 0 : resolution;
+		e++;
 	}
-
 	smIndex++;
 }
 
