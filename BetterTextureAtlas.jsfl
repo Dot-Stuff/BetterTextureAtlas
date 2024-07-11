@@ -226,9 +226,9 @@ function generateAnimation(symbol) {
 	var json ="{\n";
 	
 	// Add Animation
-	json += '"' + key("ANIMATION", "AN") + '": {\n';
+	json += '"' + key("ANIMATION", "AN") + '":{\n';
 	if (instance != null) {
-		json += '"' + key("StageInstance", "STI") +'": {\n';
+		json += '"' + key("StageInstance", "STI") +'":{\n';
 		json += parseSymbolInstance(instance);
 		json += '},\n';
 	}
@@ -240,8 +240,8 @@ function generateAnimation(symbol) {
 	findDictionary(symbol, dictionary);
 	
 	// Add Symbol Dictionary
-	json += '"' + key("SYMBOL_DICTIONARY", "SD") + '": {\n';
-	json += '"' + key ("Symbols", "S") + '": [\n';
+	json += '"' + key("SYMBOL_DICTIONARY", "SD") + '":{\n';
+	json += '"' + key ("Symbols", "S") + '":[\n';
 	for (d = 0; d < dictionary.length; d++)
 	{
 		var name = dictionary[d];
@@ -255,7 +255,7 @@ function generateAnimation(symbol) {
 	json += '},\n';
 	
 	// Add Metadata
-	json += '"' + key("metadata", "MD") +'": {\n';
+	json += '"' + key("metadata", "MD") +'":{\n';
 	json += jsonStr(key("version", "V"), version);
 	json += jsonVarEnd(key("framerate", "FRT"), doc.frameRate);
 	json += '}';
@@ -304,8 +304,8 @@ function parseSymbol(symbol)
 	var timeline = symbol.timeline;
 	
 	json += jsonStr(key("SYMBOL_name", "SN"), symbol.name);
-	json += '"' + key("TIMELINE", "TL") + '": {\n';
-	json += '"' + key ("LAYERS", "L") + '": [\n';
+	json += '"' + key("TIMELINE", "TL") + '":{\n';
+	json += '"' + key ("LAYERS", "L") + '":[\n';
 	
 	// Add Layers and Frames
 	var l = -1;
@@ -344,7 +344,7 @@ function parseSymbol(symbol)
 
 function parseFrames(frames, layerIndex, timeline)
 {
-	var json = '"' + key ("Frames", "FR") + '": [\n';
+	var json = '"' + key ("Frames", "FR") + '":[\n';
 	
 	var startFrames = [];
 	
@@ -376,7 +376,7 @@ function parseFrames(frames, layerIndex, timeline)
 
 function parseElements(elements, frameIndex, layerIndex, timeline)
 {
-	var json = '"' + key ("elements", "E") + '": [\n';
+	var json = '"' + key ("elements", "E") + '":[\n';
 	
 	for (e = 0; e < elements.length; e++)
 	{
@@ -415,7 +415,7 @@ function parseElements(elements, frameIndex, layerIndex, timeline)
 
 function parseAtlasInstance(instance, isItem, elementIndex, frameIndex, layerIndex, timeline)
 {
-	var json = '"' + key("ATLAS_SPRITE_instance", "ASI") +'": {\n';
+	var json = '"' + key("ATLAS_SPRITE_instance", "ASI") +'":{\n';
 
 	var m = instance.matrix;
 	var matrix = {a:m.a, b:m.b, c:m.c, d:m.d, tx:m.tx, ty:m.ty};
@@ -482,7 +482,7 @@ function pushElementSpritemap(timeline, layerIndex, frameIndex, elementIndex)
 
 function parseSymbolInstance(instance)
 {
-	var json = '"' + key("SYMBOL_Instance", "SI") + '": {\n';
+	var json = '"' + key("SYMBOL_Instance", "SI") + '":{\n';
 	var item = instance.libraryItem;
 	
 	if (item != undefined)
@@ -502,7 +502,7 @@ function parseSymbolInstance(instance)
 	}	
 
 	if (instance.colorMode != "none") {
-		json += '"' + key("color", "C") + '": {\n';
+		json += '"' + key("color", "C") + '":{\n';
 		var mode = instance.colorMode;
 		var modeKey = key("mode", "M");
 		
@@ -560,7 +560,7 @@ function parseSymbolInstance(instance)
 			json += jsonStr(key("blend", "B"), instance.blendMode);
 		
 		// Add Filters
-		json += '"filters": [';
+		json += '"filters":[';
 		
 		var filters = instance.filters;
 		if (filters != undefined) {
@@ -718,17 +718,17 @@ function key(normal, optimized) {
 }
 
 function jsonVarEnd(name, value) {
-	return '"' + name +'": ' + value + '\n';
+	return '"' + name +'":' + value + '\n';
 }
 
 function jsonVar(name, value) {
-	return '"' + name +'": ' + value + ',\n';
+	return '"' + name +'":' + value + ',\n';
 }
 
 function jsonStrEnd(name, value) {
-	return '"' + name +'": "' + value + '"\n';
+	return '"' + name +'":"' + value + '"\n';
 }
 
 function jsonStr(name, value) {
-	return '"' + name +'": "' + value + '",\n';
+	return '"' + name +'":"' + value + '",\n';
 }
