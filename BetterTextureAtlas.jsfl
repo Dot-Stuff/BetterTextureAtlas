@@ -491,8 +491,15 @@ function parseSymbolInstance(instance)
 	if (instance.firstFrame != undefined)
 		json += jsonVar(key("firstFrame", "FF"), instance.firstFrame);
 	
-	if (instance.symbolType != undefined)
-		json += jsonStr(key("symbolType", "ST"), instance.symbolType.replace(" ", ""));
+	if (instance.symbolType != undefined) {
+		var type;
+		switch (instance.symbolType) {
+			case "graphic": 	type = key("graphic", "G"); 	break
+			case "movie clip": 	type = key("movieclip", "MC"); 	break;
+			case "button": 		type = key("button", "B"); 		break;
+		}
+		json += jsonStr(key("symbolType", "ST"), type);
+	}	
 
 	if (instance.colorMode != "none") {
 		json += '"' + key("color", "C") + '": {\n';
@@ -532,8 +539,15 @@ function parseSymbolInstance(instance)
 	if (instance.name.length > 0)
 		json += jsonStr(key("Instance_Name", "IN"), instance.name);
 	
-	if (instance.loop != undefined)
-		json += jsonStr(key("loop", "LP"), instance.loop.replace(" ", ""));
+	if (instance.loop != undefined) {
+		var loop;
+		switch (instance.loop) {
+			case "play once": 		loop = key("playonce", "PO"); 		break;
+			case "single frame":	loop = key("singleframe", "SF");	break;
+			case "loop": 			loop = key("loop", "LP");
+		}
+		json += jsonStr(key("loop", "LP"), loop);
+	}
 	
 	if (!instance.is3D)
 		json += jsonVar(key("Matrix", "MX"), parseMatrix(instance.matrix));
