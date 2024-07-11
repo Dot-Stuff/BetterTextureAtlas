@@ -28,7 +28,7 @@
 {"SPRITE":{"name":"26","x":400,"y":3,"w":221,"h":223,"rotated":false}}]},
 "meta":{
 "app":"AdobeAnimate",
-"version":"24.0.3.19",
+"version":"24.0.4.28",
 "image":"spritemap1.png",
 "format":"RGBA8888",
 "size":{"w":1024,"h":512},

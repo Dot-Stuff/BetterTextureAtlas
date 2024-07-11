@@ -386,7 +386,7 @@ function parseElements(elements, frameIndex, layerIndex, timeline)
 		
 		switch (element.elementType) {
 			case "shape":
-				json += parseAtlasInstance(element, false, e, frameIndex, layerIndex, timeline);
+				json += parseShape(element, timeline, layerIndex, frameIndex, e);
 			break
 			case "instance":
 				switch (element.instanceType) {
@@ -394,7 +394,7 @@ function parseElements(elements, frameIndex, layerIndex, timeline)
 						json += parseSymbolInstance(element);
 					break;
 					case "bitmap":
-						json += parseAtlasInstance(element, true, e, frameIndex, layerIndex, timeline);
+						json += parseBitmapInstance(element);
 					break;
 				}
 			break;
@@ -413,39 +413,38 @@ function parseElements(elements, frameIndex, layerIndex, timeline)
 	return json;
 }
 
-function parseAtlasInstance(instance, isItem, elementIndex, frameIndex, layerIndex, timeline)
+function parseBitmapInstance(bitmap)
 {
-	var json = '"' + key("ATLAS_SPRITE_instance", "ASI") +'":{\n';
-
-	var m = instance.matrix;
+	var m = bitmap.matrix;
 	var matrix = {a:m.a, b:m.b, c:m.c, d:m.d, tx:m.tx, ty:m.ty};
-	
-	if (isItem)
-	{
-		var itemIndex = pushItemSpritemap(instance.libraryItem);
 
-		if (resolution < 1) {
-			matrix.a *= resScale;
-			matrix.d *= resScale;
-		}
-		
-		json += jsonVar(key("Matrix", "MX"), parseMatrix(matrix));
-		json += jsonStrEnd(key("name", "N"), itemIndex);
+	if (resolution < 1) {
+		matrix.a *= resScale;
+		matrix.d *= resScale;
 	}
-	else
-	{
-		// TODO: maybe should change this for group shapes
-		matrix.a = matrix.d = resScale;
-		matrix.tx = parseFloat((instance.x - (instance.width / 2)).toFixed(1));
-		matrix.ty = parseFloat((instance.y - (instance.height / 2)).toFixed(1));
-		
-		json += jsonVar(key("Matrix", "MX"), parseMatrix(matrix));
-		json += jsonStrEnd(key("name", "N"), smIndex);
-		pushElementSpritemap(timeline, layerIndex, frameIndex, elementIndex);
-	}
-	
-	json += '}';
-	return json;
+
+	var itemIndex = pushItemSpritemap(bitmap.libraryItem);
+	return parseAtlasInstance(matrix, itemIndex);
+}
+
+function parseShape(shape, timeline, layerIndex, frameIndex, elementIndex)
+{
+	var m = shape.matrix;
+	var matrix = {a:m.a * resScale, b:m.b, c:m.c, d:m.d * resScale, tx:m.tx, ty:m.ty};
+
+	// TODO: maybe should change this for group shapes, im not sure
+	matrix.tx = parseFloat((shape.x - (shape.width / 2)).toFixed(1));
+	matrix.ty = parseFloat((shape.y - (shape.height / 2)).toFixed(1));
+
+	pushElementSpritemap(timeline, layerIndex, frameIndex, elementIndex);
+	return parseAtlasInstance(matrix, smIndex - 1);
+}
+
+function parseAtlasInstance(matrix, name) {
+	return '"' + key("ATLAS_SPRITE_instance", "ASI") +'":{\n' +
+	jsonVar(key("Matrix", "MX"), parseMatrix(matrix)) +
+	jsonStrEnd(key("name", "N"), name) +
+	'}';
 }
 
 function pushItemSpritemap(item)
