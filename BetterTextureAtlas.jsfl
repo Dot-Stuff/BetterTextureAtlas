@@ -436,8 +436,8 @@ function parseAtlasInstance(instance, isItem, elementIndex, frameIndex, layerInd
 	{
 		// TODO: maybe should change this for group shapes
 		matrix.a = matrix.d = resScale;
-		matrix.tx = (instance.x - (instance.width / 2));
-		matrix.ty = (instance.y - (instance.height / 2));
+		matrix.tx = parseFloat((instance.x - (instance.width / 2)).toFixed(1));
+		matrix.ty = parseFloat((instance.y - (instance.height / 2)).toFixed(1));
 		
 		json += jsonVar(key("Matrix", "MX"), parseMatrix(matrix));
 		json += jsonStrEnd(key("name", "N"), smIndex);
