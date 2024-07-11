@@ -226,9 +226,9 @@ function generateAnimation(symbol) {
 	var json ="{\n";
 	
 	// Add Animation
-	json += '"' + key("ANIMATION", "AN") + '":{\n';
+	json += jsonHeader(key("ANIMATION", "AN"));
 	if (instance != null) {
-		json += '"' + key("StageInstance", "STI") +'":{\n';
+		json += jsonHeader(key("StageInstance", "STI"));
 		json += parseSymbolInstance(instance);
 		json += '},\n';
 	}
@@ -240,8 +240,8 @@ function generateAnimation(symbol) {
 	findDictionary(symbol, dictionary);
 	
 	// Add Symbol Dictionary
-	json += '"' + key("SYMBOL_DICTIONARY", "SD") + '":{\n';
-	json += '"' + key ("Symbols", "S") + '":[\n';
+	json += jsonHeader(key("SYMBOL_DICTIONARY", "SD"));
+	json += jsonArray(key ("Symbols", "S"));
 	for (d = 0; d < dictionary.length; d++)
 	{
 		var name = dictionary[d];
@@ -255,7 +255,7 @@ function generateAnimation(symbol) {
 	json += '},\n';
 	
 	// Add Metadata
-	json += '"' + key("metadata", "MD") +'":{\n';
+	json += jsonHeader(key("metadata", "MD"));
 	json += jsonStr(key("version", "V"), version);
 	json += jsonVarEnd(key("framerate", "FRT"), doc.frameRate);
 	json += '}';
@@ -304,8 +304,8 @@ function parseSymbol(symbol)
 	var timeline = symbol.timeline;
 	
 	json += jsonStr(key("SYMBOL_name", "SN"), symbol.name);
-	json += '"' + key("TIMELINE", "TL") + '":{\n';
-	json += '"' + key ("LAYERS", "L") + '":[\n';
+	json += jsonHeader(key("TIMELINE", "TL"));
+	json += jsonArray(key("LAYERS", "L"));
 	
 	// Add Layers and Frames
 	var l = -1;
@@ -344,7 +344,7 @@ function parseSymbol(symbol)
 
 function parseFrames(frames, layerIndex, timeline)
 {
-	var json = '"' + key ("Frames", "FR") + '":[\n';
+	var json = jsonArray(key("Frames", "FR"));
 	
 	var startFrames = [];
 	
@@ -376,7 +376,7 @@ function parseFrames(frames, layerIndex, timeline)
 
 function parseElements(elements, frameIndex, layerIndex, timeline)
 {
-	var json = '"' + key ("elements", "E") + '":[\n';
+	var json = jsonArray(key("elements", "E"));
 	
 	for (e = 0; e < elements.length; e++)
 	{
@@ -441,7 +441,7 @@ function parseShape(shape, timeline, layerIndex, frameIndex, elementIndex)
 }
 
 function parseAtlasInstance(matrix, name) {
-	return '"' + key("ATLAS_SPRITE_instance", "ASI") +'":{\n' +
+	return jsonHeader(key("ATLAS_SPRITE_instance", "ASI")) +
 	jsonVar(key("Matrix", "MX"), parseMatrix(matrix)) +
 	jsonStrEnd(key("name", "N"), name) +
 	'}';
@@ -481,7 +481,7 @@ function pushElementSpritemap(timeline, layerIndex, frameIndex, elementIndex)
 
 function parseSymbolInstance(instance)
 {
-	var json = '"' + key("SYMBOL_Instance", "SI") + '":{\n';
+	var json = jsonHeader(key("SYMBOL_Instance", "SI"));
 	var item = instance.libraryItem;
 	
 	if (item != undefined)
@@ -501,7 +501,7 @@ function parseSymbolInstance(instance)
 	}	
 
 	if (instance.colorMode != "none") {
-		json += '"' + key("color", "C") + '":{\n';
+		json += jsonHeader(key("color", "C"));
 		var mode = instance.colorMode;
 		var modeKey = key("mode", "M");
 		
@@ -622,7 +622,7 @@ function parseSymbolInstance(instance)
 						json += jsonStr("type", filter.type);
 						json += jsonVar("strength", filter.strength);
 						json += jsonVar("angle", filter.angle);
-						json += jsonVar("colorArray", parseColorArray(filter.colorArray));
+						json += jsonVar("colorArray", parseArray(filter.colorArray));
 						json += jsonVarEnd("quality", parseQuality(filter.quality));
 					break;
 					case "gradientGlowFilter":
@@ -631,7 +631,7 @@ function parseSymbolInstance(instance)
 						json += jsonVar("inner", filter.inner);
 						json += jsonVar("knockout", filter.knockout);
 						json += jsonVar("strength", filter.strength);
-						json += jsonVar("colorArray", parseColorArray(filter.colorArray));
+						json += jsonVar("colorArray", parseArray(filter.colorArray));
 						json += jsonVarEnd("quality", parseQuality(filter.quality));
 					break;
 				}
@@ -652,42 +652,40 @@ function parseSymbolInstance(instance)
 	return json;
 }
 
-function parseMatrix(mat) {
-	var str = '['
-	str += mat.a + ",";
-	str += mat.b + ",";
-	str += mat.c + ",";
-	str += mat.d + ",";
-	str += mat.tx + ",";
-	str += mat.ty;
-	str += "]";
-	return str;
+function parseMatrix(m) {
+	return "[" +
+	m.a + "," +
+	m.b + "," +
+	m.c + "," +
+	m.d + "," +
+	m.tx + "," +
+	m.ty +
+	"]"; 
 }
 
-function parseMatrix3D(mat) {
-	var str = '[\n'
-	str += mat.m00 + ",";
-	str += mat.m01 + ",";
-	str += mat.m02 + ",";
-	str += mat.m03 + ",";
-	str += mat.m10 + ",";
-	str += mat.m11 + ",";
-	str += mat.m12 + ",";
-	str += mat.m13 + ",";
-	str += mat.m20 + ",";
-	str += mat.m21 + ",";
-	str += mat.m22 + ",";
-	str += mat.m23 + ",";
-	str += mat.m30 + ",";
-	str += mat.m31 + ",";
-	str += mat.m32 + ",";
-	str += mat.m33;
-	str += "\n]";
-	return str;
+function parseMatrix3D(m) {
+	return "[" +
+	m.m00 + "," +
+	m.m01 + "," +
+	m.m02 + "," +
+	m.m03 + "," +
+	m.m10 + "," +
+	m.m11 + "," +
+	m.m12 + "," +
+	m.m13 + "," +
+	m.m20 + "," +
+	m.m21 + "," +
+	m.m22 + "," +
+	m.m23 + "," +
+	m.m30 + "," +
+	m.m31 + "," +
+	m.m32 + "," +
+	m.m33 +
+	"]";
 }
 
-function parseColorArray(colorArray) {
-	return '["' + colorArray.join('","') +'"]';
+function parseArray(array) {
+	return '["' + array.join('","') +'"]';
 }
 
 function parseQuality(quality) {
@@ -730,4 +728,12 @@ function jsonStrEnd(name, value) {
 
 function jsonStr(name, value) {
 	return '"' + name +'":"' + value + '",\n';
+}
+
+function jsonArray(name) {
+	return '"' + name + '":[\n';
+}
+
+function jsonHeader(name) {
+	return '"' + name + '":{\n';
 }
