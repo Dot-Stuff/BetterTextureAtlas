@@ -129,13 +129,16 @@ var TEMP_SPRITEMAP;
 var TEMP_ITEM;
 var TEMP_TIMELINE;
 var TEMP_LAYER;
-var itemQueue;
 var smIndex;
+
+var addedItems;
+var frameQueue;
 
 function exportAtlas(exportPath, symbolName)
 {	
 	TEMP_SPRITEMAP = "_ta_temp_sm";
-	itemQueue = {};
+	addedItems = [];
+	frameQueue = [];
 	smIndex = 0;
 
 	var symbol = findSymbol(symbolName);
@@ -150,20 +153,49 @@ function exportAtlas(exportPath, symbolName)
 	var animJson = generateAnimation(symbol);
 	FLfile.write(path + "/Animation.json", animJson);
 
-	// Add library items from queue (if any exist)
+	// Add items and fix resolutions
 	lib.editItem(TEMP_SPRITEMAP);
 	var pos = {x:0, y:0};
-	for (var item in itemQueue)
-	{
-		var index =  itemQueue[item];
-		TEMP_TIMELINE.currentFrame = index;
-		lib.addItemToDocument(pos, item);
 
-		// You only want scaled down bitmaps, you dont really gain anything from upscaling lol
-		if (resolution < 1) {
-			var instance = TEMP_LAYER.frames[index].elements[0];
-			instance.scaleX = instance.scaleY = resolution;
+	var i = 0;
+	var l = frameQueue.length;
+	while (i < l)
+	{
+		var id = frameQueue[i];
+		var isBitmapFrame = typeof id === "string";
+		TEMP_TIMELINE.currentFrame = i;
+
+		if (isBitmapFrame)
+		{
+			lib.addItemToDocument(pos, id);
+			if (resolution < 1) {
+				var bitmap = TEMP_LAYER.frames[i].elements[0];
+				bitmap.scaleX = bitmap.scaleY = resolution;
+			}
 		}
+		else if (resolution != 1)
+		{
+			var shape = TEMP_LAYER.frames[i].elements[id];
+			if (shape.isGroup)
+			{
+				shape.scaleX *= resolution;
+				shape.scaleY *= resolution;
+			}
+			else
+			{
+				// TODO: this fucks up the matrix for some reason, look into it
+				doc.selection = [shape];
+				doc.convertLinesToFills();
+
+				var elements = TEMP_LAYER.frames[i].elements;
+				for (e = 0; e < elements.length; e++) {
+					var element = elements[e];
+					if (e == id) element.scaleX = element.scaleY = resolution;
+				}
+			}
+		}
+		
+		i++;
 	}
 
 	// Generate Spritemap
@@ -269,16 +301,16 @@ function findDictionary(symbol, dictionary)
 {	
 	for each(var layer in symbol.timeline.layers)
 	{
-		var f = -1;
-		for each(var frame in layer.frames)
+		var f = 0;
+		var l = layer.frames.length;
+		while (f < l)
 		{
-			f++;
-			if (f == frame.startFrame)
+			var frame = layer.frames[f];
+			if (frame.startFrame == f)
 			{
 				for each(var element in frame.elements)
 				{
-					var type = element.elementType;
-					if (type == "instance")
+					if (element.elementType == "instance")
 					{
 						var libraryItem = element.libraryItem;
 						var itemName = libraryItem.name;
@@ -294,6 +326,7 @@ function findDictionary(symbol, dictionary)
 					}
 				}
 			}
+			f++;
 		}
 	}
 }
@@ -432,9 +465,10 @@ function parseShape(shape, timeline, layerIndex, frameIndex, elementIndex)
 	var m = shape.matrix;
 	var matrix = {a:m.a * resScale, b:m.b, c:m.c, d:m.d * resScale, tx:m.tx, ty:m.ty};
 
-	// TODO: maybe should change this for group shapes, im not sure
-	matrix.tx = parseFloat((shape.x - (shape.width / 2)).toFixed(1));
-	matrix.ty = parseFloat((shape.y - (shape.height / 2)).toFixed(1));
+	if (!shape.isGroup) {
+		matrix.tx = parseFloat((shape.x - (shape.width / 2)).toFixed(1));
+		matrix.ty = parseFloat((shape.y - (shape.height / 2)).toFixed(1));
+	}
 
 	pushElementSpritemap(timeline, layerIndex, frameIndex, elementIndex);
 	return parseAtlasInstance(matrix, smIndex - 1);
@@ -451,10 +485,11 @@ function pushItemSpritemap(item)
 {
 	var name = item.name;
 	
-	if (itemQueue[name] == null) {
+	if (addedItems.indexOf(name) == -1) {
 		TEMP_TIMELINE.insertBlankKeyframe(smIndex);
-		itemQueue[name] = smIndex;
-		smIndex++;
+		addedItems.push(name);
+		frameQueue.push(name);
+		smIndex;
 	}
 
 	return itemQueue[name];
@@ -469,13 +504,20 @@ function pushElementSpritemap(timeline, layerIndex, frameIndex, elementIndex)
 	TEMP_TIMELINE.pasteFrames();
 
 	var frameElements = TEMP_LAYER.frames[smIndex].elements;	
+	var element = frameElements[elementIndex];
+	
 	var e = 0;
 	while (e < frameElements.length) {
-		var element = frameElements[e];
-		// TODO: fix lines made with the pencil tool not scaling with resolution
-		element.scaleX = element.scaleY = (e != elementIndex) ? 0 : resolution;
+		if (e != elementIndex) {
+			var dummy = frameElements[e];
+			dummy.width = dummy.height = 0;
+			dummy.x = element.x;
+			dummy.y = element.y;
+		}
 		e++;
 	}
+
+	frameQueue.push(elementIndex);
 	smIndex++;
 }
 
@@ -502,10 +544,9 @@ function parseSymbolInstance(instance)
 
 	if (instance.colorMode != "none") {
 		json += jsonHeader(key("color", "C"));
-		var mode = instance.colorMode;
 		var modeKey = key("mode", "M");
 		
-		switch (mode) {
+		switch (instance.colorMode) {
 			case "brightness":
 				json += jsonStr(modeKey, "Brightness");
 				json += jsonVarEnd("brightness", instance.brightness);
@@ -548,28 +589,29 @@ function parseSymbolInstance(instance)
 		json += jsonStr(key("loop", "LP"), loop);
 	}
 	
-	if (!instance.is3D)
-		json += jsonVar(key("Matrix", "MX"), parseMatrix(instance.matrix));
-	else
+	if (instance.is3D)
 		json += jsonVar(key("Matrix3D", "M3D"), parseMatrix3D(instance.matrix3D));
+	else
+		json += jsonVar(key("Matrix", "MX"), parseMatrix(instance.matrix));	
 
-	if (instance.symbolType != "graphic")
+	if (instance.symbolType == "movie clip")
 	{
 		if (instance.blendMode != "normal")
 			json += jsonStr(key("blend", "B"), instance.blendMode);
 		
 		// Add Filters
-		json += '"filters":[';
-		
 		var filters = instance.filters;
-		if (filters != undefined) {
-			for (i = 0; i < filters.length; i++) {
+		if (filters != undefined && filters.length > 0)
+		{
+			json += jsonArray(key("filters", "F"));
+
+			var i = 0;
+			while (i < filters.length)
+			{
 				var filter = filters[i];
-				var name = filter.name;
-				json += '\n{\n';
-				json += jsonStr("name", name);
+				json += '{\n' + jsonStr("name", filter.name);
 				
-				switch (name) {
+				switch (filter.name) {
 					case "adjustColorFilter":
 						json += jsonVar("brightness", filter.brightness);
 						json += jsonVar("hue", filter.hue);
@@ -637,10 +679,11 @@ function parseSymbolInstance(instance)
 				}
 				
 				json += (i < filters.length - 1) ? '},' : '}\n';
+				i++;
 			}
+			
+			json += ']\n';
 		}
-		
-		json += ']\n';
 	}
 	else {
 		json = json.substring(0, json.length - 2);

@@ -914,7 +914,7 @@
 "ST":"MC",
 "MX":[1,0,0,1,0,0],
 "B":"add",
-"filters":[
+"F":[
 {
 "name":"blurFilter",
 "blurX":9,
