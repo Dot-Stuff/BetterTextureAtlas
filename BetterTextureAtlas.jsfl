@@ -340,15 +340,19 @@ function parseSymbol(symbol)
 	json += jsonStr(key("SYMBOL_name", "SN"), symbol.name);
 	json += jsonHeader(key("TIMELINE", "TL"));
 	json += jsonArray(key("LAYERS", "L"));
+
+	var layers = [];
+	for each(var layer in timeline.layers)
+	{
+		if (layer.visible || !onlyVisibleLayers)
+			layers.push(layer);
+	}
 	
 	// Add Layers and Frames
-	var l = -1;
-	for each (var layer in timeline.layers)
+	var l = 0;
+	while (l < layers.length)
 	{
-		l++;
-		if (onlyVisibleLayers && !layer.visible)
-			continue;
-
+		var layer = layers[l];
 		var locked = layer.locked;
 		layer.locked = false;
 		
@@ -365,9 +369,10 @@ function parseSymbol(symbol)
 		}
 		
 		json += parseFrames(layer.frames, l, timeline);
-		json += (l < timeline.layers.length - 1) ? '},' : '}';
+		json += (l < layers.length - 1) ? '},' : '}';
 		
 		layer.locked = locked;
+		l++;
 	}
 	
 	json += ']';
