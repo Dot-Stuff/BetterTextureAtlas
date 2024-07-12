@@ -183,7 +183,8 @@ function exportAtlas(exportPath, symbolName)
 			}
 			else
 			{
-				// TODO: this fucks up the matrix for some reason, look into it
+				// TODO: this fucks up the matrix because the shape width is incorrect when its made with lines
+				// ill have to apply a offset or something... idk
 				doc.selection = [shape];
 				doc.convertLinesToFills();
 
@@ -596,12 +597,14 @@ function parseSymbolInstance(instance)
 
 	if (instance.symbolType == "movie clip")
 	{
+		var filters = instance.filters;
+		var hasFilters = (filters != undefined && filters.length > 0)
+
 		if (instance.blendMode != "normal")
 			json += jsonStr(key("blend", "B"), instance.blendMode);
 		
 		// Add Filters
-		var filters = instance.filters;
-		if (filters != undefined && filters.length > 0)
+		if (hasFilters)
 		{
 			json += jsonArray(key("filters", "F"));
 
@@ -609,86 +612,102 @@ function parseSymbolInstance(instance)
 			while (i < filters.length)
 			{
 				var filter = filters[i];
-				json += '{\n' + jsonStr("name", filter.name);
-				
+				var filterContents = "";
+				var filterName = "";
+
+				// TODO: filters in optimized mode ugghuf
+
 				switch (filter.name) {
 					case "adjustColorFilter":
-						json += jsonVar("brightness", filter.brightness);
-						json += jsonVar("hue", filter.hue);
-						json += jsonVar("contrast", filter.contrast);
-						json += jsonVarEnd("saturation", filter.saturation);
+						filterName = key("adjustColorFilter", "ACF");
+						filterContents =
+						jsonVar(key("brightness", "BRT"), filter.brightness) +
+						jsonVar(key("hue", "H"), filter.hue) + 
+						jsonVar(key("contrast", "CT"), filter.contrast) + 
+						jsonVarEnd(key("saturation", "SAT"), filter.saturation);
 					break;
 					case "bevelFilter":
-						json += jsonVar("blurX", filter.blurX);
-						json += jsonVar("blurY", filter.blurY);
-						json += jsonVar("distance", filter.distance);
-						json += jsonVar("knockout", filter.knockout);
-						json += jsonStr("type", filter.type);
-						json += jsonVar("strength", filter.strength);
-						json += jsonVar("angle", filter.angle);
-						json += jsonStr("shadowColor", filter.shadowColor);
-						json += jsonStr("highlightColor", filter.highlightColor);
-						json += jsonVarEnd("quality", parseQuality(filter.quality));
+						filterName = key("bevelFilter", "BVF");
+						filterContents =
+						jsonVar(key("blurX", "BLX"), filter.blurX) +
+						jsonVar(key("blurY", "BLY"), filter.blurY) +
+						jsonVar("distance", filter.distance) +
+						jsonVar("knockout", filter.knockout) +
+						jsonStr("type", filter.type) +
+						jsonVar("strength", filter.strength) +
+						jsonVar("angle", filter.angle) +
+						jsonStr("shadowColor", filter.shadowColor) +
+						jsonStr("highlightColor", filter.highlightColor) +
+						jsonVarEnd(key("quality", "Q"), parseQuality(filter.quality));
 					break;
 					case "blurFilter":
-						json += jsonVar("blurX", filter.blurX);
-						json += jsonVar("blurY", filter.blurY);
-						json += jsonVarEnd("quality", parseQuality(filter.quality));
+						filterName = key("bevelFilter", "BF");
+						filterContents =
+						jsonVar(key("blurX", "BLX"), filter.blurX) +
+						jsonVar(key("blurY", "BLY"), filter.blurY) +
+						jsonVarEnd(key("quality", "Q"), parseQuality(filter.quality));
 					break;
 					case "dropShadowFilter":
-						json += jsonVar("blurX", filter.blurX);
-						json += jsonVar("blurY", filter.blurY);
-						json += jsonVar("distance", filter.distance);
-						json += jsonVar("knockout", filter.knockout);
-						json += jsonVar("inner", filter.inner);
-						json += jsonVar("hideObject", filter.hideObject);
-						json += jsonVar("strength", filter.strength);
-						json += jsonVar("angle", filter.angle);
-						json += jsonStr("shadowColor", filter.color); // adobe fucked up
-						json += jsonVarEnd("quality", parseQuality(filter.quality));
+						filterName = key("bevelFilter", "DSF");
+						filterContents =
+						jsonVar(key("blurX", "BLX"), filter.blurX) +
+						jsonVar(key("blurY", "BLY"), filter.blurY) +
+						jsonVar("distance", filter.distance) +
+						jsonVar("knockout", filter.knockout) +
+						jsonVar("inner", filter.inner) +
+						jsonVar("hideObject", filter.hideObject) +
+						jsonVar("strength", filter.strength) +
+						jsonVar("angle", filter.angle) +
+						jsonStr("shadowColor", filter.color) + // adobe fucked up
+						jsonVarEnd(key("quality", "Q"), parseQuality(filter.quality));
 					break;
 					case "glowFilter":
-						json += jsonVar("blurX", filter.blurX);
-						json += jsonVar("blurY", filter.blurY);
-						json += jsonVar("inner", filter.inner);
-						json += jsonVar("knockout", filter.knockout);
-						json += jsonVar("strength", filter.strength);
-						json += jsonStr("color", filter.color);
-						json += jsonVarEnd("quality", parseQuality(filter.quality));
+						filterName = key("bevelFilter", "GF");
+						filterContents =
+						jsonVar(key("blurX", "BLX"), filter.blurX) +
+						jsonVar(key("blurY", "BLY"), filter.blurY) +
+						jsonVar("inner", filter.inner) +
+						jsonVar("knockout", filter.knockout) +
+						jsonVar("strength", filter.strength) +
+						jsonStr("color", filter.color) +
+						jsonVarEnd(key("quality", "Q"), parseQuality(filter.quality));
 					break;
 					case "gradientBevelFilter":
-						json += jsonVar("blurX", filter.blurX);
-						json += jsonVar("blurY", filter.blurY);
-						json += jsonVar("distance", filter.distance);
-						json += jsonVar("knockout", filter.knockout);
-						json += jsonStr("type", filter.type);
-						json += jsonVar("strength", filter.strength);
-						json += jsonVar("angle", filter.angle);
-						json += jsonVar("colorArray", parseArray(filter.colorArray));
-						json += jsonVarEnd("quality", parseQuality(filter.quality));
+						filterName = key("bevelFilter", "GBVF");
+						filterContents =
+						jsonVar(key("blurX", "BLX"), filter.blurX) +
+						jsonVar(key("blurY", "BLY"), filter.blurY) +
+						jsonVar("distance", filter.distance) +
+						jsonVar("knockout", filter.knockout) +
+						jsonStr("type", filter.type) +
+						jsonVar("strength", filter.strength) +
+						jsonVar("angle", filter.angle) +
+						jsonVar("colorArray", parseArray(filter.colorArray)) +
+						jsonVarEnd(key("quality", "Q"), parseQuality(filter.quality));
 					break;
 					case "gradientGlowFilter":
-						json += jsonVar("blurX", filter.blurX);
-						json += jsonVar("blurY", filter.blurY);
-						json += jsonVar("inner", filter.inner);
-						json += jsonVar("knockout", filter.knockout);
-						json += jsonVar("strength", filter.strength);
-						json += jsonVar("colorArray", parseArray(filter.colorArray));
-						json += jsonVarEnd("quality", parseQuality(filter.quality));
+						filterName = key("bevelFilter", "GGF");
+						filterContents =
+						jsonVar(key("blurX", "BLX"), filter.blurX) +
+						jsonVar(key("blurY", "BLY"), filter.blurY) +
+						jsonVar("inner", filter.inner) +
+						jsonVar("knockout", filter.knockout) +
+						jsonVar("strength", filter.strength) +
+						jsonVar("colorArray", parseArray(filter.colorArray)) +
+						jsonVarEnd(key("quality", "Q"), parseQuality(filter.quality));
 					break;
 				}
-				
+
+				json += '{\n' + jsonStr(key("name", "N"), filterName) + filterContents;
 				json += (i < filters.length - 1) ? '},' : '}\n';
 				i++;
 			}
 			
 			json += ']\n';
 		}
+		else json = removeComma(json);
 	}
-	else {
-		json = json.substring(0, json.length - 2);
-		json += "\n";
-	}
+	else json = removeComma(json);
 
 	json += '}';
 
@@ -779,4 +798,8 @@ function jsonArray(name) {
 
 function jsonHeader(name) {
 	return '"' + name + '":{\n';
+}
+
+function removeComma(json) {
+	return json.substring(0, json.length - 2) + "\n";
 }
