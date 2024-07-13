@@ -916,10 +916,10 @@
 "B":"add",
 "F":[
 {
-"name":"blurFilter",
-"blurX":9,
-"blurY":9,
-"quality":3
+"N":"BF",
+"BLX":9,
+"BLY":9,
+"Q":3
 }
 ]
 }}]}]},{

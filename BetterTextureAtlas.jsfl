@@ -554,28 +554,28 @@ function parseSymbolInstance(instance)
 		
 		switch (instance.colorMode) {
 			case "brightness":
-				json += jsonStr(modeKey, "Brightness");
-				json += jsonVarEnd("brightness", instance.brightness);
+				json += jsonStr(modeKey, key("Brightness", "CBRT")) +
+				jsonVarEnd(key("brightness", "BRT"), instance.brightness);
 			break;
 			case "tint":
-				json += jsonStr(modeKey, "Tint");
-				json += jsonStr("tintColor", instance.tintColor);
-				json += jsonVarEnd("tintMultiplier", instance.tintPercent / 100);
+				json += jsonStr(modeKey, key("Tint", "T")) +
+				jsonStr(key("tintColor", "TC"), instance.tintColor) +
+				jsonVarEnd(key("tintMultiplier", "TM"), instance.tintPercent / 100);
 			break;
 			case "alpha":
-				json += jsonStr(modeKey, "Alpha");
-				json += jsonVarEnd("alphaMultiplier", instance.colorAlphaPercent / 100);
+				json += jsonStr(modeKey, key("Alpha", "CA")) +
+				jsonVarEnd(key("alphaMultiplier", "AM"), instance.colorAlphaPercent / 100);
 			break;
 			case "advanced":
-				json += jsonStr(modeKey, "Advanced");
-				json += jsonVar("RedMultiplier", instance.colorRedPercent / 100);
-				json += jsonVar("greenMultiplier", instance.colorGreenPercent / 100);
-				json += jsonVar("blueMultiplier", instance.colorBluePercent / 100);
-				json += jsonVar("alphaMultiplier", instance.colorAlphaPercent / 100);
-				json += jsonVar("redOffset", instance.colorRedAmount);
-				json += jsonVar("greenOffset", instance.colorGreenAmount);
-				json += jsonVar("blueOffset", instance.colorBlueAmount);
-				json += jsonVarEnd("AlphaOffset", instance.colorAlphaAmount);
+				json += jsonStr(modeKey, key("Advanced", "AD")) +
+				jsonVar(key("RedMultiplier", "RM"), instance.colorRedPercent / 100) +
+				jsonVar(key("greenMultiplier", "GM"), instance.colorGreenPercent / 100) +
+				jsonVar(key("blueMultiplier", "BM"), instance.colorBluePercent / 100) +
+				jsonVar(key("alphaMultiplier", "AM"), instance.colorAlphaPercent / 100) +
+				jsonVar(key("redOffset", "RO"), instance.colorRedAmount) +
+				jsonVar(key("greenOffset", "GO"), instance.colorGreenAmount) +
+				jsonVar(key("blueOffset", "BO"), instance.colorBlueAmount) +
+				jsonVarEnd(key("AlphaOffset", "AO"), instance.colorAlphaAmount);
 			break;
 		}
 
@@ -636,69 +636,69 @@ function parseSymbolInstance(instance)
 						filterContents =
 						jsonVar(key("blurX", "BLX"), filter.blurX) +
 						jsonVar(key("blurY", "BLY"), filter.blurY) +
-						jsonVar("distance", filter.distance) +
-						jsonVar("knockout", filter.knockout) +
-						jsonStr("type", filter.type) +
-						jsonVar("strength", filter.strength) +
-						jsonVar("angle", filter.angle) +
-						jsonStr("shadowColor", filter.shadowColor) +
-						jsonStr("highlightColor", filter.highlightColor) +
+						jsonVar(key("distance", "D"), filter.distance) +
+						jsonVar(key("knockout", "KK"), filter.knockout) +
+						jsonStr(key("type", "T"), filter.type) +
+						jsonVar(key("strength", "STR"), filter.strength) +
+						jsonVar(key("angle", "A"), filter.angle) +
+						jsonStr(key("shadowColor", "SC"), filter.shadowColor) +
+						jsonStr(key("highlightColor", "HC"), filter.highlightColor) +
 						jsonVarEnd(key("quality", "Q"), parseQuality(filter.quality));
 					break;
 					case "blurFilter":
-						filterName = key("bevelFilter", "BF");
+						filterName = key("blurFilter", "BF");
 						filterContents =
 						jsonVar(key("blurX", "BLX"), filter.blurX) +
 						jsonVar(key("blurY", "BLY"), filter.blurY) +
 						jsonVarEnd(key("quality", "Q"), parseQuality(filter.quality));
 					break;
 					case "dropShadowFilter":
-						filterName = key("bevelFilter", "DSF");
+						filterName = key("dropShadowFilter", "DSF");
 						filterContents =
 						jsonVar(key("blurX", "BLX"), filter.blurX) +
 						jsonVar(key("blurY", "BLY"), filter.blurY) +
-						jsonVar("distance", filter.distance) +
-						jsonVar("knockout", filter.knockout) +
-						jsonVar("inner", filter.inner) +
-						jsonVar("hideObject", filter.hideObject) +
-						jsonVar("strength", filter.strength) +
-						jsonVar("angle", filter.angle) +
-						jsonStr("shadowColor", filter.color) + // adobe fucked up
+						jsonVar(key("distance", "D"), filter.distance) +
+						jsonVar(key("knockout", "KK"), filter.knockout) +
+						jsonVar(key("inner", "IN"), filter.inner) +
+						jsonVar(key("hideObject", "HO"), filter.hideObject) +
+						jsonVar(key("strength", "STR"), filter.strength) +
+						jsonVar(key("angle", "A"), filter.angle) +
+						jsonStr(key("color", "C"), filter.color) +
 						jsonVarEnd(key("quality", "Q"), parseQuality(filter.quality));
 					break;
 					case "glowFilter":
-						filterName = key("bevelFilter", "GF");
+						filterName = key("glowFilter", "GF");
 						filterContents =
 						jsonVar(key("blurX", "BLX"), filter.blurX) +
 						jsonVar(key("blurY", "BLY"), filter.blurY) +
-						jsonVar("inner", filter.inner) +
-						jsonVar("knockout", filter.knockout) +
-						jsonVar("strength", filter.strength) +
-						jsonStr("color", filter.color) +
+						jsonVar(key("inner", "IN"), filter.inner) +
+						jsonVar(key("knockout", "KK"), filter.knockout) +
+						jsonVar(key("strength", "STR"), filter.strength) +
+						jsonStr(key("color", "C"), filter.color) +
 						jsonVarEnd(key("quality", "Q"), parseQuality(filter.quality));
 					break;
 					case "gradientBevelFilter":
-						filterName = key("bevelFilter", "GBVF");
+						filterName = key("gradientBevelFilter", "GBVF");
 						filterContents =
 						jsonVar(key("blurX", "BLX"), filter.blurX) +
 						jsonVar(key("blurY", "BLY"), filter.blurY) +
-						jsonVar("distance", filter.distance) +
-						jsonVar("knockout", filter.knockout) +
-						jsonStr("type", filter.type) +
-						jsonVar("strength", filter.strength) +
-						jsonVar("angle", filter.angle) +
-						jsonVar("colorArray", parseArray(filter.colorArray)) +
+						jsonVar(key("distance", "D"), filter.distance) +
+						jsonVar(key("knockout", "KK"), filter.knockout) +
+						jsonStr(key("type", "T"), filter.type) +
+						jsonVar(key("strength", "STR"), filter.strength) +
+						jsonVar(key("angle", "A"), filter.angle) +
+						jsonVar(key("colorArray", "CA"), parseArray(filter.colorArray)) +
 						jsonVarEnd(key("quality", "Q"), parseQuality(filter.quality));
 					break;
 					case "gradientGlowFilter":
-						filterName = key("bevelFilter", "GGF");
+						filterName = key("gradientGlowFilter", "GGF");
 						filterContents =
 						jsonVar(key("blurX", "BLX"), filter.blurX) +
 						jsonVar(key("blurY", "BLY"), filter.blurY) +
-						jsonVar("inner", filter.inner) +
-						jsonVar("knockout", filter.knockout) +
-						jsonVar("strength", filter.strength) +
-						jsonVar("colorArray", parseArray(filter.colorArray)) +
+						jsonVar(key("inner", "IN"), filter.inner) +
+						jsonVar(key("knockout", "KK"), filter.knockout) +
+						jsonVar(key("strength", "STR"), filter.strength) +
+						jsonVar(key("colorArray", "CA"), parseArray(filter.colorArray)) +
 						jsonVarEnd(key("quality", "Q"), parseQuality(filter.quality));
 					break;
 				}
