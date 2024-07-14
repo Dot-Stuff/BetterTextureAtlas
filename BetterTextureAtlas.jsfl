@@ -171,6 +171,7 @@ function exportAtlas(exportPath, symbolName)
 				bitmap.scaleX = bitmap.scaleY = resolution;
 			}
 		}
+		/* // TODO: this fucks up the matrix and other crap, will fix later
 		else if (resolution != 1)
 		{
 			var shape = TEMP_LAYER.frames[i].elements[id];
@@ -181,8 +182,6 @@ function exportAtlas(exportPath, symbolName)
 			}
 			else
 			{
-				// TODO: this fucks up the matrix because the shape width is incorrect when its made with lines
-				// ill have to apply a offset or something... idk
 				doc.selection = [shape];
 				doc.convertLinesToFills();
 
@@ -192,7 +191,7 @@ function exportAtlas(exportPath, symbolName)
 					if (e == id) element.scaleX = element.scaleY = resolution;
 				}
 			}
-		}
+		}*/
 		
 		i++;
 	}
@@ -226,30 +225,25 @@ function exportSpritemap(exportPath, sm, index)
 	sm.exportSpriteSheet(smPath, smSettings, true);
 
 	// Parse and change json to spritemap format
-	var meta = FLfile.read(smPath + ".json");
-	meta = meta.split("\t").join("");
-	meta = meta.split(" ").join("");
-
+	var meta = FLfile.read(smPath + ".json").split("\t").join("").split(" ").join("");
 	var atlasLimbs = meta.split(TEMP_SPRITEMAP);
 	atlasLimbs.splice(0, 1);
 
 	var smJson = '{"ATLAS":{"SPRITES":[\n';
 
-	var l = -1;
-	for each (var limb in atlasLimbs)
+	var l = 0;
+	while (l < atlasLimbs.length)
 	{
-		limb = limb.split("{").join("").split("}").join("");
-		var limbData = limb.split("\n");
-		l++;
-		
+		var limbData = atlasLimbs[l].split("{").join("").split("}").join("").split("\n");
+
 		var name = formatLimbName(limbData[0].slice(0, -2));
 		var frame = limbData[1].split('"frame":').join("");
 		var rotated = limbData[2].slice(0, -1);
 		
 		smJson += '{"SPRITE":{"name":"' + name + '",' + frame + rotated + '}}';
-		
-		if (l < atlasLimbs.length - 1)
-			smJson += ',\n';
+
+		if (l < atlasLimbs.length - 1) smJson += ',\n';
+		l++;
 	}
 
 	smJson += ']},\n"meta":';
@@ -273,7 +267,8 @@ function makeSpritemap() {
 	return sm;
 }
 
-function generateAnimation(symbol) {
+function generateAnimation(symbol)
+{
 	var json ="{\n";
 	
 	// Add Animation
@@ -329,19 +324,18 @@ function findDictionary(symbol, dictionary)
 			{
 				for each(var element in frame.elements)
 				{
-					if (element.elementType == "instance")
+					if (element.elementType !== "instance") continue;
+
+					var libraryItem = element.libraryItem;
+					var itemName = libraryItem.name;
+
+					if (dictionary.indexOf(itemName) !== -1) continue;
+
+					var itemType = libraryItem.itemType;
+					if (itemType == "graphic" || itemType == "movie clip")
 					{
-						var libraryItem = element.libraryItem;
-						var itemName = libraryItem.name;
-						
-						if (dictionary.indexOf(itemName) == -1)
-						{
-							var itemType = libraryItem.itemType;
-							if (itemType == "graphic" || itemType == "movie clip") {
-								findDictionary(libraryItem, dictionary);
-								dictionary.push(itemName);
-							}
-						}
+						findDictionary(libraryItem, dictionary);
+						dictionary.push(itemName);
 					}
 				}
 			}
@@ -435,11 +429,12 @@ function parseElements(elements, frameIndex, layerIndex, timeline)
 {
 	var json = jsonArray(key("elements", "E"));
 	
-	for (e = 0; e < elements.length; e++)
+	var e = 0;
+	while (e < elements.length)
 	{
 		var element = elements[e];
 		
-		json += "{\n";
+		json += "{";
 		
 		switch (element.elementType) {
 			case "shape":
@@ -463,7 +458,8 @@ function parseElements(elements, frameIndex, layerIndex, timeline)
 			break;
 		}
 
-		json += (e < elements.length -1) ? "}," : "}";
+		json += (e < elements.length -1) ? "},\n" : "}";
+		e++;
 	}
 	
 	json += ']';
@@ -529,6 +525,10 @@ function pushElementSpritemap(timeline, layerIndex, frameIndex, elementIndex)
 
 	var frameElements = TEMP_LAYER.frames[smIndex].elements;	
 	var element = frameElements[elementIndex];
+	
+	// TODO: temp until i fix up lines to fills
+	element.scaleX *= resolution;
+	element.scaleY *= resolution;
 	
 	var e = 0;
 	while (e < frameElements.length) {
