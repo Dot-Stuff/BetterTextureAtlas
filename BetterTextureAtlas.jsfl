@@ -38,7 +38,6 @@ if (symbol.length > 0)
 	
 	if (FLfile.exists(fl.configURI + "Commands/saveBTA.txt"))
 	{
-		
 		var file = FLfile.read(fl.configURI + "Commands/saveBTA.txt").split("\n");
 		save = file[0];
 		ShpPad = parseInt(file[1]);
@@ -70,8 +69,7 @@ if (symbol.length > 0)
 		str = xPan.saveBox;
 		
 		var arr = str.split("\\");
-		var name = arr[arr.length - 1];
-		arr.pop();
+		var name = arr.pop();
 		save = arr.join("\\");
 		ShpPad = xPan.ShpPad;
 		BrdPad = xPan.BrdPad;
@@ -136,7 +134,7 @@ var frameQueue;
 
 function exportAtlas(exportPath, symbolName)
 {	
-	TEMP_SPRITEMAP = "_ta_temp_sm";
+	TEMP_SPRITEMAP = "__BTA_TEMP_SPRITEMAP";
 	addedItems = [];
 	frameQueue = [];
 	smIndex = 0;
@@ -199,21 +197,31 @@ function exportAtlas(exportPath, symbolName)
 		i++;
 	}
 
-	// Generate Spritemap
-	var sm = new SpriteSheetExporter;
-	sm.algorithm = "maxRects";
-	sm.autoSize = true;
-	sm.borderPadding = 3;
-	sm.shapePadding = 3;
-	sm.allowRotate = true;
-	sm.allowTrimming = true;
-	sm.stackDuplicate = true;
-	sm.layoutFormat = "JSON-Array";
-
+	// Generate Spritemaps
+	var sm = makeSpritemap();
 	sm.addSymbol(TEMP_ITEM);
-	lib.deleteItem(TEMP_SPRITEMAP);
+
+	var spritemaps = [sm];
+
+	if (sm.overflowed) {
+		// TODO: divide to other spritemaps
+	}
 	
-	var smPath = exportPath + "/spritemap1";
+	var i = 0;
+	while (i < spritemaps.length) {
+		exportSpritemap(exportPath, spritemaps[i], i + 1);
+		i++;
+	}
+	
+	lib.deleteItem(TEMP_SPRITEMAP);
+	doc.exitEditMode();
+	
+	fl.trace("Exported to folder: " + exportPath);
+}
+
+function exportSpritemap(exportPath, sm, index)
+{
+	var smPath = exportPath + "/spritemap" + index;
 	var smSettings = {format:"png", bitDepth:32, backgroundColor:"#00000000"};
 	sm.exportSpriteSheet(smPath, smSettings, true);
 
@@ -250,9 +258,19 @@ function exportAtlas(exportPath, symbolName)
 	smJson += metaData.split("scale").join("resolution").slice(0, -1);
 	
 	FLfile.write(smPath + ".json", smJson);
-	
-	doc.exitEditMode();
-	fl.trace("Exported to folder: " + exportPath);
+}
+
+function makeSpritemap() {
+	var sm = new SpriteSheetExporter;
+	sm.algorithm = "maxRects";
+	sm.autoSize = true;
+	sm.borderPadding = 3;
+	sm.shapePadding = 3;
+	sm.allowRotate = true;
+	sm.allowTrimming = true;
+	sm.stackDuplicate = true;
+	sm.layoutFormat = "JSON-Array";
+	return sm;
 }
 
 function generateAnimation(symbol) {
