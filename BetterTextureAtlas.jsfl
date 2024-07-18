@@ -143,10 +143,10 @@ function exportAtlas(exportPath, symbolName)
 
 	dictionary = [];
 
-	var symbol = findSymbol(symbolName);
+	var symbol = findItem(symbolName);
 
 	lib.addNewItem("graphic", TEMP_SPRITEMAP);
-	TEMP_ITEM = lib.items[lib.findItemIndex(TEMP_SPRITEMAP)];
+	TEMP_ITEM = findItem(TEMP_SPRITEMAP);
 	TEMP_TIMELINE = TEMP_ITEM.timeline;
 	TEMP_LAYER = TEMP_TIMELINE.layers[0];
 	TEMP_TIMELINE.removeFrames(0,0);
@@ -164,11 +164,11 @@ function exportAtlas(exportPath, symbolName)
 	while (i < l)
 	{
 		var id = frameQueue[i];
-		var isBitmapFrame = typeof id === "string";
-		TEMP_TIMELINE.currentFrame = i;
+		var isBitmapFrame = (typeof id === "string");
 
 		if (isBitmapFrame)
 		{
+			TEMP_TIMELINE.currentFrame = i;
 			lib.addItemToDocument(pos, id);
 			if (resolution < 1) {
 				var bitmap = TEMP_LAYER.frames[i].elements[0];
@@ -186,6 +186,7 @@ function exportAtlas(exportPath, symbolName)
 			}
 			else
 			{
+				TEMP_TIMELINE.currentFrame = i;
 				doc.selection = [shape];
 				doc.convertLinesToFills();
 
@@ -293,15 +294,13 @@ function generateAnimation(symbol)
 	while (true)
 	{
 		var itemName = dictionary[sdIndex];		
-		var itemSymbol = lib.items[lib.findItemIndex(itemName)];
+		var itemSymbol = findItem(itemName);
 
-		if (itemSymbol == undefined) {
-			fl.trace("Symbol item not found for name " + itemName);
+		if (itemSymbol == null) {
 			break;
 		}
 
-		json += '{\n';
-		json += parseSymbol(itemSymbol);
+		json += '{\n' + parseSymbol(itemSymbol);
 		
 		if (sdIndex >= dictionary.length - 1)
 		{
@@ -310,19 +309,20 @@ function generateAnimation(symbol)
 		}
 		else
 		{
-			json+= '},';
+			json += '},';
 		}
 
 		sdIndex++;
 	}
-	json += ']';
-	json += '},\n';
+
+	json += ']},\n';
 	
 	// Add Metadata
-	json += jsonHeader(key("metadata", "MD"));
-	json += jsonStr(key("version", "V"), version);
-	json += jsonVarEnd(key("framerate", "FRT"), doc.frameRate);
-	json += '}';
+	json += 
+	jsonHeader(key("metadata", "MD")) +
+	jsonStr(key("version", "V"), version) +
+	jsonVarEnd(key("framerate", "FRT"), doc.frameRate) +
+	'}';
 	
 	json += "}";
 	
@@ -381,33 +381,28 @@ function parseSymbol(symbol)
 function parseFrames(frames, layerIndex, timeline)
 {
 	var json = jsonArray(key("Frames", "FR"));
-	
-	var startFrames = [];
-	
-	// We only need startFrames
-	for (f = 0; f < frames.length; f++)
+
+	var f = 0;
+	while (f < frames.length)
 	{
-		if (f == frames[f].startFrame) {
-			startFrames.push(frames[f]);
+		var frame = frames[f];
+		if (f == frame.startFrame)
+		{
+			json += '{\n';
+		
+			if (frame.name.length > 0) {
+				json += jsonStr(key("name", "N"), frame.name);
+			}
+		
+			json += jsonVar(key("index", "I"), frame.startFrame);
+			json += jsonVar(key("duration", "DU"), frame.duration);
+			json += parseElements(frame.elements, frame.startFrame, layerIndex, timeline);
+			json += '},';
 		}
+		f++;
 	}
 
-	for (f = 0; f < startFrames.length; f++)
-	{
-		var frame = startFrames[f];		
-		json += '{\n';
-		
-		if (frame.name.length > 0)
-			json += jsonStr(key("name", "N"), frame.name);
-		
-		json += jsonVar(key("index", "I"), frame.startFrame);
-		json += jsonVar(key("duration", "DU"), frame.duration);
-		json += parseElements(frame.elements, frame.startFrame, layerIndex, timeline);
-		json += (f < startFrames.length - 1) ? '},' : '}';
-	}
-	
-	json += ']';
-	return json;
+	return json.slice(0, -1) + ']';
 }
 
 function parseElements(elements, frameIndex, layerIndex, timeline)
@@ -418,7 +413,6 @@ function parseElements(elements, frameIndex, layerIndex, timeline)
 	while (e < elements.length)
 	{
 		var element = elements[e];
-		
 		json += "{";
 		
 		switch (element.elementType) {
@@ -435,12 +429,10 @@ function parseElements(elements, frameIndex, layerIndex, timeline)
 					break;
 				}
 			break;
-			case "text":
-			break;
-			case "tlfText":
-			break;
-			case "shapeObj":
-			break;
+			// TODO:
+			case "text": 		break;
+			case "tlfText": 	break;
+			case "shapeObj": 	break;
 		}
 
 		json += (e < elements.length -1) ? "},\n" : "}";
@@ -776,11 +768,11 @@ function formatLimbName(numStr) {
     return i === numStr.length ? "0" : numStr.slice(i);
 }
 
-function findSymbol(name) {
+function findItem(name) {
 	if (lib.itemExists(name))
 		return lib.items[lib.findItemIndex(name)];
 
-	fl.trace("Symbol not found: " + name);
+	fl.trace("Item not found: " + name);
 	return null;
 }
 
