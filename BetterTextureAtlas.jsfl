@@ -284,9 +284,10 @@ function generateAnimation(symbol)
 	json += jsonHeader(key("ANIMATION", "AN"));
 	json += jsonStr(key("name", "N"), doc.name.slice(0, -4));
 	if (instance != null) {
-		json += jsonHeader(key("StageInstance", "STI"));
-		json += parseSymbolInstance(instance);
-		json += '},\n';
+		json += 
+		jsonHeader(key("StageInstance", "STI")) +
+		parseSymbolInstance(instance) +
+		'},\n';
 	}
 	json += parseSymbol(symbol);
 	json += '},\n';
@@ -338,49 +339,42 @@ function parseSymbol(symbol)
 {
 	var json = '';
 	var timeline = symbol.timeline;
+	var layers = timeline.layers;
 	
 	json += jsonStr(key("SYMBOL_name", "SN"), symbol.name);
 	json += jsonHeader(key("TIMELINE", "TL"));
 	json += jsonArray(key("LAYERS", "L"));
 
-	var layers = [];
-	for each(var layer in timeline.layers)
-	{
-		if (layer.visible || !onlyVisibleLayers)
-			layers.push(layer);
-	}
-	
-	// Add Layers and Frames
 	var l = 0;
 	while (l < layers.length)
 	{
 		var layer = layers[l];
-		var locked = layer.locked;
-		layer.locked = false;
-		
-		json += '{\n';
-		json += jsonStr(key("Layer_name", "LN"), layer.name);
-		
-		switch (layer.layerType) {
-			case "mask":
-				json += jsonStr(key("Layer_type", "LT"), "Clipper");
-			break;
-			case "masked":
-				json += jsonStr(key("Clipped_by", "Clpb"), layer.parentLayer.name);
-			break;
+		if (layer.visible || !onlyVisibleLayers)
+		{
+			json += '{\n' +
+			jsonStr(key("Layer_name", "LN"), layer.name);
+
+			switch (layer.layerType) {
+				case "mask":
+					json += jsonStr(key("Layer_type", "LT"), "Clipper");
+				break;
+				case "masked":
+					json += jsonStr(key("Clipped_by", "Clpb"), layer.parentLayer.name);
+				break;
+				// TODO: add missing layer types
+				case "normal": break;
+				case "guide": break;
+				case "guided": break;
+				case "folder": break;
+			}
+
+			json += parseFrames(layer.frames, l, timeline) + 
+			'},';
 		}
-		
-		json += parseFrames(layer.frames, l, timeline);
-		json += (l < layers.length - 1) ? '},' : '}';
-		
-		layer.locked = locked;
 		l++;
 	}
-	
-	json += ']';
-	json += '}';
-	
-	return json;
+
+	return json.slice(0, -1) + ']}';
 }
 
 function parseFrames(frames, layerIndex, timeline)
@@ -432,9 +426,14 @@ function parseElements(elements, frameIndex, layerIndex, timeline)
 					case "bitmap":
 						json += parseBitmapInstance(element);
 					break;
+					// TODO: add missing element instance types
+					case "embedded video": break;
+					case "linked video": break;
+					case "video": break;
+					case "compiled clip": break;
 				}
 			break;
-			// TODO:
+			// TODO: add missing element types
 			case "text": 		break;
 			case "tlfText": 	break;
 			case "shapeObj": 	break;
@@ -624,8 +623,6 @@ function parseSymbolInstance(instance)
 				var filterContents = "";
 				var filterName = "";
 
-				// TODO: filters in optimized mode ugghuf
-
 				switch (filter.name) {
 					case "adjustColorFilter":
 						filterName = key("adjustColorFilter", "ACF");
@@ -794,11 +791,11 @@ function jsonVar(name, value) {
 }
 
 function jsonStrEnd(name, value) {
-	return '"' + name +'":"' + value + '"\n';
+	return '"' + name + '":"' + value + '"\n';
 }
 
 function jsonStr(name, value) {
-	return '"' + name +'":"' + value + '",\n';
+	return '"' + name + '":"' + value + '",\n';
 }
 
 function jsonArray(name) {
