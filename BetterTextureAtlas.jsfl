@@ -132,12 +132,16 @@ var smIndex;
 var addedItems;
 var frameQueue;
 
+var dictionary;
+
 function exportAtlas(exportPath, symbolName)
 {	
 	TEMP_SPRITEMAP = "__BTA_TEMP_SPRITEMAP";
 	addedItems = [];
 	frameQueue = [];
 	smIndex = 0;
+
+	dictionary = [];
 
 	var symbol = findSymbol(symbolName);
 
@@ -280,22 +284,36 @@ function generateAnimation(symbol)
 	}
 	json += parseSymbol(symbol);
 	json += '},\n';
-	
-	// Get the dictionary
-	var dictionary = [];
-	findDictionary(symbol, dictionary);
+
+	var sdIndex = 1;
 	
 	// Add Symbol Dictionary
 	json += jsonHeader(key("SYMBOL_DICTIONARY", "SD"));
 	json += jsonArray(key ("Symbols", "S"));
-	for (d = 0; d < dictionary.length; d++)
+	while (true)
 	{
-		var name = dictionary[d];
-		var symbol = lib.items[lib.findItemIndex(name)];
-		
+		var itemName = dictionary[sdIndex];		
+		var itemSymbol = lib.items[lib.findItemIndex(itemName)];
+
+		if (itemSymbol == undefined) {
+			fl.trace("Symbol item not found for name " + itemName);
+			break;
+		}
+
 		json += '{\n';
-		json += parseSymbol(symbol);
-		json += (d < dictionary.length - 1) ? '},' : '}';
+		json += parseSymbol(itemSymbol);
+		
+		if (sdIndex >= dictionary.length - 1)
+		{
+			json += '}';
+			break;
+		}
+		else
+		{
+			json+= '},';
+		}
+
+		sdIndex++;
 	}
 	json += ']';
 	json += '},\n';
@@ -309,39 +327,6 @@ function generateAnimation(symbol)
 	json += "}";
 	
 	return json;
-}
-
-function findDictionary(symbol, dictionary)
-{	
-	for each(var layer in symbol.timeline.layers)
-	{
-		var f = 0;
-		var l = layer.frames.length;
-		while (f < l)
-		{
-			var frame = layer.frames[f];
-			if (frame.startFrame == f)
-			{
-				for each(var element in frame.elements)
-				{
-					if (element.elementType !== "instance") continue;
-
-					var libraryItem = element.libraryItem;
-					var itemName = libraryItem.name;
-
-					if (dictionary.indexOf(itemName) !== -1) continue;
-
-					var itemType = libraryItem.itemType;
-					if (itemType == "graphic" || itemType == "movie clip")
-					{
-						findDictionary(libraryItem, dictionary);
-						dictionary.push(itemName);
-					}
-				}
-			}
-			f++;
-		}
-	}
 }
 
 function parseSymbol(symbol)
@@ -550,8 +535,12 @@ function parseSymbolInstance(instance)
 	var json = jsonHeader(key("SYMBOL_Instance", "SI"));
 	var item = instance.libraryItem;
 	
-	if (item != undefined)
+	if (item != undefined) {
 		json += jsonStr(key("SYMBOL_name", "SN"), item.name);
+		if (dictionary.indexOf(item.name) == -1) {
+			dictionary.push(item.name);
+		}
+	}
 
 	if (instance.firstFrame != undefined)
 		json += jsonVar(key("firstFrame", "FF"), instance.firstFrame);
