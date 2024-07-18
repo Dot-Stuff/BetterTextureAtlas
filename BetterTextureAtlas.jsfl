@@ -1,5 +1,7 @@
 ﻿///// CONFIGURATION
 fl.outputPanel.clear(); // debug purposes
+fl.showIdleMessage(false);
+
 var symbol = "";
 var meshExport = false; // If to use a spritemap or mesh vertex data
 var version = "bta_1"; // easy to modify
@@ -12,6 +14,7 @@ var resolution = 1.0;
 
 var doc = fl.getDocumentDOM();
 var lib = doc.library;
+
 
 var instance = null;
 var resScale = 1.0;
@@ -118,6 +121,7 @@ if (symbol.length > 0)
 		fl.trace("operation cancelled");
 	
 	fl.trace("DONE");
+	fl.showIdleMessage(true);
 }
 else {
 	fl.trace("No symbol selected");
@@ -600,7 +604,7 @@ function parseSymbolInstance(instance)
 	else
 		json += jsonVar(key("Matrix", "MX"), parseMatrix(instance.matrix));	
 
-	if (instance.symbolType == "movie clip")
+	if (instance.symbolType != "graphic")
 	{
 		var filters = instance.filters;
 		var hasFilters = (filters != undefined && filters.length > 0)
