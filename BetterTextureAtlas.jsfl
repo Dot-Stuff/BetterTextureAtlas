@@ -278,6 +278,7 @@ function generateAnimation(symbol)
 	
 	// Add Animation
 	json += jsonHeader(key("ANIMATION", "AN"));
+	json += jsonStr(key("name", "N"), doc.name.slice(0, -4));
 	if (instance != null) {
 		json += jsonHeader(key("StageInstance", "STI"));
 		json += parseSymbolInstance(instance);
