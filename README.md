@@ -1,3 +1,5 @@
+![BETTERTAsmiley](https://github.com/user-attachments/assets/104fd239-8db4-43de-97e3-b3bb7efa545b)
+
 # BetterTextureAtlas
 BetterTextureAtlas is an Adobe Animate JSFL script that aims to give improved Texture Atlas exports.<br>
 Adding more settings and extra features missing from the default Adobe exporter.
