@@ -53,19 +53,7 @@ if (symbol.length > 0)
 		flatten = file[6];
 	}
 
-	var xPan = null;
-	if (parseInt(version)[0] < 15 && parseInt(version)[1] < 1)
-	{
-		
-		var tempP = fl.configURI + "Commands/_BTAD.xml";
-		FLfile.write(tempP, rawXML, null);
-		
-		 xPan = fl.xmlPanel(tempP);
-		
-		FLfile.remove(tempP);
-	}
-	else
-		xPan = fl.xmlPanelFromString(rawXML);
+	var rawXML = FLfile.read(fl.configURI + "Commands/BTADialog.xml");
 
 	var str = save + "\\" + symbol;
 	if (save == "")
@@ -79,7 +67,19 @@ if (symbol.length > 0)
 	rawXML = rawXML.split("$OPTAN").join(optAn);
 	rawXML = rawXML.split("$FLAT").join(flatten);
 
-	var xPan = fl.xmlPanelFromString(rawXML);
+	var xPan = null;
+	if (parseInt(version)[0] < 15 && parseInt(version)[1] < 1)
+	{
+		
+		var tempP = fl.configURI + "Commands/_BTAD.xml";
+		FLfile.write(tempP, rawXML, null);
+		
+		 xPan = fl.xmlPanel(tempP);
+		
+		FLfile.remove(tempP);
+	}
+	else
+		xPan = fl.xmlPanelFromString(rawXML);
 	
 	if (xPan.dismiss == "accept")
 	{
