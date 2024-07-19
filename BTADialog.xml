@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <dialog title="Generate a Texture Atlas">
 
-	<flash src="C:\Users\sotif\AppData\Local\Adobe\Animate 2022\es_ES\Configuration\Commands\Logo.swf" width="700" height="72"></flash>
+	<flash src="$CONFIGDIRCommands\BTAlogo.swf" width="700" height="72"></flash>
 	<separator/>
 
 	<hbox>

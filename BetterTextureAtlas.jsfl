@@ -15,13 +15,9 @@ var version = fl.version.split(" ")[1].split(",");
 var ShpPad = 0;
 var BrdPad = 0;
 /////
-/*
-fl.trace("###################################################################################################################################################");
-*/
 
 var doc = fl.getDocumentDOM();
 var lib = doc.library;
-
 
 var instance = null;
 var resScale = 1.0;
@@ -74,16 +70,19 @@ if (symbol.length > 0)
 			}
 		}
 	}
-	else
+	else {
 		stuff = "#f0f0f0";
+	}
 
-	FLfile.write(fl.configURI + "Commands/BTATheme.txt", stuff);
+	var config = fl.configURI;
+
+	FLfile.write(config + "Commands/BTATheme.txt", stuff);
 	
-	var rawXML = FLfile.read(fl.configURI + "Commands/BTADialog.xml");
+	var rawXML = FLfile.read(config + "Commands/BTADialog.xml");
 	var str = save + "\\" + symbol;
-	if (save == "")
-		str = symbol;
+	if (save == "") str = symbol;
 	
+	rawXML = rawXML.split("$CONFIGDIR").join(fl.configDirectory);
 	rawXML = rawXML.split("$FILEURI").join(str);
 	rawXML = rawXML.split("$SHP").join(ShpPad);
 	rawXML = rawXML.split("$BRD").join(BrdPad);
@@ -91,6 +90,7 @@ if (symbol.length > 0)
 	rawXML = rawXML.split("$OPTDIM").join(optDimens);
 	rawXML = rawXML.split("$OPTAN").join(optAn);
 	rawXML = rawXML.split("$FLAT").join(flatten);
+	
 	var buttonWidth = 0;
 	if (parseInt(version[0]) >= 20)
 		buttonWidth = 50;
@@ -99,9 +99,10 @@ if (symbol.length > 0)
 	
 	var xPan = null;
 	
+	// Flash doesnt support direct panels from strings so we gotta create a temp xml
 	if (parseInt(version[0]) < 15 && parseInt(version[1]) < 1)
 	{
-		var tempP = fl.configURI + "Commands/_BTAD.xml";
+		var tempP = config + "Commands/_BTAD.xml";
 		FLfile.write(tempP, rawXML, null);
 		xPan = fl.xmlPanel(tempP);
 		FLfile.remove(tempP);
@@ -112,15 +113,15 @@ if (symbol.length > 0)
 	}	
 	
 	if (xPan == null)
+	{
 		alert("Failed loading XML Panel");
+	}
 	else if (xPan.dismiss == "accept")
 	{
-		var str = "";
-		str = xPan.saveBox;
-		
-		var arr = str.split("\\");
+		var arr = xPan.saveBox.split("\\");
 		var name = arr.pop();
 		save = arr.join("\\");
+		
 		ShpPad = parseInt(xPan.ShpPad);
 		BrdPad = parseInt(xPan.BrdPad);
 		res = xPan.ResSld;
@@ -144,7 +145,9 @@ if (symbol.length > 0)
 		FLfile.write(fl.configURI + "Commands/saveBTA.txt", save + "\n" + ShpPad + "\n" + BrdPad +  "\n" + res +  "\n" + optDimens +  "\n" + optAn +  "\n" + flatten);
 	}
 	else
-		fl.trace("operation cancelled");
+	{
+		fl.trace("Operation cancelled");
+	}
 	
 	fl.trace("DONE");
 	fl.showIdleMessage(true);
@@ -310,9 +313,10 @@ function generateAnimation(symbol)
 	json += jsonHeader(key("ANIMATION", "AN"));
 	json += jsonStr(key("name", "N"), doc.name.slice(0, -4));
 	if (instance != null) {
-		json += jsonHeader(key("StageInstance", "STI"));
-		json += parseSymbolInstance(instance);
-		json += '},\n';
+		json += 
+		jsonHeader(key("StageInstance", "STI")) +
+		parseSymbolInstance(instance) +
+		'},\n';
 	}
 	json += parseSymbol(symbol);
 	json += '},\n';
@@ -364,49 +368,42 @@ function parseSymbol(symbol)
 {
 	var json = '';
 	var timeline = symbol.timeline;
+	var layers = timeline.layers;
 	
 	json += jsonStr(key("SYMBOL_name", "SN"), symbol.name);
 	json += jsonHeader(key("TIMELINE", "TL"));
 	json += jsonArray(key("LAYERS", "L"));
 
-	var layers = [];
-	for each(var layer in timeline.layers)
-	{
-		if (layer.visible || !onlyVisibleLayers)
-			layers.push(layer);
-	}
-	
-	// Add Layers and Frames
 	var l = 0;
 	while (l < layers.length)
 	{
 		var layer = layers[l];
-		var locked = layer.locked;
-		layer.locked = false;
-		
-		json += '{\n';
-		json += jsonStr(key("Layer_name", "LN"), layer.name);
-		
-		switch (layer.layerType) {
-			case "mask":
-				json += jsonStr(key("Layer_type", "LT"), "Clipper");
-			break;
-			case "masked":
-				json += jsonStr(key("Clipped_by", "Clpb"), layer.parentLayer.name);
-			break;
+		if (layer.visible || !onlyVisibleLayers)
+		{
+			json += '{\n' +
+			jsonStr(key("Layer_name", "LN"), layer.name);
+
+			switch (layer.layerType) {
+				case "mask":
+					json += jsonStr(key("Layer_type", "LT"), "Clipper");
+				break;
+				case "masked":
+					json += jsonStr(key("Clipped_by", "Clpb"), layer.parentLayer.name);
+				break;
+				// TODO: add missing layer types
+				case "normal": break;
+				case "guide": break;
+				case "guided": break;
+				case "folder": break;
+			}
+
+			json += parseFrames(layer.frames, l, timeline) + 
+			'},';
 		}
-		
-		json += parseFrames(layer.frames, l, timeline);
-		json += (l < layers.length - 1) ? '},' : '}';
-		
-		layer.locked = locked;
 		l++;
 	}
-	
-	json += ']';
-	json += '}';
-	
-	return json;
+
+	return json.slice(0, -1) + ']}';
 }
 
 function parseFrames(frames, layerIndex, timeline)
@@ -458,9 +455,14 @@ function parseElements(elements, frameIndex, layerIndex, timeline)
 					case "bitmap":
 						json += parseBitmapInstance(element);
 					break;
+					// TODO: add missing element instance types
+					case "embedded video": break;
+					case "linked video": break;
+					case "video": break;
+					case "compiled clip": break;
 				}
 			break;
-			// TODO:
+			// TODO:  add missing element types
 			case "text": 		break;
 			case "tlfText": 	break;
 			case "shapeObj": 	break;
@@ -650,8 +652,6 @@ function parseSymbolInstance(instance)
 				var filterContents = "";
 				var filterName = "";
 
-				// TODO: filters in optimized mode ugghuf
-
 				switch (filter.name) {
 					case "adjustColorFilter":
 						filterName = key("adjustColorFilter", "ACF");
@@ -812,7 +812,6 @@ function formatPath(path)
 		
 	path = "file:///" + arr.join("|");
 	path = path.split("\\").join("/");
-	path += "/" + name;
 
 	// Remove leading spaces of the path
 	var endIndex = path.length - 1;
@@ -844,11 +843,11 @@ function jsonVar(name, value) {
 }
 
 function jsonStrEnd(name, value) {
-	return '"' + name +'":"' + value + '"\n';
+	return '"' + name + '":"' + value + '"\n';
 }
 
 function jsonStr(name, value) {
-	return '"' + name +'":"' + value + '",\n';
+	return '"' + name + '":"' + value + '",\n';
 }
 
 function jsonArray(name) {
