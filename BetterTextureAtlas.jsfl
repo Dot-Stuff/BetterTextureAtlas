@@ -12,7 +12,12 @@ var flattenSkewing = false;
 var resolution = 1.0;
 var platform = fl.version.split(" ")[0];
 var version = fl.version.split(" ")[1].split(",");
+var ShpPad = 0;
+var BrdPad = 0;
 /////
+/*
+fl.trace("###################################################################################################################################################");
+*/
 
 var doc = fl.getDocumentDOM();
 var lib = doc.library;
@@ -34,8 +39,7 @@ else if (lib.getSelectedItems().length > 0)
 if (symbol.length > 0)
 {
 	var save = "";
-	var ShpPad = 0;
-	var BrdPad = 0;
+	
 	var res = 1.0;
 	var optDimens = "true";
 	var optAn = "true";
@@ -52,9 +56,30 @@ if (symbol.length > 0)
 		optAn = file[5];
 		flatten = file[6];
 	}
+	
+	var stuff = "";
+	if (version[0] >= 13)
+	{
+		if (version[0] < 20)
+			stuff = fl.getThemeColor("themeAppBackgroundColor");
+		else
+		{
+			stuff = fl.getThemeColor("themeAppBackgroundColor");
+			switch(stuff)
+			{
+					case "#404040": stuff = "#333333"; break;
+					case "#262626": stuff = "#1f1f1f"; break;
+					case "#B9B9B9": stuff = "#f5f5f5"; break;	
+					case "#F2F2F2": stuff = "#ffffff"; break;
+			}
+		}
+	}
+	else
+		stuff = "#f0f0f0";
 
+	FLfile.write(fl.configURI + "Commands/BTATheme.txt", stuff);
+	
 	var rawXML = FLfile.read(fl.configURI + "Commands/BTADialog.xml");
-
 	var str = save + "\\" + symbol;
 	if (save == "")
 		str = symbol;
@@ -66,10 +91,14 @@ if (symbol.length > 0)
 	rawXML = rawXML.split("$OPTDIM").join(optDimens);
 	rawXML = rawXML.split("$OPTAN").join(optAn);
 	rawXML = rawXML.split("$FLAT").join(flatten);
-
+	var buttonWidth = 0;
+	if (parseInt(version[0]) >= 20)
+		buttonWidth = 50;
+	
+	rawXML = rawXML.split("$BWI").join(buttonWidth);
+	
 	var xPan = null;
 	
-	// Flash doesnt support direct panels from strings so we gotta create a temp xml
 	if (parseInt(version[0]) < 15 && parseInt(version[1]) < 1)
 	{
 		var tempP = fl.configURI + "Commands/_BTAD.xml";
@@ -81,27 +110,32 @@ if (symbol.length > 0)
 	{
 		xPan = fl.xmlPanelFromString(rawXML);
 	}	
-
+	
 	if (xPan == null)
-	{
-		fl.trace("Failed loading XML Panel");
-	}
+		alert("Failed loading XML Panel");
 	else if (xPan.dismiss == "accept")
-	{	
-		save = xPan.saveBox;
-		ShpPad = xPan.ShpPad;
-		BrdPad = xPan.BrdPad;
+	{
+		var str = "";
+		str = xPan.saveBox;
+		
+		var arr = str.split("\\");
+		var name = arr.pop();
+		save = arr.join("\\");
+		ShpPad = parseInt(xPan.ShpPad);
+		BrdPad = parseInt(xPan.BrdPad);
 		res = xPan.ResSld;
 		optDimens = xPan.OptDimens;
 		optAn = xPan.OptAn;
 		flatten = xPan.FlatSke;
 		
-		var path = formatPath(save);
 		optimiseDimensions = (optDimens == "true");
 		optimizeJson = (optAn == "true");
 		flattenSkewing = (flatten == "true");
 		resolution = parseFloat(res);
 		resScale =  1 / resolution;
+
+		// First ask for the export folder
+		var path = formatPath(save);
 	
 		FLfile.createFolder(path);
 
@@ -110,15 +144,13 @@ if (symbol.length > 0)
 		FLfile.write(fl.configURI + "Commands/saveBTA.txt", save + "\n" + ShpPad + "\n" + BrdPad +  "\n" + res +  "\n" + optDimens +  "\n" + optAn +  "\n" + flatten);
 	}
 	else
-	{
-		fl.trace("Operation cancelled");
-	}
+		fl.trace("operation cancelled");
 	
 	fl.trace("DONE");
 	fl.showIdleMessage(true);
 }
 else {
-	fl.trace("No symbol selected");
+	alert("No symbol has been selected");
 }
 
 var TEMP_SPRITEMAP;
@@ -173,28 +205,28 @@ function exportAtlas(exportPath, symbolName)
 				bitmap.scaleX = bitmap.scaleY = resolution;
 			}
 		}
-		// TODO: this fucks up the matrix and other crap, will fix later
-		//else if (resolution != 1)
-		//{
-		//	var shape = TEMP_LAYER.frames[i].elements[id];
-		//	if (shape.isGroup)
-		//	{
-		//		shape.scaleX *= resolution;
-		//		shape.scaleY *= resolution;
-		//	}
-		//	else
-		//	{
-		//		TEMP_TIMELINE.currentFrame = i;
-		//		doc.selection = [shape];
-		//		doc.convertLinesToFills();
+		/* // TODO: this fucks up the matrix and other crap, will fix later
+		else if (resolution != 1)
+		{
+			var shape = TEMP_LAYER.frames[i].elements[id];
+			if (shape.isGroup)
+			{
+				shape.scaleX *= resolution;
+				shape.scaleY *= resolution;
+			}
+			else
+			{
+				TEMP_TIMELINE.currentFrame = i;
+				doc.selection = [shape];
+				doc.convertLinesToFills();
 
-		//		var elements = TEMP_LAYER.frames[i].elements;
-		//		for (e = 0; e < elements.length; e++) {
-		//			var element = elements[e];
-		//			if (e == id) element.scaleX = element.scaleY = resolution;
-		//		}
-		//	}
-		//}
+				var elements = TEMP_LAYER.frames[i].elements;
+				for (e = 0; e < elements.length; e++) {
+					var element = elements[e];
+					if (e == id) element.scaleX = element.scaleY = resolution;
+				}
+			}
+		}*/
 		
 		i++;
 	}
@@ -261,8 +293,8 @@ function makeSpritemap() {
 	var sm = new SpriteSheetExporter;
 	sm.algorithm = "maxRects";
 	sm.autoSize = true;
-	sm.borderPadding = 3;
-	sm.shapePadding = 3;
+	sm.borderPadding = BrdPad;
+	sm.shapePadding = ShpPad;
 	sm.allowRotate = true;
 	sm.allowTrimming = true;
 	sm.stackDuplicate = true;
@@ -278,10 +310,9 @@ function generateAnimation(symbol)
 	json += jsonHeader(key("ANIMATION", "AN"));
 	json += jsonStr(key("name", "N"), doc.name.slice(0, -4));
 	if (instance != null) {
-		json += 
-		jsonHeader(key("StageInstance", "STI")) +
-		parseSymbolInstance(instance) +
-		'},\n';
+		json += jsonHeader(key("StageInstance", "STI"));
+		json += parseSymbolInstance(instance);
+		json += '},\n';
 	}
 	json += parseSymbol(symbol);
 	json += '},\n';
@@ -333,42 +364,49 @@ function parseSymbol(symbol)
 {
 	var json = '';
 	var timeline = symbol.timeline;
-	var layers = timeline.layers;
 	
 	json += jsonStr(key("SYMBOL_name", "SN"), symbol.name);
 	json += jsonHeader(key("TIMELINE", "TL"));
 	json += jsonArray(key("LAYERS", "L"));
 
+	var layers = [];
+	for each(var layer in timeline.layers)
+	{
+		if (layer.visible || !onlyVisibleLayers)
+			layers.push(layer);
+	}
+	
+	// Add Layers and Frames
 	var l = 0;
 	while (l < layers.length)
 	{
 		var layer = layers[l];
-		if (layer.visible || !onlyVisibleLayers)
-		{
-			json += '{\n' +
-			jsonStr(key("Layer_name", "LN"), layer.name);
-
-			switch (layer.layerType) {
-				case "mask":
-					json += jsonStr(key("Layer_type", "LT"), "Clipper");
-				break;
-				case "masked":
-					json += jsonStr(key("Clipped_by", "Clpb"), layer.parentLayer.name);
-				break;
-				// TODO: add missing layer types
-				case "normal": break;
-				case "guide": break;
-				case "guided": break;
-				case "folder": break;
-			}
-
-			json += parseFrames(layer.frames, l, timeline) + 
-			'},';
+		var locked = layer.locked;
+		layer.locked = false;
+		
+		json += '{\n';
+		json += jsonStr(key("Layer_name", "LN"), layer.name);
+		
+		switch (layer.layerType) {
+			case "mask":
+				json += jsonStr(key("Layer_type", "LT"), "Clipper");
+			break;
+			case "masked":
+				json += jsonStr(key("Clipped_by", "Clpb"), layer.parentLayer.name);
+			break;
 		}
+		
+		json += parseFrames(layer.frames, l, timeline);
+		json += (l < layers.length - 1) ? '},' : '}';
+		
+		layer.locked = locked;
 		l++;
 	}
-
-	return json.slice(0, -1) + ']}';
+	
+	json += ']';
+	json += '}';
+	
+	return json;
 }
 
 function parseFrames(frames, layerIndex, timeline)
@@ -420,14 +458,9 @@ function parseElements(elements, frameIndex, layerIndex, timeline)
 					case "bitmap":
 						json += parseBitmapInstance(element);
 					break;
-					// TODO: add missing element instance types
-					case "embedded video": break;
-					case "linked video": break;
-					case "video": break;
-					case "compiled clip": break;
 				}
 			break;
-			// TODO: add missing element types
+			// TODO:
 			case "text": 		break;
 			case "tlfText": 	break;
 			case "shapeObj": 	break;
@@ -617,6 +650,8 @@ function parseSymbolInstance(instance)
 				var filterContents = "";
 				var filterName = "";
 
+				// TODO: filters in optimized mode ugghuf
+
 				switch (filter.name) {
 					case "adjustColorFilter":
 						filterName = key("adjustColorFilter", "ACF");
@@ -772,7 +807,6 @@ function formatPath(path)
 	}
 
 	var arr = path.split("\\");
-	var name = arr.pop();
 
 	arr = arr.join("\\").split(":");
 		
@@ -810,11 +844,11 @@ function jsonVar(name, value) {
 }
 
 function jsonStrEnd(name, value) {
-	return '"' + name + '":"' + value + '"\n';
+	return '"' + name +'":"' + value + '"\n';
 }
 
 function jsonStr(name, value) {
-	return '"' + name + '":"' + value + '",\n';
+	return '"' + name +'":"' + value + '",\n';
 }
 
 function jsonArray(name) {
