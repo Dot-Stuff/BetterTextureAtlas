@@ -10,6 +10,8 @@ var optimiseDimensions = true; // TODO: doesnt work yet
 var optimizeJson = true; // TODO: theres still some variable names left to change for optimized lmao
 var flattenSkewing = false;
 var resolution = 1.0;
+var platform = fl.version.split(" ")[0];
+var version = fl.version.split(" ")[1].split(",");
 /////
 
 var doc = fl.getDocumentDOM();
@@ -63,8 +65,21 @@ if (symbol.length > 0)
 	rawXML = rawXML.split("$OPTDIM").join(optDimens);
 	rawXML = rawXML.split("$OPTAN").join(optAn);
 	rawXML = rawXML.split("$FLAT").join(flatten);
-
-	var xPan = fl.xmlPanelFromString(rawXML);
+	
+	var xPan = null;
+	
+	if (parseInt(version)[0] < 15 && parseInt(version)[1] < 1)
+	{
+		
+		var tempP = fl.configURI + "Commands/_BTAD.xml";
+		FLfile.write(tempP, rawXML, null);
+		
+		 xPan = fl.xmlPanel(tempP);
+		
+		FLfile.remove(tempP);
+	}
+	else
+		xPan = fl.xmlPanelFromString(rawXML);
 	
 	if (xPan.dismiss == "accept")
 	{
@@ -124,7 +139,7 @@ if (symbol.length > 0)
 	fl.showIdleMessage(true);
 }
 else {
-	fl.trace("No symbol selected");
+	alert("No symbol has been selected");
 }
 
 var TEMP_SPRITEMAP;
@@ -284,10 +299,9 @@ function generateAnimation(symbol)
 	json += jsonHeader(key("ANIMATION", "AN"));
 	json += jsonStr(key("name", "N"), doc.name.slice(0, -4));
 	if (instance != null) {
-		json += 
-		jsonHeader(key("StageInstance", "STI")) +
-		parseSymbolInstance(instance) +
-		'},\n';
+		json += jsonHeader(key("StageInstance", "STI"));
+		json += parseSymbolInstance(instance);
+		json += '},\n';
 	}
 	json += parseSymbol(symbol);
 	json += '},\n';
@@ -339,42 +353,49 @@ function parseSymbol(symbol)
 {
 	var json = '';
 	var timeline = symbol.timeline;
-	var layers = timeline.layers;
 	
 	json += jsonStr(key("SYMBOL_name", "SN"), symbol.name);
 	json += jsonHeader(key("TIMELINE", "TL"));
 	json += jsonArray(key("LAYERS", "L"));
 
+	var layers = [];
+	for each(var layer in timeline.layers)
+	{
+		if (layer.visible || !onlyVisibleLayers)
+			layers.push(layer);
+	}
+	
+	// Add Layers and Frames
 	var l = 0;
 	while (l < layers.length)
 	{
 		var layer = layers[l];
-		if (layer.visible || !onlyVisibleLayers)
-		{
-			json += '{\n' +
-			jsonStr(key("Layer_name", "LN"), layer.name);
-
-			switch (layer.layerType) {
-				case "mask":
-					json += jsonStr(key("Layer_type", "LT"), "Clipper");
-				break;
-				case "masked":
-					json += jsonStr(key("Clipped_by", "Clpb"), layer.parentLayer.name);
-				break;
-				// TODO: add missing layer types
-				case "normal": break;
-				case "guide": break;
-				case "guided": break;
-				case "folder": break;
-			}
-
-			json += parseFrames(layer.frames, l, timeline) + 
-			'},';
+		var locked = layer.locked;
+		layer.locked = false;
+		
+		json += '{\n';
+		json += jsonStr(key("Layer_name", "LN"), layer.name);
+		
+		switch (layer.layerType) {
+			case "mask":
+				json += jsonStr(key("Layer_type", "LT"), "Clipper");
+			break;
+			case "masked":
+				json += jsonStr(key("Clipped_by", "Clpb"), layer.parentLayer.name);
+			break;
 		}
+		
+		json += parseFrames(layer.frames, l, timeline);
+		json += (l < layers.length - 1) ? '},' : '}';
+		
+		layer.locked = locked;
 		l++;
 	}
-
-	return json.slice(0, -1) + ']}';
+	
+	json += ']';
+	json += '}';
+	
+	return json;
 }
 
 function parseFrames(frames, layerIndex, timeline)
@@ -426,14 +447,9 @@ function parseElements(elements, frameIndex, layerIndex, timeline)
 					case "bitmap":
 						json += parseBitmapInstance(element);
 					break;
-					// TODO: add missing element instance types
-					case "embedded video": break;
-					case "linked video": break;
-					case "video": break;
-					case "compiled clip": break;
 				}
 			break;
-			// TODO: add missing element types
+			// TODO:
 			case "text": 		break;
 			case "tlfText": 	break;
 			case "shapeObj": 	break;
@@ -623,6 +639,8 @@ function parseSymbolInstance(instance)
 				var filterContents = "";
 				var filterName = "";
 
+				// TODO: filters in optimized mode ugghuf
+
 				switch (filter.name) {
 					case "adjustColorFilter":
 						filterName = key("adjustColorFilter", "ACF");
@@ -791,11 +809,11 @@ function jsonVar(name, value) {
 }
 
 function jsonStrEnd(name, value) {
-	return '"' + name + '":"' + value + '"\n';
+	return '"' + name +'":"' + value + '"\n';
 }
 
 function jsonStr(name, value) {
-	return '"' + name + '":"' + value + '",\n';
+	return '"' + name +'":"' + value + '",\n';
 }
 
 function jsonArray(name) {
