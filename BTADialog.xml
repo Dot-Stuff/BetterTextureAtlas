@@ -1,17 +1,22 @@
 <?xml version="1.0"?>
-<dialog title="Generate a Texture Atlas" buttons="">
+<dialog title="Generate a Texture Atlas">
 
-	<vbox>
-		<label value="Export Settings"/>
-		
-		<separator/>
-		<spacer/>
-		<spacer/>
+	<flash src="C:\Users\sotif\AppData\Local\Adobe\Animate 2022\es_ES\Configuration\Commands\Logo.swf" width="700" height="72"></flash>
+	<separator/>
+
+	<hbox>
+		<label value=" " />
+		<label value="Texture Atlas Export" id="stuff" control="radioGroup"/>
+	</hbox>
+
+	<radiogroup id="radioGroup" groupbox="true" label="Export Settings">
 
 		<grid>
+
 			<columns>
 				<column/>
 				<column/>
+				
 			</columns>
 			<rows>
 				<row>
@@ -19,69 +24,101 @@
 						<columns>
 							<column/>
 							<column/>
-							<column/>
 						</columns>
 						<rows>
-							<row align="center">
-								<label value="Image dimensions: " control="imgDims"/>
+							<row>
+								<label value="Image dimensions:" align="right"/>
+								<hbox>
 								<menulist id="imgDims" value="128" >
-										<menupop>
-											<menuitem label="Automatic Size" value="auto"/>
-											<menuitem label="64x64" value="64"/>
-										<menuitem label="128x128" value="128"/>
-										<menuitem label="256x256" value="256"/>
-										<menuitem label="512x512" value="512"/>
-										<menuitem label="1024x1024" value="1024"/>
-										<menuitem label="128x128" value="128"/>
-										<menuitem label="256x256" value="256"/>
-										<menuitem label="512x512" value="512"/>
-										</menupop>
-									</menulist>
-								<checkbox id="OptDimens" checked="$OPTDIM" label="Optimize dimensions" />
+									<menupop>
+										<menuitem label="Automatic Size" value="auto"/>
+										<menuitem label="64x64" value="64"/>
+									<menuitem label="128x128" value="128"/>
+									<menuitem label="256x256" value="256"/>
+									<menuitem label="512x512" value="512"/>
+									<menuitem label="1024x1024" value="1024"/>
+									<menuitem label="128x128" value="128"/>
+									<menuitem label="256x256" value="256"/>
+									<menuitem label="512x512" value="512"/>
+									</menupop>
+								</menulist>
+								<vbox>
+									<hbox>
+										<label value= " "/>
+										<checkbox id="OptDimens" checked="$OPTDIM" label="Optimize dimensions" />
+									</hbox>
+									<label value= " "/>
+								</vbox>
+								</hbox>
 							</row>
-
-							<row align="center">
-								<label value="Image format: " control="imgFormat"/>
+							<row align="right">
+								<label value="Image Format:" align="right"/>
 								<menulist id="imgFormat">
-										<menupop>
-											<menuitem label="PNG 32 bits" value="32bits"/>
+									<menupop>
+										<menuitem label="PNG 32 bits" value="32bits"/>
 										<menuitem label="PNG 8 bits" value="8bits"/>
-										</menupop>
-									</menulist>
+									</menupop>
+								</menulist>
 							</row>
-				
-							<row align="center">
-								<label value="(Only rasterised) Resolution: " control="ResSld"/>
+							
+							<!-- <row><label value=" " /></row> -->
+							<row align="right">
+								<label value="Resolution:" align="right"/>
 								<textbox id="ResSld" maxlength="3" value="$RES" width="50" />
 							</row>
-			
+							<row>
+								<label value="(rasterized only)" align="right"/>
+		
+							</row>
+							<row><label value=" " /></row>
 						</rows>
 					</grid>
-
+<!-- 					
+					<hbox>
+						<label value=" " />
+						<vbox>
+							<vbox>
+								
+								<label value=" "/>
+								<label value=" "/>
+								<label value=" "/>
+								<label value=" "/>
+								<label value=" "/>
+				
+								<separator/>
+							</vbox>
+							<label value=" "/>
+							<label value=" "/>
+							<label value=" "/>
+							<label value=" "/>
+							<label value=" "/>
+							<separator/>
+						</vbox>
+					</hbox> -->
 					<grid>
-
+		
 						<columns>
 							<column/>
 							<column/>
 						</columns>
 						<rows>
 							<row align="right">
-								<label value="Algorithm: " control="xScale"/>
+								<label value="Algorithm: " control="xScale" align="right" />
 								<menulist id="algorithm">
 										<menupop>
 											<menuitem label="Basic" value="basic"/>
 											<menuitem label="MaxRects" value="maxRects"/>
 										</menupop>
-									</menulist>
+								</menulist>
 							</row>
 							<row align="right">
-								<label value="Data Format: " control="DFormat"/>
+								<label value="Data Format: " control="DFormat" align="right" />
 								<menulist id="DFormat">
 										<menupop>
 											<menuitem label="Rasterised JSON" value="raster"/>
 											<menuitem label="Vectorised JSON" value="mesh"/>
 										</menupop>
-									</menulist>
+								</menulist>
 							</row>
 							<row align="right">
 								<label value=""/>
@@ -92,86 +129,100 @@
 								<label value=""/>
 							</row>
 							<row align="center">
-								<label value="Shape padding: " control="ShpPad"/>
+								<label value="Shape padding: " control="ShpPad" align="right"/>
 								<textbox id="ShpPad" maxlength="3" value="$SHP" width="50" />
 							</row>
 							<row align="center">
-								<label value="Border padding: " control="BrdPad"/>
+								<label value="Border padding: " control="BrdPad" align="right"/>
 								<textbox id="BrdPad" maxlength="3" value="$BRD" width="50" />
 							</row>
 						</rows>
 					</grid>
 				</row>
 			</rows>
+			
+
 		</grid>
 
-			<spacer/>
-			<spacer/>
-			<spacer/>
-			<spacer/>
-			<spacer/>
-			<spacer/>
-			<spacer/>
-			<spacer/>
-			<spacer/>
-			<spacer/>
-
+		<spacer/>
+		<spacer/>
 		<separator/>
+		<spacer/>
+		<spacer/>
+		<vbox>
+			<checkbox id="OptAn" checked="$OPTAN" label="Optimize Animation.json file" />
 
-		<checkbox id="OptAn" checked="$OPTAN" label="Optimize Animation.json file" />
-		<checkbox id="FlatSke" checked="$FLAT" label="Flatten skewed objects to bitmap" />
+			<checkbox id="FlatSke" checked="$FLAT" label="Flatten skewed objects to bitmap" />
+		</vbox>
 
-		<separator/>
-		<hbox align="right" >
-			<grid>
-				<columns>
-					<column/>
-				</columns>
-				<rows>
-					<row>
-						<label value="Export Path" control="saveBox" />
-					</row>
-					<row>
-						<choosefile size="40" value="$FILEURI" required="true" pathtype="absolute" id="saveBox" type="save" />
-					</row>
-					<row>
-						<label value=" "/>
-					</row>
-					<row>
-						<label value=" "/>
-					</row>
-				</rows>
-			</grid>
-			
-			
-			<spacer/>
-			<spacer/>
-			<spacer/>
-			<spacer/>
-			<spacer/>
-			<spacer/>
-			<spacer/>
-			<spacer/>
-			<grid>
-				<columns>
-					<column/>
-					<column/>
-					<column/>
-				</columns>
-				<rows>
-					<row>
-						<button label="Export" oncommand="fl.xmlui.accept()" width="30"/>
-						<label value="" />
-						<button label="Cancel" oncommand="fl.xmlui.cancel()" width="30" />
-					</row>
-					<row>
-						<label value=" "/>
-					</row>
-				</rows>
-			</grid>
-			<spacer/>
-		</hbox>
-	</vbox>
+		<spacer/>
+		<spacer/>
+		<spacer/>
+
+	</radiogroup>
 	
-	
+	<spacer/>
+
+	<spacer/>
+
+	<grid>
+		<columns>
+			<column/>
+			<column/>
+			<column/>
+			<column/>
+			<column/>
+			<column/>
+			<column/>
+			<column/>
+			<column/>
+			<column/>
+			<column/>
+			<column/>
+			<column/>
+			<column/>
+			<column/>
+			<column/>
+			<column/>
+			<column/>
+		</columns>
+		<rows>
+			<row>
+				<label value="Export Path" control="saveBox" />
+			</row>
+			<row>
+				<choosefile size="40" value="$FILEURI" required="true" pathtype="absolute" id="saveBox" type="save" />
+				<label value=" "/>
+				<label value=" "/>
+				<label value=" "/>
+				<label value=" "/>
+				<label value=" "/>
+				<label value=" "/>
+				<label value=" "/>
+				<label value=" "/>
+				<label value=" "/>
+				<label value=" "/>
+				<label value=" "/>
+				<label value=" "/>
+				<label value=" "/>
+				<label value=" "/>
+				<label value=" "/>
+				<spacer/>
+				<grid>
+					<columns>
+						<column/>
+						<column/>
+						<column/>
+					</columns>
+					<rows>
+						<row>
+							<button label="Export" oncommand="fl.xmlui.accept()" width="$BWI"/>
+							<label value="" />
+							<button label="Cancel" oncommand="fl.xmlui.cancel()" width="$BWI"/>
+						</row>
+					</rows>
+				</grid>
+			</row>
+		</rows>
+	</grid>
 </dialog>
