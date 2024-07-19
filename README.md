@@ -1,4 +1,4 @@
-![BETTERTAsmiley](https://github.com/user-attachments/assets/104fd239-8db4-43de-97e3-b3bb7efa545b)
+![BetterTA](https://github.com/user-attachments/assets/a7db43ad-ecda-4b53-9c5b-ed8efc834c64)
 
 # BetterTextureAtlas
 BetterTextureAtlas is an Adobe Animate JSFL script that aims to give improved Texture Atlas exports.<br>
