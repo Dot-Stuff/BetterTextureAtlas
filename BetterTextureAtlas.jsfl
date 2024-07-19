@@ -10,6 +10,8 @@ var optimiseDimensions = true; // TODO: doesnt work yet
 var optimizeJson = true; // TODO: theres still some variable names left to change for optimized lmao
 var flattenSkewing = false;
 var resolution = 1.0;
+var platform = fl.version.split(" ")[0];
+var version = fl.version.split(" ")[1].split(",");
 /////
 
 var doc = fl.getDocumentDOM();
@@ -51,7 +53,20 @@ if (symbol.length > 0)
 		flatten = file[6];
 	}
 
-	var rawXML = FLfile.read(fl.configURI + "Commands/BTADialog.xml");
+	var xPan = null;
+	if (parseInt(version)[0] < 15 && parseInt(version)[1] < 1)
+	{
+		
+		var tempP = fl.configURI + "Commands/_BTAD.xml";
+		FLfile.write(tempP, rawXML, null);
+		
+		 xPan = fl.xmlPanel(tempP);
+		
+		FLfile.remove(tempP);
+	}
+	else
+		xPan = fl.xmlPanelFromString(rawXML);
+
 	var str = save + "\\" + symbol;
 	if (save == "")
 		str = symbol;
