@@ -4,7 +4,7 @@ fl.showIdleMessage(false);
 
 var symbol = "";
 var meshExport = false; // If to use a spritemap or mesh vertex data
-var version = "bta_1"; // easy to modify
+var BTA_version = "bta_1"; // easy to modify
 var onlyVisibleLayers = true;
 var optimiseDimensions = true; // TODO: doesnt work yet
 var optimizeJson = true; // TODO: theres still some variable names left to change for optimized lmao
@@ -68,27 +68,27 @@ if (symbol.length > 0)
 	rawXML = rawXML.split("$FLAT").join(flatten);
 
 	var xPan = null;
-	if (parseInt(version)[0] < 15 && parseInt(version)[1] < 1)
+	
+	// Flash doesnt support direct panels from strings so we gotta create a temp xml
+	if (parseInt(version[0]) < 15 && parseInt(version[1]) < 1)
 	{
-		
 		var tempP = fl.configURI + "Commands/_BTAD.xml";
 		FLfile.write(tempP, rawXML, null);
-		
-		 xPan = fl.xmlPanel(tempP);
-		
+		xPan = fl.xmlPanel(tempP);
 		FLfile.remove(tempP);
 	}
 	else
-		xPan = fl.xmlPanelFromString(rawXML);
-	
-	if (xPan.dismiss == "accept")
 	{
-		var str = "";
-		str = xPan.saveBox;
-		
-		var arr = str.split("\\");
-		var name = arr.pop();
-		save = arr.join("\\");
+		xPan = fl.xmlPanelFromString(rawXML);
+	}	
+
+	if (xPan == null)
+	{
+		fl.trace("Failed loading XML Panel");
+	}
+	else if (xPan.dismiss == "accept")
+	{	
+		save = xPan.saveBox;
 		ShpPad = xPan.ShpPad;
 		BrdPad = xPan.BrdPad;
 		res = xPan.ResSld;
@@ -96,35 +96,12 @@ if (symbol.length > 0)
 		optAn = xPan.OptAn;
 		flatten = xPan.FlatSke;
 		
+		var path = formatPath(save);
 		optimiseDimensions = (optDimens == "true");
 		optimizeJson = (optAn == "true");
 		flattenSkewing = (flatten == "true");
 		resolution = parseFloat(res);
 		resScale =  1 / resolution;
-
-		// First ask for the export folder
-		var path = save;
-		
-		if (path == null)
-		{
-			var arr = doc.path.split("/");
-			arr.pop();
-			path = arr.join("/");
-		}
-		
-		var arr = path.split(":");
-		
-		path = "file:///" + arr.join("|");
-		path = path.split("\\").join("/");
-		path += "/" + name;
-	
-		// Remove leading spaces of the path
-		var endIndex = path.length - 1;
-		while (endIndex >= 0 && path[endIndex] === ' ') {
-			endIndex--;
-		}
-	
-		path = path.substring(0, endIndex + 1);
 	
 		FLfile.createFolder(path);
 
@@ -133,7 +110,9 @@ if (symbol.length > 0)
 		FLfile.write(fl.configURI + "Commands/saveBTA.txt", save + "\n" + ShpPad + "\n" + BrdPad +  "\n" + res +  "\n" + optDimens +  "\n" + optAn +  "\n" + flatten);
 	}
 	else
-		fl.trace("operation cancelled");
+	{
+		fl.trace("Operation cancelled");
+	}
 	
 	fl.trace("DONE");
 	fl.showIdleMessage(true);
@@ -194,28 +173,28 @@ function exportAtlas(exportPath, symbolName)
 				bitmap.scaleX = bitmap.scaleY = resolution;
 			}
 		}
-		/* // TODO: this fucks up the matrix and other crap, will fix later
-		else if (resolution != 1)
-		{
-			var shape = TEMP_LAYER.frames[i].elements[id];
-			if (shape.isGroup)
-			{
-				shape.scaleX *= resolution;
-				shape.scaleY *= resolution;
-			}
-			else
-			{
-				TEMP_TIMELINE.currentFrame = i;
-				doc.selection = [shape];
-				doc.convertLinesToFills();
+		// TODO: this fucks up the matrix and other crap, will fix later
+		//else if (resolution != 1)
+		//{
+		//	var shape = TEMP_LAYER.frames[i].elements[id];
+		//	if (shape.isGroup)
+		//	{
+		//		shape.scaleX *= resolution;
+		//		shape.scaleY *= resolution;
+		//	}
+		//	else
+		//	{
+		//		TEMP_TIMELINE.currentFrame = i;
+		//		doc.selection = [shape];
+		//		doc.convertLinesToFills();
 
-				var elements = TEMP_LAYER.frames[i].elements;
-				for (e = 0; e < elements.length; e++) {
-					var element = elements[e];
-					if (e == id) element.scaleX = element.scaleY = resolution;
-				}
-			}
-		}*/
+		//		var elements = TEMP_LAYER.frames[i].elements;
+		//		for (e = 0; e < elements.length; e++) {
+		//			var element = elements[e];
+		//			if (e == id) element.scaleX = element.scaleY = resolution;
+		//		}
+		//	}
+		//}
 		
 		i++;
 	}
@@ -341,7 +320,7 @@ function generateAnimation(symbol)
 	// Add Metadata
 	json += 
 	jsonHeader(key("metadata", "MD")) +
-	jsonStr(key("version", "V"), version) +
+	jsonStr(key("version", "V"), BTA_version) +
 	jsonVarEnd(key("framerate", "FRT"), doc.frameRate) +
 	'}';
 	
@@ -783,6 +762,31 @@ function formatLimbName(numStr) {
         i++;
     }
     return i === numStr.length ? "0" : numStr.slice(i);
+}
+
+function formatPath(path)
+{
+	// All good here im gonna assume
+	if (path.split("file:///").length > 1) {
+		return path;
+	}
+
+	var arr = path.split("\\");
+	var name = arr.pop();
+
+	arr = arr.join("\\").split(":");
+		
+	path = "file:///" + arr.join("|");
+	path = path.split("\\").join("/");
+	path += "/" + name;
+
+	// Remove leading spaces of the path
+	var endIndex = path.length - 1;
+	while (endIndex >= 0 && path[endIndex] === ' ') {
+		endIndex--;
+	}
+
+	return path.substring(0, endIndex + 1);
 }
 
 function findItem(name) {
