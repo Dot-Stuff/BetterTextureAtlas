@@ -79,11 +79,16 @@ if (symbol.length > 0)
 	FLfile.write(config + "Commands/BTATheme.txt", stuff);
 	
 	var rawXML = FLfile.read(config + "Commands/BTADialog.xml");
-	var str = save + "\\" + symbol;
-	if (save == "") str = symbol;
+	var fileuri = symbol;
+	if (save != "")
+	{
+		var arr = save.split("\\");
+		arr.pop();
+		fileuri = arr.join("\\") + "\\" + symbol;
+	}
 	
 	rawXML = rawXML.split("$CONFIGDIR").join(fl.configDirectory);
-	rawXML = rawXML.split("$FILEURI").join(str);
+	rawXML = rawXML.split("$FILEURI").join(fileuri);
 	rawXML = rawXML.split("$SHP").join(ShpPad);
 	rawXML = rawXML.split("$BRD").join(BrdPad);
 	rawXML = rawXML.split("$RES").join(res);
@@ -117,11 +122,7 @@ if (symbol.length > 0)
 		alert("Failed loading XML Panel");
 	}
 	else if (xPan.dismiss == "accept")
-	{
-		var arr = xPan.saveBox.split("\\");
-		var name = arr.pop();
-		save = arr.join("\\");
-		
+	{		
 		ShpPad = parseInt(xPan.ShpPad);
 		BrdPad = parseInt(xPan.BrdPad);
 		res = xPan.ResSld;
@@ -136,13 +137,12 @@ if (symbol.length > 0)
 		resScale =  1 / resolution;
 
 		// First ask for the export folder
-		var path = formatPath(save);
+		var path = formatPath(fileuri);
 	
 		FLfile.createFolder(path);
-
 		exportAtlas(path, symbol);
 		
-		FLfile.write(fl.configURI + "Commands/saveBTA.txt", save + "\n" + ShpPad + "\n" + BrdPad +  "\n" + res +  "\n" + optDimens +  "\n" + optAn +  "\n" + flatten);
+		FLfile.write(fl.configURI + "Commands/saveBTA.txt", fileuri + "\n" + ShpPad + "\n" + BrdPad +  "\n" + res +  "\n" + optDimens +  "\n" + optAn +  "\n" + flatten);
 	}
 	else
 	{
