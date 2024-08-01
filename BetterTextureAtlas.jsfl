@@ -79,7 +79,7 @@ if (symbol.length > 0)
 	FLfile.write(config + "Commands/BTATheme.txt", stuff);
 	
 	var rawXML = FLfile.read(config + "Commands/BTADialog.xml");
-	var fileuri = symbol;
+	var fileuri = fl.configDirectory + "\\Commands\\" + symbol; // Default to the root commands folder
 	if (save != "")
 	{
 		var arr = save.split("\\");
