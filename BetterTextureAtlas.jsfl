@@ -238,17 +238,20 @@ function exportAtlas(exportPath, symbolName)
 	var sm = makeSpritemap();
 	sm.addSymbol(TEMP_ITEM);
 
-	spritemaps = [sm];
+	var smData = {sm: sm, index:0};
+	spritemaps = [smData];
 
 	// Divide Spritemap if overflowed
 	if (sm.overflowed) {
-		divideSpritemap(sm, TEMP_ITEM);
+		divideSpritemap(smData, TEMP_ITEM);
 	}
 	
 	var i = 0;
 	while (i < spritemaps.length) {
 		var id = SPRITEMAP_ID + "_" + i;
-		exportSpritemap(id, exportPath, spritemaps[i], i + 1);
+		var exportId = (i == 0) ? 1 : Math.abs(i - spritemaps.length - 1);
+
+		exportSpritemap(id, exportPath, spritemaps[i], exportId);
 		lib.deleteItem(id);
 		i++;
 	}
@@ -260,8 +263,9 @@ function exportAtlas(exportPath, symbolName)
 
 var spritemaps = [];
 
-function divideSpritemap(parent, symbol)
+function divideSpritemap(smData, symbol)
 {
+	var parent = smData.sm;
 	var framesLength = symbol.timeline.layers[0].frames.length;
 	var cutFrames = Math.floor(framesLength / 2);
 
@@ -274,25 +278,27 @@ function divideSpritemap(parent, symbol)
 	symbol.timeline.removeFrames(cutFrames, framesLength);
 
 	var nextSm = makeSpritemap();
-	spritemaps.push(nextSm);
+	var nextSmData = {sm: nextSm, index: cutFrames + smData.index};
+	spritemaps.push(nextSmData);
 	nextSm.addSymbol(nextSmSymbol);
 
 	parent.removeSymbol(symbol);
 	parent.addSymbol(symbol);
 
 	if (parent.overflowed) {
-		divideSpritemap(parent, symbol);
+		divideSpritemap(smData, symbol);
 	}
 
 	if (nextSm.overflowed) {
-		divideSpritemap(nextSm, nextSmSymbol);
+		divideSpritemap(nextSmData, nextSmSymbol);
 	}
 }
 
-function exportSpritemap(id, exportPath, sm, index)
+function exportSpritemap(id, exportPath, smData, index)
 {
 	var smPath = exportPath + "/spritemap" + index;
 	var smSettings = {format:"png", bitDepth:32, backgroundColor:"#00000000"};
+	var sm = smData.sm;
 	sm.exportSpriteSheet(smPath, smSettings, true);
 
 	// Parse and change json to spritemap format
@@ -307,12 +313,11 @@ function exportSpritemap(id, exportPath, sm, index)
 	{
 		var limbData = atlasLimbs[l].split("{").join("").split("}").join("").split("\n");
 
-		var name = formatLimbName(limbData[0].slice(0, -2));
+		var name = parseInt(formatLimbName(limbData[0].slice(0, -2))) + smData.index;
 		var frame = limbData[1].split('"frame":').join("");
 		var rotated = limbData[2].slice(0, -1);
 		
 		smJson += '{"SPRITE":{"name":"' + name + '",' + frame + rotated + '}}';
-
 		if (l < atlasLimbs.length - 1) smJson += ',\n';
 		l++;
 	}
