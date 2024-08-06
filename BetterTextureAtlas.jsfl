@@ -79,13 +79,7 @@ if (symbol.length > 0)
 	FLfile.write(config + "Commands/BTATheme.txt", stuff);
 	
 	var rawXML = FLfile.read(config + "Commands/BTADialog.xml");
-	var fileuri = fl.configDirectory + "\\Commands\\" + symbol; // Default to the root commands folder
-	if (save != "")
-	{
-		var arr = save.split("\\");
-		arr.pop();
-		fileuri = arr.join("\\") + "\\" + symbol;
-	}
+	var fileuri = (save != "") ? save + "\\" + symbol : fl.configDirectory + "\\Commands\\" + symbol;
 	
 	rawXML = rawXML.split("$CONFIGDIR").join(fl.configDirectory);
 	rawXML = rawXML.split("$FILEURI").join(fileuri);
@@ -141,8 +135,12 @@ if (symbol.length > 0)
 	
 		FLfile.createFolder(path);
 		exportAtlas(path, symbol);
+
+		var saveArray = fileuri.split("\\");
+		saveArray.pop();
+		var savePath = saveArray.join("\\");
 		
-		FLfile.write(fl.configURI + "Commands/saveBTA.txt", fileuri + "\n" + ShpPad + "\n" + BrdPad +  "\n" + res +  "\n" + optDimens +  "\n" + optAn +  "\n" + flatten);
+		FLfile.write(fl.configURI + "Commands/saveBTA.txt", savePath + "\n" + ShpPad + "\n" + BrdPad +  "\n" + res +  "\n" + optDimens +  "\n" + optAn +  "\n" + flatten);
 	}
 	else
 	{
@@ -156,6 +154,7 @@ else {
 	alert("No symbol has been selected");
 }
 
+var SPRITEMAP_ID;
 var TEMP_SPRITEMAP;
 var TEMP_ITEM;
 var TEMP_TIMELINE;
@@ -169,7 +168,8 @@ var dictionary;
 
 function exportAtlas(exportPath, symbolName)
 {	
-	TEMP_SPRITEMAP = "__BTA_TEMP_SPRITEMAP";
+	SPRITEMAP_ID = "__BTA_TEMP_SPRITEMAP_";
+	TEMP_SPRITEMAP = SPRITEMAP_ID + "_0";
 	addedItems = [];
 	frameQueue = [];
 	smIndex = 0;
@@ -234,29 +234,62 @@ function exportAtlas(exportPath, symbolName)
 		i++;
 	}
 
-	// Generate Spritemaps
+	// Generate Spritemap
 	var sm = makeSpritemap();
 	sm.addSymbol(TEMP_ITEM);
 
-	var spritemaps = [sm];
+	spritemaps = [sm];
 
+	// Divide Spritemap if overflowed
 	if (sm.overflowed) {
-		// TODO: divide to other spritemaps
+		divideSpritemap(sm, TEMP_ITEM);
 	}
 	
 	var i = 0;
 	while (i < spritemaps.length) {
-		exportSpritemap(exportPath, spritemaps[i], i + 1);
+		var id = SPRITEMAP_ID + "_" + i;
+		exportSpritemap(id, exportPath, spritemaps[i], i + 1);
+		lib.deleteItem(id);
 		i++;
 	}
 	
-	lib.deleteItem(TEMP_SPRITEMAP);
 	doc.exitEditMode();
 	
 	fl.trace("Exported to folder: " + exportPath);
 }
 
-function exportSpritemap(exportPath, sm, index)
+var spritemaps = [];
+
+function divideSpritemap(parent, symbol)
+{
+	var framesLength = symbol.timeline.layers[0].frames.length;
+	var cutFrames = Math.floor(framesLength / 2);
+
+	var nextSmID = SPRITEMAP_ID + "_" + spritemaps.length;
+	lib.addNewItem("graphic", nextSmID);
+	var nextSmSymbol = findItem(nextSmID);
+
+	symbol.timeline.copyFrames(cutFrames, framesLength);
+	nextSmSymbol.timeline.pasteFrames(0, (framesLength - cutFrames));
+	symbol.timeline.removeFrames(cutFrames, framesLength);
+
+	var nextSm = makeSpritemap();
+	spritemaps.push(nextSm);
+	nextSm.addSymbol(nextSmSymbol);
+
+	parent.removeSymbol(symbol);
+	parent.addSymbol(symbol);
+
+	if (parent.overflowed) {
+		divideSpritemap(parent, symbol);
+	}
+
+	if (nextSm.overflowed) {
+		divideSpritemap(nextSm, nextSmSymbol);
+	}
+}
+
+function exportSpritemap(id, exportPath, sm, index)
 {
 	var smPath = exportPath + "/spritemap" + index;
 	var smSettings = {format:"png", bitDepth:32, backgroundColor:"#00000000"};
@@ -264,7 +297,7 @@ function exportSpritemap(exportPath, sm, index)
 
 	// Parse and change json to spritemap format
 	var meta = FLfile.read(smPath + ".json").split("\t").join("").split(" ").join("");
-	var atlasLimbs = meta.split(TEMP_SPRITEMAP);
+	var atlasLimbs = meta.split(id);
 	atlasLimbs.splice(0, 1);
 
 	var smJson = '{"ATLAS":{"SPRITES":[\n';
