@@ -5,17 +5,14 @@
 <hr>
 
 <h1>BetterTextureAtlas </h1>
-Better TA is an Adobe Animate JSFL script that aims to give improved Texture Atlas exports.<br>
-Adding more settings and extra features missing from the default Adobe exporter.
-
 BetterTextureAtlas is an Adobe Animate extension that tries to enhance the Texture Atlas exports,<br> 
-Adding features and fixing its Animation file format
+Adding features and fixing its Animation file format so it presents more data for the user to easily change whether in-game or by tweaking values.
 
 ## What differs from the default Texture Atlas Exporter?
 
 
 <details>
-  <summary>Features</summary>
+  <summary><b>Features</b></summary>
 
   * [x] Blend Mode Support
   * [x] Matrix reformatting
@@ -25,25 +22,35 @@ Adding features and fixing its Animation file format
 </details>
 
 <details>
-  <summary>Fixes</summary>
+  <summary><b>Fixes</b></summary>
 
   * [x] Reformatting of Filters
   * [x] Optimized exports (being able to export 5~ SWF videos with relative ease)
 </details>
-___
 
+<hr>
 
 ## How to install
 
-To install the extension, We recommend using an Extension Manager for your version if your Adobe Flash version permits it, (download the released .zxp and put it in your extension manager)
-Otherwise, you can download them manually.
+<details>
+ <summary><b>With an Extension Manager</b> (advisable)</summary><hr>
+With the <b>Extension Manager</b> open, whether from the Command Line or as an application, you install the extension, this should be known whether you use an application that comes within your Flash app or the CMD tool.<br><br>
 
-To install them manually, you need to go to <br>``C:\Users\[UserName]\AppData\Local\Adobe\[Flash/Animate version]\[yourLocale]\Configuration\Commands``<br>
+That being said, if you're using the <b>Extension Manager</b> app, just accept the license it'll be provided and it should be good to go.
+
+<hr></details>
+
+<details>
+ <summary><b>Manually</b></summary><hr>
+ 
+ To install them manually, you need to go to <br>``C:\Users\[UserName]\AppData\Local\Adobe\[Flash/Animate version]\[yourLocale]\Configuration\Commands``<br>
 Example: ``C:\Users\sotif\AppData\Local\Adobe\Animate 2022\en_US\Configuration\Commands``
 
 With your `zxp` file, rename the extension to `zip` so you can extract the contents, except `BetterTextureAtlas.mxi` (this is only useful for the Extension Managers mentioned before)
 
-After extracting the zip file, you should restart the program if it's currently running, and after that it should pop up in the `Commands` tab.
+<hr></details>
+
+After installing the extension, you should restart the program if it's currently running, and after that it should pop up in the `Commands` tab.
 
 ## How to use the extension
 
