@@ -127,6 +127,7 @@ if (symbols[0].length > 0)
 		optDimens = xPan.OptDimens;
 		optAn = xPan.OptAn;
 		flatten = xPan.FlatSke;
+		fileuri = xPan.saveBox;
 		
 		optimiseDimensions = (optDimens == "true");
 		optimizeJson = (optAn == "true");
