@@ -2,7 +2,7 @@
 fl.outputPanel.clear(); // debug purposes
 fl.showIdleMessage(false);
 
-var symbols = [""];
+var symbols = [];
 var meshExport = false; // If to use a spritemap or mesh vertex data
 var BTA_version = "bta_1"; // easy to modify
 var onlyVisibleLayers = true;
@@ -24,19 +24,23 @@ var resScale = 1.0;
 
 if (doc.selection.length > 0)
 {
-	instance = doc.selection[0];
-	symbols = [instance.libraryItem.name];
+	var i = 0;
+	while (i < doc.selection.length)
+	{
+		var object = doc.selection[i];
+		if (object.elementType == "instance")
+			symbols.push(object.libraryItem.name);
+		i++;
+	}
 }
 else if (lib.getSelectedItems().length > 0)
 {
-	symbols = [];
 	var items = lib.getSelectedItems();
 	while (items.length > 0)
 		symbols.push(items.shift().name);
 }
 
-
-if (symbols[0].length > 0)
+if (symbols.length > 0)
 {
 	var save = "";
 	
@@ -196,26 +200,28 @@ function exportAtlas(exportPath, symbolNames)
 
 		tmpSymbol = true;
 		symbol = findItem(containerID);
+		
 		var i = 0;
-
+		var startIndex = 0;
+		
 		while(i < symbolNames.length)
 		{
-			var tempName = symbolNames[i]
-			var startIndex = symbol.timeline.frameCount;
+			var tempName = symbolNames[i];
+			var frameCount = findItem(tempName).timeline.frameCount - 1;
 
-			if (i > 0) {
-				symbol.timeline.insertBlankKeyframe(startIndex);
-			}
-
-			var startFrame = symbol.timeline.layers[0].frames[startIndex - 1];
+			var startFrame = symbol.timeline.layers[0].frames[startIndex];
 			startFrame.name = tempName;
 			startFrame.labelType = "name";
 
-			symbol.timeline.insertFrames(findItem(tempName).timeline.frameCount - 1, false, startIndex);
+			symbol.timeline.insertFrames(frameCount, false, startIndex);
 			symbol.timeline.currentFrame = startIndex;
 			lib.addItemToDocument({x: 0, y: 0}, tempName);
 
+			startIndex += frameCount;
 			i++;
+
+			if (i <= symbolNames.length)
+				symbol.timeline.insertBlankKeyframe(startIndex);
 		}
 	}
 
