@@ -2,7 +2,7 @@
 fl.outputPanel.clear(); // debug purposes
 fl.showIdleMessage(false);
 
-var symbol = "";
+var symbols = [""];
 var meshExport = false; // If to use a spritemap or mesh vertex data
 var BTA_version = "bta_1"; // easy to modify
 var onlyVisibleLayers = true;
@@ -25,14 +25,18 @@ var resScale = 1.0;
 if (doc.selection.length > 0)
 {
 	instance = doc.selection[0];
-	symbol = instance.libraryItem.name;
+	symbols = [instance.libraryItem.name];
 }
 else if (lib.getSelectedItems().length > 0)
 {
-	symbol = lib.getSelectedItems()[0].name;
+	symbols = [];
+	var items = lib.getSelectedItems();
+	while (items.length > 0)
+		symbols.push(items.shift().name);
 }
 
-if (symbol.length > 0)
+
+if (symbols[0].length > 0)
 {
 	var save = "";
 	
@@ -79,7 +83,7 @@ if (symbol.length > 0)
 	FLfile.write(config + "Commands/BTATheme.txt", stuff);
 	
 	var rawXML = FLfile.read(config + "Commands/BTADialog.xml");
-	var fileuri = (save != "") ? save + "\\" + symbol : fl.configDirectory + "\\Commands\\" + symbol;
+	var fileuri = (save != "") ? save + "\\" + symbols[0] : fl.configDirectory + "\\Commands\\" + symbols[0];
 	
 	rawXML = rawXML.split("$CONFIGDIR").join(fl.configDirectory);
 	rawXML = rawXML.split("$FILEURI").join(fileuri);
@@ -134,7 +138,7 @@ if (symbol.length > 0)
 		var path = formatPath(fileuri);
 	
 		FLfile.createFolder(path);
-		exportAtlas(path, symbol);
+		exportAtlas(path, symbols);
 
 		var saveArray = fileuri.split("\\");
 		saveArray.pop();
@@ -166,17 +170,53 @@ var frameQueue;
 
 var dictionary;
 
-function exportAtlas(exportPath, symbolName)
+function exportAtlas(exportPath, symbolNames)
 {	
 	SPRITEMAP_ID = "__BTA_TEMP_SPRITEMAP_";
-	TEMP_SPRITEMAP = SPRITEMAP_ID + "_0";
+	TEMP_SPRITEMAP = SPRITEMAP_ID + "0";
 	addedItems = [];
 	frameQueue = [];
 	smIndex = 0;
 
 	dictionary = [];
 
-	var symbol = findItem(symbolName);
+	var tmpSymbol = false;
+	var symbol;
+
+	if (symbolNames.length == 1)
+	{
+		symbol = findItem(symbolNames[0]);
+	}
+	else
+	{
+		var containerID = SPRITEMAP_ID + "PACKED_SYMBOL";
+		lib.addNewItem("graphic", containerID);
+		lib.editItem(containerID);
+
+		tmpSymbol = true;
+		symbol = findItem(containerID);
+		var i = 0;
+
+		while(i < symbolNames.length)
+		{
+			var tempName = symbolNames[i]
+			var startIndex = symbol.timeline.frameCount;
+
+			if (i > 0) {
+				symbol.timeline.insertBlankKeyframe(startIndex);
+			}
+
+			var startFrame = symbol.timeline.layers[0].frames[startIndex - 1];
+			startFrame.name = tempName;
+			startFrame.labelType = "name";
+
+			symbol.timeline.insertFrames(findItem(tempName).timeline.frameCount - 1, false, startIndex);
+			symbol.timeline.currentFrame = startIndex;
+			lib.addItemToDocument({x: 0, y: 0}, tempName);
+
+			i++;
+		}
+	}
 
 	lib.addNewItem("graphic", TEMP_SPRITEMAP);
 	TEMP_ITEM = findItem(TEMP_SPRITEMAP);
@@ -248,13 +288,16 @@ function exportAtlas(exportPath, symbolName)
 	
 	var i = 0;
 	while (i < spritemaps.length) {
-		var id = SPRITEMAP_ID + "_" + i;
+		var id = SPRITEMAP_ID + i;
 		var exportId = (i == 0) ? 1 : Math.abs(i - spritemaps.length - 1);
 
 		exportSpritemap(id, exportPath, spritemaps[i], exportId);
 		lib.deleteItem(id);
 		i++;
 	}
+	
+	if (tmpSymbol)
+		lib.deleteItem(symbol.name);
 	
 	doc.exitEditMode();
 	
@@ -269,7 +312,7 @@ function divideSpritemap(smData, symbol)
 	var framesLength = symbol.timeline.layers[0].frames.length;
 	var cutFrames = Math.floor(framesLength / 2);
 
-	var nextSmID = SPRITEMAP_ID + "_" + spritemaps.length;
+	var nextSmID = SPRITEMAP_ID + spritemaps.length;
 	lib.addNewItem("graphic", nextSmID);
 	var nextSmSymbol = findItem(nextSmID);
 
@@ -358,15 +401,16 @@ function generateAnimation(symbol)
 	}
 	json += parseSymbol(symbol);
 	json += '},\n';
-
-	var sdIndex = 1;
 	
 	// Add Symbol Dictionary
 	json += jsonHeader(key("SYMBOL_DICTIONARY", "SD"));
 	json += jsonArray(key ("Symbols", "S"));
+	
+	var dictionaryIndex = 0;
+
 	while (true)
 	{
-		var itemName = dictionary[sdIndex];		
+		var itemName = dictionary[dictionaryIndex];
 		var itemSymbol = findItem(itemName);
 
 		if (itemSymbol == null) {
@@ -374,8 +418,9 @@ function generateAnimation(symbol)
 		}
 
 		json += '{\n' + parseSymbol(itemSymbol);
+		dictionaryIndex += 1;
 		
-		if (sdIndex >= dictionary.length - 1)
+		if (dictionaryIndex > dictionary.length - 1)
 		{
 			json += '}';
 			break;
@@ -384,8 +429,6 @@ function generateAnimation(symbol)
 		{
 			json += '},';
 		}
-
-		sdIndex++;
 	}
 
 	json += ']},\n';
@@ -600,9 +643,8 @@ function parseSymbolInstance(instance)
 	
 	if (item != undefined) {
 		json += jsonStr(key("SYMBOL_name", "SN"), item.name);
-		if (dictionary.indexOf(item.name) == -1) {
+		if (dictionary.indexOf(item.name) == -1)
 			dictionary.push(item.name);
-		}
 	}
 
 	if (instance.firstFrame != undefined)
