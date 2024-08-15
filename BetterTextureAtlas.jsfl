@@ -559,14 +559,38 @@ function parseElements(elements, frameIndex, layerIndex, timeline)
 	var json = jsonArray(key("elements", "E"));
 	
 	var e = 0;
+	var shapeQueue = [];
+	var shapeElementQueue = [];
+
 	while (e < elements.length)
 	{
 		var element = elements[e];
-		json += "{";
+		var elementType = element.elementType;
+
+		var isShape = elementType == "shape";
+		if (isShape) isShape = !element.isGroup;
+
+		if (isShape) // Adobe sometimes forgets how their own software works
+		{
+			shapeQueue.push(e);
+			shapeElementQueue.push(element);
+		}
+		else
+		{
+			if (shapeQueue.length > 0)
+			{
+				json += "{" + parseShape(shapeElementQueue, timeline, layerIndex, frameIndex, shapeQueue) + "},\n";
+				shapeQueue = [];
+			}
+
+			json += "{";
+		}
 		
-		switch (element.elementType) {
+		switch (element.elementType)
+		{
 			case "shape":
-				json += parseShape(element, timeline, layerIndex, frameIndex, e);
+				if (element.isGroup)
+					json += parseShape([element], timeline, layerIndex, frameIndex, [e]);
 			break
 			case "instance":
 				switch (element.instanceType) {
@@ -587,7 +611,7 @@ function parseElements(elements, frameIndex, layerIndex, timeline)
 				switch (element.textType)
 				{
 					case "static":
-						json += parseShape(element, timeline, layerIndex, frameIndex, e);
+						json += parseShape([element], timeline, layerIndex, frameIndex, [e]);
 					break;
 					// TODO: add missing text types
 					case "dynamic": break;
@@ -599,9 +623,14 @@ function parseElements(elements, frameIndex, layerIndex, timeline)
 			case "shapeObj": 	break;
 		}
 
-		json += (e < elements.length -1) ? "},\n" : "}";
+		if (!isShape)
+			json += (e < elements.length -1) ? "},\n" : "}";
+		
 		e++;
 	}
+
+	if (shapeQueue.length > 0)
+		json += "{" + parseShape(shapeElementQueue, timeline, layerIndex, frameIndex, shapeQueue) + "}";
 	
 	json += ']';
 	return json;
@@ -621,17 +650,34 @@ function parseBitmapInstance(bitmap)
 	return parseAtlasInstance(matrix, itemIndex);
 }
 
-function parseShape(shape, timeline, layerIndex, frameIndex, elementIndex)
+function parseShape(shapes, timeline, layerIndex, frameIndex, elementIndices)
 {
-	var m = shape.matrix;
+	var m = shapes[0].matrix;
 	var matrix = {a:m.a * resScale, b:m.b, c:m.c, d:m.d * resScale, tx:m.tx, ty:m.ty};
 
-	if (!shape.isGroup) {
-		matrix.tx = parseFloat((shape.x - (shape.width / 2)).toFixed(1));
-		matrix.ty = parseFloat((shape.y - (shape.height / 2)).toFixed(1));
+	if (!shapes[0].isGroup)
+	{
+		var minX = shapes[0].x;
+		var minY = shapes[0].y;
+		var maxX = shapes[0].x + shapes[0].width;
+		var maxY = shapes[0].y + shapes[0].height;
+
+		var s = 0;
+		while (s < shapes.length)
+		{
+			var shape = shapes[s];
+			minX = Math.min(minX, shape.x);
+        	minY = Math.min(minY, shape.y);
+        	maxX = Math.max(maxX, shape.x + shape.width);
+        	maxY = Math.max(maxY, shape.y + shape.height);
+			s++;
+		}
+		
+		matrix.tx = parseFloat((minX - ((maxX - minX) / 2)).toFixed(1));
+		matrix.ty = parseFloat((minY - ((maxY - minY) / 2)).toFixed(1));
 	}
 
-	pushElementSpritemap(timeline, layerIndex, frameIndex, elementIndex);
+	pushElementSpritemap(timeline, layerIndex, frameIndex, elementIndices);
 	return parseAtlasInstance(matrix, smIndex - 1);
 }
 
@@ -656,7 +702,7 @@ function pushItemSpritemap(item)
 	return itemQueue[name];
 }
 
-function pushElementSpritemap(timeline, layerIndex, frameIndex, elementIndex)
+function pushElementSpritemap(timeline, layerIndex, frameIndex, elementIndices)
 {
 	timeline.setSelectedLayers(layerIndex, true);
 	timeline.copyFrames(frameIndex, frameIndex);
@@ -664,25 +710,35 @@ function pushElementSpritemap(timeline, layerIndex, frameIndex, elementIndex)
 	TEMP_TIMELINE.insertBlankKeyframe(smIndex);
 	TEMP_TIMELINE.pasteFrames();
 
-	var frameElements = TEMP_LAYER.frames[smIndex].elements;	
-	var element = frameElements[elementIndex];
-	
-	// TODO: temp until i fix up lines to fills
-	element.scaleX *= resolution;
-	element.scaleY *= resolution;
-	
+	var frameElements = TEMP_LAYER.frames[smIndex].elements;
+	var shape = frameElements[elementIndices[0]];
+
 	var e = 0;
-	while (e < frameElements.length) {
-		if (e != elementIndex) {
-			var dummy = frameElements[e];
-			dummy.width = dummy.height = 0;
-			dummy.x = element.x;
-			dummy.y = element.y;
+
+	while (e < frameElements.length)
+	{
+		var frameElement = frameElements[e];
+
+		if (elementIndices[0] == e) // Add the actual parts of the array
+		{
+			elementIndices.shift();
+			
+			// TODO: temp until i fix up lines to fills
+			frameElement.scaleX *= resolution;
+			frameElement.scaleY *= resolution;
 		}
+		else // Remove other crap from the frame
+		{
+			frameElement.width = frameElement.height = 0;
+			frameElement.x = shape.x;
+			frameElement.y = shape.y;
+		}
+
 		e++;
 	}
 
-	frameQueue.push(elementIndex);
+	//frameQueue.push(elementIndex);
+	frameQueue.push(0);
 	smIndex++;
 }
 
