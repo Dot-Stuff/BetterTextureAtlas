@@ -714,6 +714,7 @@ function pushElementSpritemap(timeline, layerIndex, frameIndex, elementIndices)
 	var shape = frameElements[elementIndices[0]];
 
 	var e = 0;
+	var lastWidth = -1;
 
 	while (e < frameElements.length)
 	{
@@ -722,10 +723,15 @@ function pushElementSpritemap(timeline, layerIndex, frameIndex, elementIndices)
 		if (elementIndices[0] == e) // Add the actual parts of the array
 		{
 			elementIndices.shift();
-			
+
 			// TODO: temp until i fix up lines to fills
-			frameElement.scaleX *= resolution;
-			frameElement.scaleY *= resolution;
+			// Gotta check because its both the same shape instance but also not?? Really weird shit
+			if (Math.round(frameElement.width) != lastWidth)
+			{
+				frameElement.width *= resolution;
+				frameElement.height *= resolution;
+				lastWidth = Math.round(frameElement.width);
+			}
 		}
 		else // Remove other crap from the frame
 		{
