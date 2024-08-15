@@ -27,7 +27,7 @@
 {"SPRITE":{"name":"25","x":807,"y":284,"w":98,"h":52,"rotated":false}},
 {"SPRITE":{"name":"26","x":908,"y":284,"w":52,"h":98,"rotated":true}}]},
 "meta":{
-"app":"AdobeAnimate",
+"app":"Adobe Animate (Better TA Extension)",
 "version":"24.0.4.28",
 "image":"spritemap1.png",
 "format":"RGBA8888",

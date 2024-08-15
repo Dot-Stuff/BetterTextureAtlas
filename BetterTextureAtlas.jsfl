@@ -127,26 +127,23 @@ if (symbols.length > 0)
 	{
 		var familySymbol = [];
 		var frs = [];
-		var curFr = 0;
-		curFr = doc.getTimeline().currentFrame;
+		var curFr = doc.getTimeline().currentFrame;
 		var n = "";
-		
-		
-		while (n != doc.timelines[0].name)
+
+		while (true)
 		{
-			doc.exitEditMode();
-			
-			familySymbol.unshift(doc.selection[0]);
-			frs.unshift(doc.getTimeline().currentFrame);
-			
 			n = doc.getTimeline().name;
+			doc.exitEditMode();
+
+			if (n == doc.timelines[0].name)
+				break;
+
+			if (doc.selection[0] != undefined)
+			{
+				familySymbol.unshift(doc.selection[0]);
+				frs.unshift(doc.getTimeline().currentFrame);
+			}
 		}
-		
-		for each(symbol in familySymbol)
-		{
-			doc.enterEditMode("inPlace");
-		}
-		
 		
 		ShpPad = parseInt(xPan.ShpPad);
 		BrdPad = parseInt(xPan.BrdPad);
@@ -174,14 +171,13 @@ if (symbols.length > 0)
 		
 		FLfile.write(fl.configURI + "Commands/saveBTA.txt", savePath + "\n" + ShpPad + "\n" + BrdPad +  "\n" + res +  "\n" + optDimens +  "\n" + optAn +  "\n" + flatten);
 		
-		var i = 0;
-		while (i < familySymbol.length)
+		for (i = 0; i < familySymbol.length; i++)
 		{
 			doc.getTimeline().currentFrame = frs[i];
 			familySymbol[i].selected = true;
 			doc.enterEditMode("inPlace");
-			i++;
 		}
+
 		doc.getTimeline().currentFrame = curFr;
 	}
 	else
@@ -587,8 +583,18 @@ function parseElements(elements, frameIndex, layerIndex, timeline)
 					case "compiled clip": break;
 				}
 			break;
-			// TODO:  add missing element types
-			case "text": 		break;
+			case "text":
+				switch (element.textType)
+				{
+					case "static":
+						json += parseShape(element, timeline, layerIndex, frameIndex, e);
+					break;
+					// TODO: add missing text types
+					case "dynamic": break;
+					case "input": 	break;
+				}
+			break;
+			// TODO: add missing (deprecated) element types
 			case "tlfText": 	break;
 			case "shapeObj": 	break;
 		}
