@@ -124,7 +124,30 @@ if (symbols.length > 0)
 		alert("Failed loading XML Panel");
 	}
 	else if (xPan.dismiss == "accept")
-	{		
+	{
+		var familySymbol = [];
+		var frs = [];
+		var curFr = 0;
+		curFr = doc.getTimeline().currentFrame;
+		var n = "";
+		
+		
+		while (n != doc.timelines[0].name)
+		{
+			doc.exitEditMode();
+			
+			familySymbol.unshift(doc.selection[0]);
+			frs.unshift(doc.getTimeline().currentFrame);
+			
+			n = doc.getTimeline().name;
+		}
+		
+		for each(symbol in familySymbol)
+		{
+			doc.enterEditMode("inPlace");
+		}
+		
+		
 		ShpPad = parseInt(xPan.ShpPad);
 		BrdPad = parseInt(xPan.BrdPad);
 		res = xPan.ResSld;
@@ -150,6 +173,16 @@ if (symbols.length > 0)
 		var savePath = saveArray.join("\\");
 		
 		FLfile.write(fl.configURI + "Commands/saveBTA.txt", savePath + "\n" + ShpPad + "\n" + BrdPad +  "\n" + res +  "\n" + optDimens +  "\n" + optAn +  "\n" + flatten);
+		
+		var i = 0;
+		while (i < familySymbol.length)
+		{
+			doc.getTimeline().currentFrame = frs[i];
+			familySymbol[i].selected = true;
+			doc.enterEditMode("inPlace");
+			i++;
+		}
+		doc.getTimeline().currentFrame = curFr;
 	}
 	else
 	{
@@ -362,12 +395,12 @@ function exportSpritemap(id, exportPath, smData, index)
 	while (l < atlasLimbs.length)
 	{
 		var limbData = atlasLimbs[l].split("{").join("").split("}").join("").split("\n");
-
+		
 		var name = parseInt(formatLimbName(limbData[0].slice(0, -2))) + smData.index;
 		var frame = limbData[1].split('"frame":').join("");
 		var rotated = limbData[2].slice(0, -1);
 		
-		smJson += '{"SPRITE":{"name":"' + name + '",' + frame + rotated + '}}';
+		smJson += '{"SPRITE":{"name":"' +  name + '",' + frame + rotated + '}}';
 		if (l < atlasLimbs.length - 1) smJson += ',\n';
 		l++;
 	}
@@ -375,11 +408,13 @@ function exportSpritemap(id, exportPath, smData, index)
 	smJson += ']},\n"meta":';
 
 	var metaData = atlasLimbs.pop().split('"meta":')[1];
+	metaData = metaData.split(app.split(" ").join("")).join(app + " (Better TA Extension)");
 	smJson += metaData.split("scale").join("resolution").slice(0, -1);
 	
 	FLfile.write(smPath + ".json", smJson);
 }
 
+var app = "";
 function makeSpritemap() {
 	var sm = new SpriteSheetExporter;
 	sm.algorithm = "maxRects";
@@ -390,6 +425,8 @@ function makeSpritemap() {
 	sm.allowTrimming = true;
 	sm.stackDuplicate = true;
 	sm.layoutFormat = "JSON-Array";
+	
+	app = sm.app;
 	return sm;
 }
 
@@ -665,7 +702,12 @@ function parseSymbolInstance(instance)
 			case "button": 		type = key("button", "B"); 		break;
 		}
 		json += jsonStr(key("symbolType", "ST"), type);
-	}	
+	}
+	
+	json += jsonHeader(key("transformationPoint", "TRP"));
+	json += jsonVar("x", instance.transformX);
+	json += jsonVarEnd("y", instance.transformY);
+	json += "},\n";
 
 	if (instance.colorMode != "none") {
 		json += jsonHeader(key("color", "C"));
@@ -749,7 +791,7 @@ function parseSymbolInstance(instance)
 						jsonVarEnd(key("saturation", "SAT"), filter.saturation);
 					break;
 					case "bevelFilter":
-						filterName = key("bevelFilter", "BVF");
+						filterName = key("bevelFilter", "BF");
 						filterContents =
 						jsonVar(key("blurX", "BLX"), filter.blurX) +
 						jsonVar(key("blurY", "BLY"), filter.blurY) +
@@ -763,7 +805,7 @@ function parseSymbolInstance(instance)
 						jsonVarEnd(key("quality", "Q"), parseQuality(filter.quality));
 					break;
 					case "blurFilter":
-						filterName = key("blurFilter", "BF");
+						filterName = key("blurFilter", "BLF");
 						filterContents =
 						jsonVar(key("blurX", "BLX"), filter.blurX) +
 						jsonVar(key("blurY", "BLY"), filter.blurY) +
@@ -795,7 +837,7 @@ function parseSymbolInstance(instance)
 						jsonVarEnd(key("quality", "Q"), parseQuality(filter.quality));
 					break;
 					case "gradientBevelFilter":
-						filterName = key("gradientBevelFilter", "GBVF");
+						filterName = key("gradientBevelFilter", "GBF");
 						filterContents =
 						jsonVar(key("blurX", "BLX"), filter.blurX) +
 						jsonVar(key("blurY", "BLY"), filter.blurY) +
