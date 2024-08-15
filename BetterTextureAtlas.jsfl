@@ -560,7 +560,6 @@ function parseElements(elements, frameIndex, layerIndex, timeline)
 	
 	var e = 0;
 	var shapeQueue = [];
-	var shapeElementQueue = [];
 
 	while (e < elements.length)
 	{
@@ -573,13 +572,12 @@ function parseElements(elements, frameIndex, layerIndex, timeline)
 		if (isShape) // Adobe sometimes forgets how their own software works
 		{
 			shapeQueue.push(e);
-			shapeElementQueue.push(element);
 		}
 		else
 		{
 			if (shapeQueue.length > 0)
 			{
-				json += "{" + parseShape(shapeElementQueue, timeline, layerIndex, frameIndex, shapeQueue) + "},\n";
+				json += "{" + parseShape(timeline, layerIndex, frameIndex, shapeQueue, true) + "},\n";
 				shapeQueue = [];
 			}
 
@@ -590,7 +588,7 @@ function parseElements(elements, frameIndex, layerIndex, timeline)
 		{
 			case "shape":
 				if (element.isGroup)
-					json += parseShape([element], timeline, layerIndex, frameIndex, [e]);
+					json += parseShape(timeline, layerIndex, frameIndex, [e], false);
 			break
 			case "instance":
 				switch (element.instanceType) {
@@ -611,7 +609,7 @@ function parseElements(elements, frameIndex, layerIndex, timeline)
 				switch (element.textType)
 				{
 					case "static":
-						json += parseShape([element], timeline, layerIndex, frameIndex, [e]);
+						json += parseShape(timeline, layerIndex, frameIndex, [e], false);
 					break;
 					// TODO: add missing text types
 					case "dynamic": break;
@@ -630,7 +628,7 @@ function parseElements(elements, frameIndex, layerIndex, timeline)
 	}
 
 	if (shapeQueue.length > 0)
-		json += "{" + parseShape(shapeElementQueue, timeline, layerIndex, frameIndex, shapeQueue) + "}";
+		json += "{" + parseShape(timeline, layerIndex, frameIndex, shapeQueue, true) + "}";
 	
 	json += ']';
 	return json;
@@ -650,22 +648,25 @@ function parseBitmapInstance(bitmap)
 	return parseAtlasInstance(matrix, itemIndex);
 }
 
-function parseShape(shapes, timeline, layerIndex, frameIndex, elementIndices)
+function parseShape(timeline, layerIndex, frameIndex, elementIndices, checkMatrix)
 {
-	var m = shapes[0].matrix;
+	var frameElements = timeline.layers[layerIndex].frames[frameIndex].elements;
+	var shape = frameElements[elementIndices[0]];
+
+	var m = shape.matrix;
 	var matrix = {a:m.a * resScale, b:m.b, c:m.c, d:m.d * resScale, tx:m.tx, ty:m.ty};
 
-	if (!shapes[0].isGroup)
+	if (checkMatrix)
 	{
-		var minX = shapes[0].x;
-		var minY = shapes[0].y;
-		var maxX = shapes[0].x + shapes[0].width;
-		var maxY = shapes[0].y + shapes[0].height;
+		var minX = shape.x;
+		var minY = shape.y;
+		var maxX = shape.x + shape.width;
+		var maxY = shape.y + shape.height;
 
 		var s = 0;
-		while (s < shapes.length)
+		while (s < elementIndices.length)
 		{
-			var shape = shapes[s];
+			var shape = frameElements[elementIndices[s]];
 			minX = Math.min(minX, shape.x);
         	minY = Math.min(minY, shape.y);
         	maxX = Math.max(maxX, shape.x + shape.width);
