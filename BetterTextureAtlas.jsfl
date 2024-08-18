@@ -650,11 +650,9 @@ function parseBitmapInstance(bitmap)
 
 function parseShape(timeline, layerIndex, frameIndex, elementIndices, checkMatrix)
 {
-	var frameElements = timeline.layers[layerIndex].frames[frameIndex].elements;
-	var shape = frameElements[elementIndices[0]];
-
-	var m = shape.matrix;
-	var matrix = {a:m.a * resScale, b:m.b, c:m.c, d:m.d * resScale, tx:m.tx, ty:m.ty};
+	var shapes = pushElementSpritemap(timeline, layerIndex, frameIndex, elementIndices);
+	var shape = shapes[0];
+	var matrix;
 
 	if (checkMatrix)
 	{
@@ -663,10 +661,10 @@ function parseShape(timeline, layerIndex, frameIndex, elementIndices, checkMatri
 		var maxX = shape.x + shape.width;
 		var maxY = shape.y + shape.height;
 
-		var s = 0;
-		while (s < elementIndices.length)
+		var s = 1;
+		while (s < shapes.length)
 		{
-			var shape = frameElements[elementIndices[s]];
+			var shape = shapes[s];
 			minX = Math.min(minX, shape.x);
         	minY = Math.min(minY, shape.y);
         	maxX = Math.max(maxX, shape.x + shape.width);
@@ -674,11 +672,18 @@ function parseShape(timeline, layerIndex, frameIndex, elementIndices, checkMatri
 			s++;
 		}
 		
-		matrix.tx = parseFloat((minX - ((maxX - minX) / 2)).toFixed(1));
-		matrix.ty = parseFloat((minY - ((maxY - minY) / 2)).toFixed(1));
+		var tx = parseFloat((minX - ((maxX - minX) / 2)).toFixed(3));
+		var ty = parseFloat((minY - ((maxY - minY) / 2)).toFixed(3));
+		
+		matrix = {a: resScale, b: 0, c: 0, d: resScale, tx: tx, ty: ty}
 	}
-
-	pushElementSpritemap(timeline, layerIndex, frameIndex, elementIndices);
+	else
+	{
+		matrix = cloneMatrix(shape.matrix);
+		matrix.a *= resScale;
+		matrix.d *= resScale;
+	}
+	
 	return parseAtlasInstance(matrix, smIndex - 1);
 }
 
@@ -707,12 +712,11 @@ function pushElementSpritemap(timeline, layerIndex, frameIndex, elementIndices)
 {
 	timeline.setSelectedLayers(layerIndex, true);
 	timeline.copyFrames(frameIndex, frameIndex);
-
-	TEMP_TIMELINE.insertBlankKeyframe(smIndex);
-	TEMP_TIMELINE.pasteFrames();
+	TEMP_TIMELINE.pasteFrames(smIndex);
 
 	var frameElements = TEMP_LAYER.frames[smIndex].elements;
 	var shape = frameElements[elementIndices[0]];
+	var shapes = [];
 
 	var e = 0;
 	var lastWidth = -1;
@@ -729,6 +733,14 @@ function pushElementSpritemap(timeline, layerIndex, frameIndex, elementIndices)
 			// Gotta check because its both the same shape instance but also not?? Really weird shit
 			if (Math.round(frameElement.width) != lastWidth)
 			{
+				// Gotta do this because jsfl scripts cant keep track well of instances data and will randomly corrupt values
+				shapes.push({
+					x: frameElement.x, y: frameElement.y,
+					width: frameElement.width, height: frameElement.height,
+					matrix: frameElement.matrix
+				});
+				
+				frameElement.matrix = matrixIdent(frameElement.matrix);
 				frameElement.width *= resolution;
 				frameElement.height *= resolution;
 				lastWidth = Math.round(frameElement.width);
@@ -747,6 +759,8 @@ function pushElementSpritemap(timeline, layerIndex, frameIndex, elementIndices)
 	//frameQueue.push(elementIndex);
 	frameQueue.push(0);
 	smIndex++;
+
+	return shapes;
 }
 
 function parseSymbolInstance(instance)
@@ -945,6 +959,18 @@ function parseSymbolInstance(instance)
 	json += '}';
 
 	return json;
+}
+
+function matrixIdent(mat)
+{
+	mat.a = mat.d = 1;
+	mat.b = mat.c = mat.tx = mat.ty = 0;
+	return mat;
+}
+
+function cloneMatrix(mat)
+{
+	return {a: mat.a, b: mat.b, c: mat.c, d: mat.d, tx: mat.tx, ty: mat.ty}
 }
 
 function parseMatrix(m) {
