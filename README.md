@@ -49,6 +49,7 @@ That being said, if you're using the <b>Extension Manager</b> app, just accept t
 Example: ``C:\Users\sotif\AppData\Local\Adobe\Animate 2022\en_US\Configuration\Commands``
 
 With your `zxp` file, rename the extension to `zip` so you can extract the contents, except `BetterTextureAtlas.mxi` (this is only useful for the Extension Managers mentioned before)
+<br><b>Pro Tip</b>: You can search where should the files be placed in the `mxi` file, specifically on the `<files>` block.
 
 <hr></details>
 
