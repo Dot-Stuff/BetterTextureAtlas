@@ -504,22 +504,30 @@ function parseSymbol(symbol)
 			json += '{\n' +
 			jsonStr(key("Layer_name", "LN"), layer.name);
 
-			switch (layer.layerType) {
+			switch (layer.layerType)
+			{
 				case "mask":
-					json += jsonStr(key("Layer_type", "LT"), "Clipper");
+					json += jsonStr(key("Layer_type", "LT"), key("Clipper", "Clp"));
 				break;
 				case "masked":
 					json += jsonStr(key("Clipped_by", "Clpb"), layer.parentLayer.name);
 				break;
-				// TODO: add missing layer types
-				case "normal": break;
-				case "guide": break;
-				case "guided": break;
-				case "folder": break;
+				case "folder":
+					json += jsonStr(key("Layer_type", "LT"), key("Folder", "Fld"));
+					if (layer.parentLayer != undefined)
+						json += jsonStr(key("Parent_layer", "PL"), layer.parentLayer.name);
+				break
+				// not planning on adding these
+				case "guide":
+				case "guided":
+				case "normal":
+				break;
 			}
 
-			json += parseFrames(layer.frames, l, timeline) + 
-			'},';
+			if (layer.layerType != "folder")
+				json += parseFrames(layer.frames, l, timeline);
+
+			json += '},';
 		}
 		l++;
 	}
