@@ -340,7 +340,7 @@ function exportAtlas(exportPath, symbolNames)
 	fl.trace("Exported to folder: " + exportPath);
 }
 
-var spritemaps = [];
+var spritemaps;
 
 function divideSpritemap(smData, symbol)
 {
@@ -385,7 +385,7 @@ function exportSpritemap(id, exportPath, smData, index)
 	var atlasLimbs = meta.split(id);
 	atlasLimbs.splice(0, 1);
 
-	var smJson = '{"ATLAS":{"SPRITES":[\n';
+	var smJson = ['{"ATLAS":{"SPRITES":[\n'];
 
 	var l = 0;
 	while (l < atlasLimbs.length)
@@ -396,18 +396,18 @@ function exportSpritemap(id, exportPath, smData, index)
 		var frame = limbData[1].split('"frame":').join("");
 		var rotated = limbData[2].slice(0, -1);
 		
-		smJson += '{"SPRITE":{"name":"' +  name + '",' + frame + rotated + '}}';
-		if (l < atlasLimbs.length - 1) smJson += ',\n';
+		smJson.push('{"SPRITE":{"name":"' +  name + '",' + frame + rotated + '}}');
+		if (l < atlasLimbs.length - 1) smJson.push(',\n');
 		l++;
 	}
 
-	smJson += ']},\n"meta":';
+	smJson.push(']},\n"meta":');
 
 	var metaData = atlasLimbs.pop().split('"meta":')[1];
 	metaData = metaData.split(app.split(" ").join("")).join(app + " (Better TA Extension)");
-	smJson += metaData.split("scale").join("resolution").slice(0, -1);
+	smJson.push(metaData.split("scale").join("resolution").slice(0, -1));
 	
-	FLfile.write(smPath + ".json", smJson);
+	FLfile.write(smPath + ".json", smJson.join(""));
 }
 
 var app = "";
@@ -428,72 +428,63 @@ function makeSpritemap() {
 
 function generateAnimation(symbol)
 {
-	var json ="{\n";
+	initJson();
+	push("{\n");
 	
 	// Add Animation
-	json += jsonHeader(key("ANIMATION", "AN"));
-	json += jsonStr(key("name", "N"), doc.name.slice(0, -4));
+	jsonHeader(key("ANIMATION", "AN"));
+	jsonStr(key("name", "N"), doc.name.slice(0, -4));
+	
 	if (instance != null) {
-		json += 
-		jsonHeader(key("StageInstance", "STI")) +
-		parseSymbolInstance(instance) +
-		'},\n';
+		jsonHeader(key("StageInstance", "STI"));
+		parseSymbolInstance(instance);
+		push('},\n');
 	}
-	json += parseSymbol(symbol);
-	json += '},\n';
+
+	parseSymbol(symbol);
+	push('},\n');
 	
 	// Add Symbol Dictionary
-	json += jsonHeader(key("SYMBOL_DICTIONARY", "SD"));
-	json += jsonArray(key ("Symbols", "S"));
+	jsonHeader(key("SYMBOL_DICTIONARY", "SD"));
+	jsonArray(key ("Symbols", "S"));
 	
 	var dictionaryIndex = 0;
 
 	while (true)
 	{
-		var itemName = dictionary[dictionaryIndex];
-		var itemSymbol = findItem(itemName);
+		var itemSymbol = findItem(dictionary[dictionaryIndex++]);
 
-		if (itemSymbol == null) {
+		if (itemSymbol == null)
 			break;
-		}
 
-		json += '{\n' + parseSymbol(itemSymbol);
-		dictionaryIndex += 1;
+		push('{\n');
+		parseSymbol(itemSymbol);
+		push('},');
 		
 		if (dictionaryIndex > dictionary.length - 1)
-		{
-			json += '}';
 			break;
-		}
-		else
-		{
-			json += '},';
-		}
 	}
 
-	json += ']},\n';
+	removeTrail(1);
+	push(']},\n');
 	
 	// Add Metadata
-	json += 
-	jsonHeader(key("metadata", "MD")) +
-	jsonStr(key("version", "V"), BTA_version) +
-	jsonVarEnd(key("framerate", "FRT"), doc.frameRate) +
-	'}';
+	jsonHeader(key("metadata", "MD"));
+	jsonStr(key("version", "V"), BTA_version);
+	jsonVarEnd(key("framerate", "FRT"), doc.frameRate);
+	push('}}');
 	
-	json += "}";
-	
-	return json;
+	return curJson.join("");
 }
 
 function parseSymbol(symbol)
 {
-	var json = '';
 	var timeline = symbol.timeline;
 	var layers = timeline.layers;
 	
-	json += jsonStr(key("SYMBOL_name", "SN"), symbol.name);
-	json += jsonHeader(key("TIMELINE", "TL"));
-	json += jsonArray(key("LAYERS", "L"));
+	jsonStr(key("SYMBOL_name", "SN"), symbol.name);
+	jsonHeader(key("TIMELINE", "TL"));
+	jsonArray(key("LAYERS", "L"));
 
 	var l = 0;
 	while (l < layers.length)
@@ -501,21 +492,21 @@ function parseSymbol(symbol)
 		var layer = layers[l];
 		if (layer.visible || !onlyVisibleLayers)
 		{
-			json += '{\n' +
+			push('{\n');
 			jsonStr(key("Layer_name", "LN"), layer.name);
 
 			switch (layer.layerType)
 			{
 				case "mask":
-					json += jsonStr(key("Layer_type", "LT"), key("Clipper", "Clp"));
+					jsonStr(key("Layer_type", "LT"), key("Clipper", "Clp"));
 				break;
 				case "masked":
-					json += jsonStr(key("Clipped_by", "Clpb"), layer.parentLayer.name);
+					jsonStr(key("Clipped_by", "Clpb"), layer.parentLayer.name);
 				break;
 				case "folder":
-					json += jsonStr(key("Layer_type", "LT"), key("Folder", "Fld"));
+					jsonStr(key("Layer_type", "LT"), key("Folder", "Fld"));
 					if (layer.parentLayer != undefined)
-						json += jsonStr(key("Parent_layer", "PL"), layer.parentLayer.name);
+						jsonStr(key("Parent_layer", "PL"), layer.parentLayer.name);
 				break
 				// not planning on adding these
 				case "guide":
@@ -525,19 +516,20 @@ function parseSymbol(symbol)
 			}
 
 			if (layer.layerType != "folder")
-				json += parseFrames(layer.frames, l, timeline);
+				parseFrames(layer.frames, l, timeline);
 
-			json += '},';
+			push('},');
 		}
 		l++;
 	}
 
-	return json.slice(0, -1) + ']}';
+	removeTrail(1);
+	push(']}');
 }
 
 function parseFrames(frames, layerIndex, timeline)
 {
-	var json = jsonArray(key("Frames", "FR"));
+	jsonArray(key("Frames", "FR"));
 
 	var f = 0;
 	while (f < frames.length)
@@ -545,26 +537,26 @@ function parseFrames(frames, layerIndex, timeline)
 		var frame = frames[f];
 		if (f == frame.startFrame)
 		{
-			json += '{\n';
+			push('{\n');
 		
-			if (frame.name.length > 0) {
-				json += jsonStr(key("name", "N"), frame.name);
-			}
+			if (frame.name.length > 0)
+				jsonStr(key("name", "N"), frame.name);
 		
-			json += jsonVar(key("index", "I"), frame.startFrame);
-			json += jsonVar(key("duration", "DU"), frame.duration);
-			json += parseElements(frame.elements, frame.startFrame, layerIndex, timeline);
-			json += '},';
+			jsonVar(key("index", "I"), frame.startFrame);
+			jsonVar(key("duration", "DU"), frame.duration);
+			parseElements(frame.elements, frame.startFrame, layerIndex, timeline);
+			push('},');
 		}
 		f++;
 	}
 
-	return json.slice(0, -1) + ']';
+	removeTrail(1);
+	push(']');
 }
 
 function parseElements(elements, frameIndex, layerIndex, timeline)
 {
-	var json = jsonArray(key("elements", "E"));
+	jsonArray(key("elements", "E"));
 	
 	var e = 0;
 	var shapeQueue = [];
@@ -585,26 +577,28 @@ function parseElements(elements, frameIndex, layerIndex, timeline)
 		{
 			if (shapeQueue.length > 0)
 			{
-				json += "{" + parseShape(timeline, layerIndex, frameIndex, shapeQueue, true) + "},\n";
+				push("{");
+				parseShape(timeline, layerIndex, frameIndex, shapeQueue, true)
+				push("},\n");
 				shapeQueue = [];
 			}
 
-			json += "{";
+			push("{");
 		}
 		
 		switch (element.elementType)
 		{
 			case "shape":
 				if (element.isGroup)
-					json += parseShape(timeline, layerIndex, frameIndex, [e], false);
+					parseShape(timeline, layerIndex, frameIndex, [e], false);
 			break
 			case "instance":
 				switch (element.instanceType) {
 					case "symbol":
-						json += parseSymbolInstance(element);
+						parseSymbolInstance(element);
 					break;
 					case "bitmap":
-						json += parseBitmapInstance(element);
+						parseBitmapInstance(element);
 					break;
 					// TODO: add missing element instance types
 					case "embedded video": break;
@@ -617,7 +611,7 @@ function parseElements(elements, frameIndex, layerIndex, timeline)
 				switch (element.textType)
 				{
 					case "static":
-						json += parseShape(timeline, layerIndex, frameIndex, [e], false);
+						parseShape(timeline, layerIndex, frameIndex, [e], false);
 					break;
 					// TODO: add missing text types
 					case "dynamic": break;
@@ -630,16 +624,18 @@ function parseElements(elements, frameIndex, layerIndex, timeline)
 		}
 
 		if (!isShape)
-			json += (e < elements.length -1) ? "},\n" : "}";
+			push((e < elements.length -1) ? "},\n" : "}");
 		
 		e++;
 	}
 
-	if (shapeQueue.length > 0)
-		json += "{" + parseShape(timeline, layerIndex, frameIndex, shapeQueue, true) + "}";
+	if (shapeQueue.length > 0) {
+		push("{");
+		parseShape(timeline, layerIndex, frameIndex, shapeQueue, true)
+		push("}");
+	}
 	
-	json += ']';
-	return json;
+	push(']');
 }
 
 function parseBitmapInstance(bitmap)
@@ -653,7 +649,7 @@ function parseBitmapInstance(bitmap)
 	}
 
 	var itemIndex = pushItemSpritemap(bitmap.libraryItem);
-	return parseAtlasInstance(matrix, itemIndex);
+	parseAtlasInstance(matrix, itemIndex);
 }
 
 function parseShape(timeline, layerIndex, frameIndex, elementIndices, checkMatrix)
@@ -692,28 +688,31 @@ function parseShape(timeline, layerIndex, frameIndex, elementIndices, checkMatri
 		matrix.d *= resScale;
 	}
 	
-	return parseAtlasInstance(matrix, smIndex - 1);
+	parseAtlasInstance(matrix, smIndex - 1);
 }
 
-function parseAtlasInstance(matrix, name) {
-	return jsonHeader(key("ATLAS_SPRITE_instance", "ASI")) +
-	jsonVar(key("Matrix", "MX"), parseMatrix(matrix)) +
-	jsonStrEnd(key("name", "N"), name) +
-	'}';
+function parseAtlasInstance(matrix, name)
+{
+	jsonHeader(key("ATLAS_SPRITE_instance", "ASI"));
+	jsonVar(key("Matrix", "MX"), parseMatrix(matrix));
+	jsonStrEnd(key("name", "N"), name);
+	push('}');
 }
 
 function pushItemSpritemap(item)
 {
 	var name = item.name;
+	var index = addedItems.indexOf(name);
 	
-	if (addedItems.indexOf(name) == -1) {
+	if (index == -1) {
 		TEMP_TIMELINE.insertBlankKeyframe(smIndex);
 		addedItems.push(name);
 		frameQueue.push(name);
-		smIndex;
+		index = addedItems.length - 1;
+		smIndex++;
 	}
 
-	return itemQueue[name];
+	return index;
 }
 
 function pushElementSpritemap(timeline, layerIndex, frameIndex, elementIndices)
@@ -727,17 +726,18 @@ function pushElementSpritemap(timeline, layerIndex, frameIndex, elementIndices)
 	var shapes = [];
 
 	var e = 0;
+	var ei = 0;
 	var lastWidth = -1;
 
 	while (e < frameElements.length)
 	{
 		var frameElement = frameElements[e];
 
-		if (elementIndices[0] == e) // Add the actual parts of the array
+		if (elementIndices[ei] == e) // Add the actual parts of the array
 		{
-			elementIndices.shift();
+			ei++;
 
-			// TODO: temp until i fix up lines to fills
+			// TODO: move this to the frameQueue and fix the resolution lines bug
 			// Gotta check because its both the same shape instance but also not?? Really weird shit
 			if (Math.round(frameElement.width) != lastWidth)
 			{
@@ -764,8 +764,7 @@ function pushElementSpritemap(timeline, layerIndex, frameIndex, elementIndices)
 		e++;
 	}
 
-	//frameQueue.push(elementIndex);
-	frameQueue.push(0);
+	//frameQueue.push(smIndex);
 	smIndex++;
 
 	return shapes;
@@ -773,17 +772,17 @@ function pushElementSpritemap(timeline, layerIndex, frameIndex, elementIndices)
 
 function parseSymbolInstance(instance)
 {
-	var json = jsonHeader(key("SYMBOL_Instance", "SI"));
+	jsonHeader(key("SYMBOL_Instance", "SI"));
 	var item = instance.libraryItem;
 	
 	if (item != undefined) {
-		json += jsonStr(key("SYMBOL_name", "SN"), item.name);
+		jsonStr(key("SYMBOL_name", "SN"), item.name);
 		if (dictionary.indexOf(item.name) == -1)
 			dictionary.push(item.name);
 	}
 
 	if (instance.firstFrame != undefined)
-		json += jsonVar(key("firstFrame", "FF"), instance.firstFrame);
+		jsonVar(key("firstFrame", "FF"), instance.firstFrame);
 	
 	if (instance.symbolType != undefined) {
 		var type;
@@ -792,65 +791,63 @@ function parseSymbolInstance(instance)
 			case "movie clip": 	type = key("movieclip", "MC"); 	break;
 			case "button": 		type = key("button", "B"); 		break;
 		}
-		json += jsonStr(key("symbolType", "ST"), type);
+		jsonStr(key("symbolType", "ST"), type);
 	}
 	
-	json += jsonHeader(key("transformationPoint", "TRP"));
-	json += jsonVar("x", instance.transformX);
-	json += jsonVarEnd("y", instance.transformY);
-	json += "},\n";
+	jsonHeader(key("transformationPoint", "TRP"));
+	jsonVar("x", instance.transformX);
+	jsonVarEnd("y", instance.transformY);
+	push("},\n");
 
 	if (instance.colorMode != "none") {
-		json += jsonHeader(key("color", "C"));
+		jsonHeader(key("color", "C"));
 		var modeKey = key("mode", "M");
 		
 		switch (instance.colorMode) {
 			case "brightness":
-				json += jsonStr(modeKey, key("Brightness", "CBRT")) +
+				jsonStr(modeKey, key("Brightness", "CBRT"));
 				jsonVarEnd(key("brightness", "BRT"), instance.brightness);
 			break;
 			case "tint":
-				json += jsonStr(modeKey, key("Tint", "T")) +
-				jsonStr(key("tintColor", "TC"), instance.tintColor) +
+				jsonStr(modeKey, key("Tint", "T"));
+				jsonStr(key("tintColor", "TC"), instance.tintColor);
 				jsonVarEnd(key("tintMultiplier", "TM"), instance.tintPercent / 100);
 			break;
 			case "alpha":
-				json += jsonStr(modeKey, key("Alpha", "CA")) +
+				jsonStr(modeKey, key("Alpha", "CA"));
 				jsonVarEnd(key("alphaMultiplier", "AM"), instance.colorAlphaPercent / 100);
 			break;
 			case "advanced":
-				json += jsonStr(modeKey, key("Advanced", "AD")) +
-				jsonVar(key("RedMultiplier", "RM"), instance.colorRedPercent / 100) +
-				jsonVar(key("greenMultiplier", "GM"), instance.colorGreenPercent / 100) +
-				jsonVar(key("blueMultiplier", "BM"), instance.colorBluePercent / 100) +
-				jsonVar(key("alphaMultiplier", "AM"), instance.colorAlphaPercent / 100) +
-				jsonVar(key("redOffset", "RO"), instance.colorRedAmount) +
-				jsonVar(key("greenOffset", "GO"), instance.colorGreenAmount) +
-				jsonVar(key("blueOffset", "BO"), instance.colorBlueAmount) +
+				jsonStr(modeKey, key("Advanced", "AD"));
+				jsonVar(key("RedMultiplier", "RM"), instance.colorRedPercent / 100);
+				jsonVar(key("greenMultiplier", "GM"), instance.colorGreenPercent / 100);
+				jsonVar(key("blueMultiplier", "BM"), instance.colorBluePercent / 100);
+				jsonVar(key("alphaMultiplier", "AM"), instance.colorAlphaPercent / 100);
+				jsonVar(key("redOffset", "RO"), instance.colorRedAmount);
+				jsonVar(key("greenOffset", "GO"), instance.colorGreenAmount);
+				jsonVar(key("blueOffset", "BO"), instance.colorBlueAmount);
 				jsonVarEnd(key("AlphaOffset", "AO"), instance.colorAlphaAmount);
 			break;
 		}
 
-		json += '},\n';
+		push('},\n');
 	}
 	
 	if (instance.name.length > 0)
-		json += jsonStr(key("Instance_Name", "IN"), instance.name);
+		jsonStr(key("Instance_Name", "IN"), instance.name);
 	
 	if (instance.loop != undefined) {
 		var loop;
 		switch (instance.loop) {
 			case "play once": 		loop = key("playonce", "PO"); 		break;
 			case "single frame":	loop = key("singleframe", "SF");	break;
-			case "loop": 			loop = key("loop", "LP");
+			case "loop": 			loop = key("loop", "LP");			break;
 		}
-		json += jsonStr(key("loop", "LP"), loop);
+		jsonStr(key("loop", "LP"), loop);
 	}
 	
-	if (instance.is3D)
-		json += jsonVar(key("Matrix3D", "M3D"), parseMatrix3D(instance.matrix3D));
-	else
-		json += jsonVar(key("Matrix", "MX"), parseMatrix(instance.matrix));	
+	if (instance.is3D)	jsonVar(key("Matrix3D", "M3D"), parseMatrix3D(instance.matrix3D));
+	else				jsonVar(key("Matrix", "MX"), 	parseMatrix(instance.matrix));	
 
 	if (instance.symbolType != "graphic")
 	{
@@ -858,115 +855,106 @@ function parseSymbolInstance(instance)
 		var hasFilters = (filters != undefined && filters.length > 0)
 
 		if (instance.blendMode != "normal")
-			json += jsonStr(key("blend", "B"), instance.blendMode);
+			jsonStr(key("blend", "B"), instance.blendMode);
 		
 		// Add Filters
 		if (hasFilters)
 		{
-			json += jsonArray(key("filters", "F"));
+			jsonArray(key("filters", "F"));
+			var n = key("name", "N");
 
 			var i = 0;
 			while (i < filters.length)
 			{
 				var filter = filters[i];
-				var filterContents = "";
-				var filterName = "";
+
+				push('{\n');
 
 				switch (filter.name) {
 					case "adjustColorFilter":
-						filterName = key("adjustColorFilter", "ACF");
-						filterContents =
-						jsonVar(key("brightness", "BRT"), filter.brightness) +
-						jsonVar(key("hue", "H"), filter.hue) + 
-						jsonVar(key("contrast", "CT"), filter.contrast) + 
+						jsonStr(n, key("adjustColorFilter", "ACF"));
+						jsonVar(key("brightness", "BRT"), filter.brightness);
+						jsonVar(key("hue", "H"), filter.hue);
+						jsonVar(key("contrast", "CT"), filter.contrast);
 						jsonVarEnd(key("saturation", "SAT"), filter.saturation);
 					break;
 					case "bevelFilter":
-						filterName = key("bevelFilter", "BF");
-						filterContents =
-						jsonVar(key("blurX", "BLX"), filter.blurX) +
-						jsonVar(key("blurY", "BLY"), filter.blurY) +
-						jsonVar(key("distance", "D"), filter.distance) +
-						jsonVar(key("knockout", "KK"), filter.knockout) +
-						jsonStr(key("type", "T"), filter.type) +
-						jsonVar(key("strength", "STR"), filter.strength) +
-						jsonVar(key("angle", "A"), filter.angle) +
-						jsonStr(key("shadowColor", "SC"), filter.shadowColor) +
-						jsonStr(key("highlightColor", "HC"), filter.highlightColor) +
+						jsonStr(n, key("bevelFilter", "BF"));
+						jsonVar(key("blurX", "BLX"), filter.blurX);
+						jsonVar(key("blurY", "BLY"), filter.blurY);
+						jsonVar(key("distance", "D"), filter.distance);
+						jsonVar(key("knockout", "KK"), filter.knockout);
+						jsonStr(key("type", "T"), filter.type);
+						jsonVar(key("strength", "STR"), filter.strength);
+						jsonVar(key("angle", "A"), filter.angle);
+						jsonStr(key("shadowColor", "SC"), filter.shadowColor);
+						jsonStr(key("highlightColor", "HC"), filter.highlightColor);
 						jsonVarEnd(key("quality", "Q"), parseQuality(filter.quality));
 					break;
 					case "blurFilter":
-						filterName = key("blurFilter", "BLF");
-						filterContents =
-						jsonVar(key("blurX", "BLX"), filter.blurX) +
-						jsonVar(key("blurY", "BLY"), filter.blurY) +
+						jsonStr(n, key("blurFilter", "BLF"));
+						jsonVar(key("blurX", "BLX"), filter.blurX);
+						jsonVar(key("blurY", "BLY"), filter.blurY);
 						jsonVarEnd(key("quality", "Q"), parseQuality(filter.quality));
 					break;
 					case "dropShadowFilter":
-						filterName = key("dropShadowFilter", "DSF");
-						filterContents =
-						jsonVar(key("blurX", "BLX"), filter.blurX) +
-						jsonVar(key("blurY", "BLY"), filter.blurY) +
-						jsonVar(key("distance", "D"), filter.distance) +
-						jsonVar(key("knockout", "KK"), filter.knockout) +
-						jsonVar(key("inner", "IN"), filter.inner) +
-						jsonVar(key("hideObject", "HO"), filter.hideObject) +
-						jsonVar(key("strength", "STR"), filter.strength) +
-						jsonVar(key("angle", "A"), filter.angle) +
-						jsonStr(key("color", "C"), filter.color) +
+						jsonStr(n, key("dropShadowFilter", "DSF"));
+						jsonVar(key("blurX", "BLX"), filter.blurX);
+						jsonVar(key("blurY", "BLY"), filter.blurY);
+						jsonVar(key("distance", "D"), filter.distance);
+						jsonVar(key("knockout", "KK"), filter.knockout);
+						jsonVar(key("inner", "IN"), filter.inner);
+						jsonVar(key("hideObject", "HO"), filter.hideObject);
+						jsonVar(key("strength", "STR"), filter.strength);
+						jsonVar(key("angle", "A"), filter.angle);
+						jsonStr(key("color", "C"), filter.color);
 						jsonVarEnd(key("quality", "Q"), parseQuality(filter.quality));
 					break;
 					case "glowFilter":
-						filterName = key("glowFilter", "GF");
-						filterContents =
-						jsonVar(key("blurX", "BLX"), filter.blurX) +
-						jsonVar(key("blurY", "BLY"), filter.blurY) +
-						jsonVar(key("inner", "IN"), filter.inner) +
-						jsonVar(key("knockout", "KK"), filter.knockout) +
-						jsonVar(key("strength", "STR"), filter.strength) +
-						jsonStr(key("color", "C"), filter.color) +
+						jsonStr(n, key("glowFilter", "GF"));
+						jsonVar(key("blurX", "BLX"), filter.blurX);
+						jsonVar(key("blurY", "BLY"), filter.blurY);
+						jsonVar(key("inner", "IN"), filter.inner);
+						jsonVar(key("knockout", "KK"), filter.knockout);
+						jsonVar(key("strength", "STR"), filter.strength);
+						jsonStr(key("color", "C"), filter.color);
 						jsonVarEnd(key("quality", "Q"), parseQuality(filter.quality));
 					break;
 					case "gradientBevelFilter":
-						filterName = key("gradientBevelFilter", "GBF");
-						filterContents =
-						jsonVar(key("blurX", "BLX"), filter.blurX) +
-						jsonVar(key("blurY", "BLY"), filter.blurY) +
-						jsonVar(key("distance", "D"), filter.distance) +
-						jsonVar(key("knockout", "KK"), filter.knockout) +
-						jsonStr(key("type", "T"), filter.type) +
-						jsonVar(key("strength", "STR"), filter.strength) +
-						jsonVar(key("angle", "A"), filter.angle) +
-						jsonVar(key("colorArray", "CA"), parseArray(filter.colorArray)) +
+						jsonStr(n, key("gradientBevelFilter", "GBF"));
+						jsonVar(key("blurX", "BLX"), filter.blurX);
+						jsonVar(key("blurY", "BLY"), filter.blurY);
+						jsonVar(key("distance", "D"), filter.distance);
+						jsonVar(key("knockout", "KK"), filter.knockout);
+						jsonStr(key("type", "T"), filter.type);
+						jsonVar(key("strength", "STR"), filter.strength);
+						jsonVar(key("angle", "A"), filter.angle);
+						jsonVar(key("colorArray", "CA"), parseArray(filter.colorArray));
 						jsonVarEnd(key("quality", "Q"), parseQuality(filter.quality));
 					break;
 					case "gradientGlowFilter":
-						filterName = key("gradientGlowFilter", "GGF");
-						filterContents =
-						jsonVar(key("blurX", "BLX"), filter.blurX) +
-						jsonVar(key("blurY", "BLY"), filter.blurY) +
-						jsonVar(key("inner", "IN"), filter.inner) +
-						jsonVar(key("knockout", "KK"), filter.knockout) +
-						jsonVar(key("strength", "STR"), filter.strength) +
-						jsonVar(key("colorArray", "CA"), parseArray(filter.colorArray)) +
+						jsonStr(n, key("gradientGlowFilter", "GGF"));
+						jsonVar(key("blurX", "BLX"), filter.blurX);
+						jsonVar(key("blurY", "BLY"), filter.blurY);
+						jsonVar(key("inner", "IN"), filter.inner);
+						jsonVar(key("knockout", "KK"), filter.knockout);
+						jsonVar(key("strength", "STR"), filter.strength);
+						jsonVar(key("colorArray", "CA"), parseArray(filter.colorArray));
 						jsonVarEnd(key("quality", "Q"), parseQuality(filter.quality));
 					break;
 				}
 
-				json += '{\n' + jsonStr(key("name", "N"), filterName) + filterContents;
-				json += (i < filters.length - 1) ? '},' : '}\n';
+				push((i < filters.length - 1) ? '},' : '}\n');
 				i++;
 			}
 			
-			json += ']\n';
+			push(']\n');
 		}
-		else json = removeComma(json);
+		else removeTrail(2);
 	}
-	else json = removeComma(json);
+	else removeTrail(2);
 
-	json += '}';
-
-	return json;
+	push('}');
 }
 
 function matrixIdent(mat)
@@ -1066,30 +1054,34 @@ function key(normal, optimized) {
 	return optimizeJson ? optimized : normal;
 }
 
-function jsonVarEnd(name, value) {
-	return '"' + name +'":' + value + '\n';
+function jsonVarEnd(name, value)	{ push('"' + name +'":' + value + '\n'); }
+function jsonVar(name, value)		{ push('"' + name +'":' + value + ',\n'); }
+function jsonStrEnd(name, value)	{ push('"' + name + '":"' + value + '"\n'); }
+function jsonStr(name, value)		{ push('"' + name + '":"' + value + '",\n'); }
+function jsonArray(name)			{ push('"' + name + '":[\n'); }
+function jsonHeader(name)			{ push('"' + name + '":{\n'); }
+
+function measure(func)
+{
+	var last = Date.now();
+	func();
+	fl.trace("" + (Date.now() - last) + "ms");
 }
 
-function jsonVar(name, value) {
-	return '"' + name +'":' + value + ',\n';
+var curJson;
+
+function initJson()
+{
+	curJson = [];
 }
 
-function jsonStrEnd(name, value) {
-	return '"' + name + '":"' + value + '"\n';
+function push(data)
+{
+	curJson.push(data);
 }
 
-function jsonStr(name, value) {
-	return '"' + name + '":"' + value + '",\n';
-}
-
-function jsonArray(name) {
-	return '"' + name + '":[\n';
-}
-
-function jsonHeader(name) {
-	return '"' + name + '":{\n';
-}
-
-function removeComma(json) {
-	return json.substring(0, json.length - 2) + "\n";
+function removeTrail(trail)
+{
+	var l = curJson.length -1;
+	curJson[l] = curJson[l].slice(0, -trail) + "\n";
 }
