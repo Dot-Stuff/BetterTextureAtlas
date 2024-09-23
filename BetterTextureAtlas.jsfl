@@ -7,7 +7,9 @@ var meshExport = false; // If to use a spritemap or mesh vertex data
 var BTA_version = "bta_1"; // easy to modify
 var onlyVisibleLayers = true;
 var optimizeDimensions = true;
-var optimizeJson = true; // TODO: theres still some variable names left to change for optimized lmao
+var optimizeJson = true;
+var bakedFilters = false; // TODO
+var bakedTweens = true; // TODO: add non-baked tweens
 var flattenSkewing = false;
 var resolution = 1.0;
 var platform = fl.version.split(" ")[0];
@@ -43,12 +45,12 @@ else if (lib.getSelectedItems().length > 0)
 if (symbols.length > 0)
 {
 	var save = "";
-	
+
 	var res = 1.0;
 	var optDimens = "true";
 	var optAn = "true";
 	var flatten = "false";
-	
+
 	if (FLfile.exists(fl.configURI + "Commands/saveBTA.txt"))
 	{
 		var file = FLfile.read(fl.configURI + "Commands/saveBTA.txt").split("\n");
@@ -60,7 +62,7 @@ if (symbols.length > 0)
 		optAn = file[5];
 		flatten = file[6];
 	}
-	
+
 	var stuff = "";
 	if (version[0] >= 13)
 	{
@@ -73,7 +75,7 @@ if (symbols.length > 0)
 			{
 					case "#404040": stuff = "#333333"; break;
 					case "#262626": stuff = "#1f1f1f"; break;
-					case "#B9B9B9": stuff = "#f5f5f5"; break;	
+					case "#B9B9B9": stuff = "#f5f5f5"; break;
 					case "#F2F2F2": stuff = "#ffffff"; break;
 			}
 		}
@@ -85,10 +87,10 @@ if (symbols.length > 0)
 	var config = fl.configURI;
 
 	FLfile.write(config + "Commands/BTATheme.txt", stuff);
-	
+
 	var rawXML = FLfile.read(config + "Commands/BTADialog.xml");
 	var fileuri = (save != "") ? save + "\\" + symbols[0] : fl.configDirectory + "\\Commands\\" + symbols[0];
-	
+
 	rawXML = rawXML.split("$CONFIGDIR").join(fl.configDirectory);
 	rawXML = rawXML.split("$FILEURI").join(fileuri);
 	rawXML = rawXML.split("$SHP").join(ShpPad);
@@ -97,15 +99,15 @@ if (symbols.length > 0)
 	rawXML = rawXML.split("$OPTDIM").join(optDimens);
 	rawXML = rawXML.split("$OPTAN").join(optAn);
 	rawXML = rawXML.split("$FLAT").join(flatten);
-	
+
 	var buttonWidth = 0;
 	if (parseInt(version[0]) >= 20)
 		buttonWidth = 50;
-	
+
 	rawXML = rawXML.split("$BWI").join(buttonWidth);
-	
+
 	var xPan = null;
-	
+
 	// Flash doesnt support direct panels from strings so we gotta create a temp xml
 	if (parseInt(version[0]) < 15 && parseInt(version[1]) < 1)
 	{
@@ -117,8 +119,8 @@ if (symbols.length > 0)
 	else
 	{
 		xPan = fl.xmlPanelFromString(rawXML);
-	}	
-	
+	}
+
 	if (xPan == null)
 	{
 		alert("Failed loading XML Panel");
@@ -144,7 +146,7 @@ if (symbols.length > 0)
 				frs.unshift(doc.getTimeline().currentFrame);
 			}
 		}
-		
+
 		ShpPad = parseInt(xPan.ShpPad);
 		BrdPad = parseInt(xPan.BrdPad);
 		res = xPan.ResSld;
@@ -152,7 +154,7 @@ if (symbols.length > 0)
 		optAn = xPan.OptAn;
 		flatten = xPan.FlatSke;
 		fileuri = xPan.saveBox;
-		
+
 		optimizeDimensions = (optDimens == "true");
 		optimizeJson = (optAn == "true");
 		flattenSkewing = (flatten == "true");
@@ -161,16 +163,16 @@ if (symbols.length > 0)
 
 		// First ask for the export folder
 		var path = formatPath(fileuri);
-	
+
 		FLfile.createFolder(path);
 		exportAtlas(path, symbols);
 
 		var saveArray = fileuri.split("\\");
 		saveArray.pop();
 		var savePath = saveArray.join("\\");
-		
+
 		FLfile.write(fl.configURI + "Commands/saveBTA.txt", savePath + "\n" + ShpPad + "\n" + BrdPad +  "\n" + res +  "\n" + optDimens +  "\n" + optAn +  "\n" + flatten);
-		
+
 		for (i = 0; i < familySymbol.length; i++)
 		{
 			doc.getTimeline().currentFrame = frs[i];
@@ -184,7 +186,7 @@ if (symbols.length > 0)
 	{
 		fl.trace("Operation cancelled");
 	}
-	
+
 	fl.trace("DONE");
 	fl.showIdleMessage(true);
 }
@@ -205,7 +207,7 @@ var frameQueue;
 var dictionary;
 
 function exportAtlas(exportPath, symbolNames)
-{	
+{
 	SPRITEMAP_ID = "__BTA_TEMP_SPRITEMAP_";
 	TEMP_SPRITEMAP = SPRITEMAP_ID + "0";
 	addedItems = [];
@@ -229,10 +231,10 @@ function exportAtlas(exportPath, symbolNames)
 
 		tmpSymbol = true;
 		symbol = findItem(containerID);
-		
+
 		var i = 0;
 		var startIndex = 0;
-		
+
 		while(i < symbolNames.length)
 		{
 			var tempName = symbolNames[i];
@@ -306,7 +308,7 @@ function exportAtlas(exportPath, symbolNames)
 				}
 			}
 		}*/
-		
+
 		i++;
 	}
 
@@ -321,7 +323,7 @@ function exportAtlas(exportPath, symbolNames)
 	if (sm.overflowed) {
 		divideSpritemap(smData, TEMP_ITEM);
 	}
-	
+
 	var i = 0;
 	while (i < spritemaps.length) {
 		var id = SPRITEMAP_ID + i;
@@ -331,12 +333,12 @@ function exportAtlas(exportPath, symbolNames)
 		lib.deleteItem(id);
 		i++;
 	}
-	
+
 	if (tmpSymbol)
 		lib.deleteItem(symbol.name);
-	
+
 	doc.exitEditMode();
-	
+
 	fl.trace("Exported to folder: " + exportPath);
 }
 
@@ -380,6 +382,43 @@ function exportSpritemap(id, exportPath, smData, index)
 	var sm = smData.sm;
 	sm.exportSpriteSheet(smPath, smSettings, true);
 
+	if (optimizeDimensions)
+	{
+		var smWidth = 1;
+		var smHeight = 1;
+
+		var meta = FLfile.read(smPath + ".json").split("\t").join("").split(" ").join("");
+		var atlasLimbs = meta.split(id);
+		atlasLimbs.splice(0, 1);
+
+		var i = 0;
+		var l = atlasLimbs.length;
+		while (i < l)
+		{
+			var limbData = atlasLimbs[i++].split("{").join("").split("}").join("").split("\n");
+			var splitFrame = limbData[1].split('"frame":').join("").split(",");
+
+			var x = parseInt(splitFrame[0].substring(4));
+			var y = parseInt(splitFrame[1].substring(4));
+			var w = parseInt(splitFrame[2].substring(4));
+			var h = parseInt(splitFrame[3].substring(4));
+
+			if (x + w > smWidth)
+				smWidth = x + w;
+
+			if (y + h > smHeight)
+				smHeight = y + h;
+		}
+
+		smWidth += BrdPad;
+		smHeight += BrdPad;
+
+		sm.autoSize = false;
+		sm.sheetWidth = smWidth;
+		sm.sheetHeight = smHeight;
+		sm.exportSpriteSheet(smPath, smSettings, true);
+	}
+
 	// Parse and change json to spritemap format
 	var meta = FLfile.read(smPath + ".json").split("\t").join("").split(" ").join("");
 	var atlasLimbs = meta.split(id);
@@ -387,55 +426,26 @@ function exportSpritemap(id, exportPath, smData, index)
 
 	var smJson = ['{"ATLAS":{"SPRITES":[\n'];
 
-	var smWidth = 1;
-	var smHeight = 1;
-
 	var l = 0;
 	while (l < atlasLimbs.length)
 	{
 		var limbData = atlasLimbs[l].split("{").join("").split("}").join("").split("\n");
-		
+
 		var name = parseInt(formatLimbName(limbData[0].slice(0, -2))) + smData.index;
 		var frame = limbData[1].split('"frame":').join("");
 		var rotated = limbData[2].slice(0, -1);
 
-		if (optimizeDimensions)
-		{
-			var splitFrame = frame.split(",");
-			var x = parseInt(splitFrame[0].substring(4));
-			var y = parseInt(splitFrame[1].substring(4));
-			var w = parseInt(splitFrame[2].substring(4));
-			var h = parseInt(splitFrame[3].substring(4));
-	
-			if (x + w > smWidth)
-				smWidth = x + w;
-	
-			if (y + h > smHeight)
-				smHeight = y + h;
-		}
-		
 		smJson.push('{"SPRITE":{"name":"' +  name + '",' + frame + rotated + '}}');
 		if (l < atlasLimbs.length - 1) smJson.push(',\n');
 		l++;
 	}
 
-	smWidth += BrdPad;
-	smHeight += BrdPad;
-
 	smJson.push(']},\n"meta":');
-
-	if (optimizeDimensions)
-	{
-		sm.autoSize = false;
-		sm.sheetWidth = smWidth;
-		sm.sheetHeight = smHeight;
-		sm.exportSpriteSheet(smPath, smSettings, false);
-	}
 
 	var metaData = atlasLimbs.pop().split('"meta":')[1];
 	metaData = metaData.split(app.split(" ").join("")).join(app + " (Better TA Extension)");
 	smJson.push(metaData.split("scale").join("resolution").slice(0, -1));
-	
+
 	FLfile.write(smPath + ".json", smJson.join(""));
 }
 
@@ -450,7 +460,7 @@ function makeSpritemap() {
 	sm.allowTrimming = true;
 	sm.stackDuplicate = true;
 	sm.layoutFormat = "JSON-Array";
-	
+
 	app = sm.app;
 	return sm;
 }
@@ -459,11 +469,11 @@ function generateAnimation(symbol)
 {
 	initJson();
 	push("{\n");
-	
+
 	// Add Animation
 	jsonHeader(key("ANIMATION", "AN"));
 	jsonStr(key("name", "N"), doc.name.slice(0, -4));
-	
+
 	if (instance != null) {
 		jsonHeader(key("StageInstance", "STI"));
 		parseSymbolInstance(instance);
@@ -472,11 +482,11 @@ function generateAnimation(symbol)
 
 	parseSymbol(symbol);
 	push('},\n');
-	
+
 	// Add Symbol Dictionary
 	jsonHeader(key("SYMBOL_DICTIONARY", "SD"));
 	jsonArray(key ("Symbols", "S"));
-	
+
 	var dictionaryIndex = 0;
 
 	while (true)
@@ -489,20 +499,20 @@ function generateAnimation(symbol)
 		push('{\n');
 		parseSymbol(itemSymbol);
 		push('},');
-		
+
 		if (dictionaryIndex > dictionary.length - 1)
 			break;
 	}
 
 	removeTrail(1);
 	push(']},\n');
-	
+
 	// Add Metadata
 	jsonHeader(key("metadata", "MD"));
 	jsonStr(key("version", "V"), BTA_version);
 	jsonVarEnd(key("framerate", "FRT"), doc.frameRate);
 	push('}}');
-	
+
 	return curJson.join("");
 }
 
@@ -510,7 +520,7 @@ function parseSymbol(symbol)
 {
 	var timeline = symbol.timeline;
 	var layers = timeline.layers;
-	
+
 	jsonStr(key("SYMBOL_name", "SN"), symbol.name);
 	jsonHeader(key("TIMELINE", "TL"));
 	jsonArray(key("LAYERS", "L"));
@@ -569,13 +579,18 @@ function parseFrames(frames, layerIndex, timeline)
 	while (f < frames.length)
 	{
 		var frame = frames[f];
-		if (f == frame.startFrame)
+		var pushFrame = (f == frame.startFrame);
+
+		if (frame.tweenType != "none" && bakedTweens)
+			pushFrame = true;
+
+		if (pushFrame)
 		{
 			push('{\n');
-		
+
 			if (frame.name.length > 0)
 				jsonStr(key("name", "N"), frame.name);
-		
+
 			jsonVar(key("index", "I"), frame.startFrame);
 			jsonVar(key("duration", "DU"), frame.duration);
 			parseElements(frame.elements, frame.startFrame, layerIndex, timeline);
@@ -591,7 +606,7 @@ function parseFrames(frames, layerIndex, timeline)
 function parseElements(elements, frameIndex, layerIndex, timeline)
 {
 	jsonArray(key("elements", "E"));
-	
+
 	var e = 0;
 	var shapeQueue = [];
 
@@ -619,7 +634,7 @@ function parseElements(elements, frameIndex, layerIndex, timeline)
 
 			push("{");
 		}
-		
+
 		switch (element.elementType)
 		{
 			case "shape":
@@ -659,7 +674,7 @@ function parseElements(elements, frameIndex, layerIndex, timeline)
 
 		if (!isShape)
 			push((e < elements.length -1) ? "},\n" : "}");
-		
+
 		e++;
 	}
 
@@ -668,7 +683,7 @@ function parseElements(elements, frameIndex, layerIndex, timeline)
 		parseShape(timeline, layerIndex, frameIndex, shapeQueue, true)
 		push("}");
 	}
-	
+
 	push(']');
 }
 
@@ -709,10 +724,10 @@ function parseShape(timeline, layerIndex, frameIndex, elementIndices, checkMatri
         	maxY = Math.max(maxY, shape.y + shape.height);
 			s++;
 		}
-		
+
 		var tx = parseFloat((minX - ((maxX - minX) / 2)).toFixed(3));
 		var ty = parseFloat((minY - ((maxY - minY) / 2)).toFixed(3));
-		
+
 		matrix = {a: resScale, b: 0, c: 0, d: resScale, tx: tx, ty: ty}
 	}
 	else
@@ -721,7 +736,7 @@ function parseShape(timeline, layerIndex, frameIndex, elementIndices, checkMatri
 		matrix.a *= resScale;
 		matrix.d *= resScale;
 	}
-	
+
 	parseAtlasInstance(matrix, smIndex - 1);
 }
 
@@ -737,7 +752,7 @@ function pushItemSpritemap(item)
 {
 	var name = item.name;
 	var index = addedItems.indexOf(name);
-	
+
 	if (index == -1) {
 		TEMP_TIMELINE.insertBlankKeyframe(smIndex);
 		addedItems.push(name);
@@ -781,7 +796,7 @@ function pushElementSpritemap(timeline, layerIndex, frameIndex, elementIndices)
 					width: frameElement.width, height: frameElement.height,
 					matrix: frameElement.matrix
 				});
-				
+
 				frameElement.matrix = matrixIdent(frameElement.matrix);
 				frameElement.width *= resolution;
 				frameElement.height *= resolution;
@@ -808,7 +823,7 @@ function parseSymbolInstance(instance)
 {
 	jsonHeader(key("SYMBOL_Instance", "SI"));
 	var item = instance.libraryItem;
-	
+
 	if (item != undefined) {
 		jsonStr(key("SYMBOL_name", "SN"), item.name);
 		if (dictionary.indexOf(item.name) == -1)
@@ -817,7 +832,7 @@ function parseSymbolInstance(instance)
 
 	if (instance.firstFrame != undefined)
 		jsonVar(key("firstFrame", "FF"), instance.firstFrame);
-	
+
 	if (instance.symbolType != undefined) {
 		var type;
 		switch (instance.symbolType) {
@@ -827,7 +842,7 @@ function parseSymbolInstance(instance)
 		}
 		jsonStr(key("symbolType", "ST"), type);
 	}
-	
+
 	jsonHeader(key("transformationPoint", "TRP"));
 	jsonVar("x", instance.transformX);
 	jsonVarEnd("y", instance.transformY);
@@ -836,7 +851,7 @@ function parseSymbolInstance(instance)
 	if (instance.colorMode != "none") {
 		jsonHeader(key("color", "C"));
 		var modeKey = key("mode", "M");
-		
+
 		switch (instance.colorMode) {
 			case "brightness":
 				jsonStr(modeKey, key("Brightness", "CBRT"));
@@ -866,10 +881,10 @@ function parseSymbolInstance(instance)
 
 		push('},\n');
 	}
-	
+
 	if (instance.name.length > 0)
 		jsonStr(key("Instance_Name", "IN"), instance.name);
-	
+
 	if (instance.loop != undefined) {
 		var loop;
 		switch (instance.loop) {
@@ -879,20 +894,20 @@ function parseSymbolInstance(instance)
 		}
 		jsonStr(key("loop", "LP"), loop);
 	}
-	
+
 	if (instance.is3D)	jsonVar(key("Matrix3D", "M3D"), parseMatrix3D(instance.matrix3D));
-	else				jsonVar(key("Matrix", "MX"), 	parseMatrix(instance.matrix));	
+	else				jsonVar(key("Matrix", "MX"), 	parseMatrix(instance.matrix));
 
 	if (instance.symbolType != "graphic")
 	{
+		if (instance.blendMode != "normal")
+			jsonStr(key("blend", "B"), instance.blendMode);
+
 		var filters = instance.filters;
 		var hasFilters = (filters != undefined && filters.length > 0)
 
-		if (instance.blendMode != "normal")
-			jsonStr(key("blend", "B"), instance.blendMode);
-		
 		// Add Filters
-		if (hasFilters)
+		if (hasFilters && !bakedFilters)
 		{
 			jsonArray(key("filters", "F"));
 			var n = key("name", "N");
@@ -981,7 +996,7 @@ function parseSymbolInstance(instance)
 				push((i < filters.length - 1) ? '},' : '}\n');
 				i++;
 			}
-			
+
 			push(']\n');
 		}
 		else removeTrail(2);
@@ -1011,7 +1026,7 @@ function parseMatrix(m) {
 	m.d + "," +
 	m.tx + "," +
 	m.ty +
-	"]"; 
+	"]";
 }
 
 function parseMatrix3D(m) {
@@ -1063,7 +1078,7 @@ function formatPath(path)
 	var arr = path.split("\\");
 
 	arr = arr.join("\\").split(":");
-		
+
 	path = "file:///" + arr.join("|");
 	path = path.split("\\").join("/");
 
