@@ -6,7 +6,7 @@ var symbols = [];
 var meshExport = false; // If to use a spritemap or mesh vertex data
 var BTA_version = "bta_1"; // easy to modify
 var onlyVisibleLayers = true;
-var optimiseDimensions = true; // TODO: doesnt work yet
+var optimizeDimensions = true;
 var optimizeJson = true; // TODO: theres still some variable names left to change for optimized lmao
 var flattenSkewing = false;
 var resolution = 1.0;
@@ -153,7 +153,7 @@ if (symbols.length > 0)
 		flatten = xPan.FlatSke;
 		fileuri = xPan.saveBox;
 		
-		optimiseDimensions = (optDimens == "true");
+		optimizeDimensions = (optDimens == "true");
 		optimizeJson = (optAn == "true");
 		flattenSkewing = (flatten == "true");
 		resolution = parseFloat(res);
@@ -387,6 +387,9 @@ function exportSpritemap(id, exportPath, smData, index)
 
 	var smJson = ['{"ATLAS":{"SPRITES":[\n'];
 
+	var smWidth = 1;
+	var smHeight = 1;
+
 	var l = 0;
 	while (l < atlasLimbs.length)
 	{
@@ -395,13 +398,39 @@ function exportSpritemap(id, exportPath, smData, index)
 		var name = parseInt(formatLimbName(limbData[0].slice(0, -2))) + smData.index;
 		var frame = limbData[1].split('"frame":').join("");
 		var rotated = limbData[2].slice(0, -1);
+
+		if (optimizeDimensions)
+		{
+			var splitFrame = frame.split(",");
+			var x = parseInt(splitFrame[0].substring(4));
+			var y = parseInt(splitFrame[1].substring(4));
+			var w = parseInt(splitFrame[2].substring(4));
+			var h = parseInt(splitFrame[3].substring(4));
+	
+			if (x + w > smWidth)
+				smWidth = x + w;
+	
+			if (y + h > smHeight)
+				smHeight = y + h;
+		}
 		
 		smJson.push('{"SPRITE":{"name":"' +  name + '",' + frame + rotated + '}}');
 		if (l < atlasLimbs.length - 1) smJson.push(',\n');
 		l++;
 	}
 
+	smWidth += BrdPad;
+	smHeight += BrdPad;
+
 	smJson.push(']},\n"meta":');
+
+	if (optimizeDimensions)
+	{
+		sm.autoSize = false;
+		sm.sheetWidth = smWidth;
+		sm.sheetHeight = smHeight;
+		sm.exportSpriteSheet(smPath, smSettings, false);
+	}
 
 	var metaData = atlasLimbs.pop().split('"meta":')[1];
 	metaData = metaData.split(app.split(" ").join("")).join(app + " (Better TA Extension)");
@@ -510,7 +539,7 @@ function parseSymbol(symbol)
 					jsonStr(key("Layer_type", "LT"), key("Folder", "Fld"));
 					if (layer.parentLayer != undefined)
 						jsonStr(key("Parent_layer", "PL"), layer.parentLayer.name);
-				break
+				break;
 				// not planning on adding these
 				case "guide":
 				case "guided":
@@ -522,7 +551,7 @@ function parseSymbol(symbol)
 				parseFrames(layer.frames, l, timeline);
 
 			push('},');
-			
+
 			layer.locked = lockedLayer;
 		}
 		l++;
