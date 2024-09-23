@@ -492,6 +492,9 @@ function parseSymbol(symbol)
 		var layer = layers[l];
 		if (layer.visible || !onlyVisibleLayers)
 		{
+			var lockedLayer = layer.locked;
+			layer.locked = false;
+
 			push('{\n');
 			jsonStr(key("Layer_name", "LN"), layer.name);
 
@@ -519,6 +522,8 @@ function parseSymbol(symbol)
 				parseFrames(layer.frames, l, timeline);
 
 			push('},');
+			
+			layer.locked = lockedLayer;
 		}
 		l++;
 	}
