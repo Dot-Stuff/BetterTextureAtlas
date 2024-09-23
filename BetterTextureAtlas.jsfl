@@ -398,16 +398,21 @@ function exportSpritemap(id, exportPath, smData, index)
 			var limbData = atlasLimbs[i++].split("{").join("").split("}").join("").split("\n");
 			var splitFrame = limbData[1].split('"frame":').join("").split(",");
 
+			var rotated = limbData[2] == '"rotated":true,';
+
 			var x = parseInt(splitFrame[0].substring(4));
 			var y = parseInt(splitFrame[1].substring(4));
 			var w = parseInt(splitFrame[2].substring(4));
 			var h = parseInt(splitFrame[3].substring(4));
 
-			if (x + w > smWidth)
-				smWidth = x + w;
+			var right = x + (rotated ? h : w);
+			var down = y + (rotated ? w : h);
 
-			if (y + h > smHeight)
-				smHeight = y + h;
+			if (right > smWidth)
+				smWidth = right;
+
+			if (down > smHeight)
+				smHeight = down;
 		}
 
 		smWidth += BrdPad;
@@ -429,13 +434,13 @@ function exportSpritemap(id, exportPath, smData, index)
 	var l = 0;
 	while (l < atlasLimbs.length)
 	{
-		var limbData = atlasLimbs[l].split("{").join("").split("}").join("").split("\n");
+		var limbData = atlasLimbs[l].split("\n");
 
 		var name = parseInt(formatLimbName(limbData[0].slice(0, -2))) + smData.index;
-		var frame = limbData[1].split('"frame":').join("");
-		var rotated = limbData[2].slice(0, -1);
+		var frame = limbData[1].substring(9, limbData[1].length - 2);
+		var rotated = limbData[2] == '"rotated":true,';
 
-		smJson.push('{"SPRITE":{"name":"' +  name + '",' + frame + rotated + '}}');
+		smJson.push('{"SPRITE":{"name":"' +  name + '",' + frame + ',' + rotated + '}}');
 		if (l < atlasLimbs.length - 1) smJson.push(',\n');
 		l++;
 	}
