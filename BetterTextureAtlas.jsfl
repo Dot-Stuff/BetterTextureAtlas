@@ -5,6 +5,7 @@ fl.showIdleMessage(false);
 var symbols = [];
 var meshExport = false; // If to use a spritemap or mesh vertex data
 var BTA_version = "bta_1"; // easy to modify
+var algorithm = "maxRects";
 var onlyVisibleLayers = true;
 var optimizeDimensions = true;
 var optimizeJson = true;
@@ -263,8 +264,7 @@ function exportAtlas(exportPath, symbolNames)
 	TEMP_TIMELINE.removeFrames(0,0);
 
 	// Write Animation.json
-	var animJson = generateAnimation(symbol);
-	FLfile.write(path + "/Animation.json", animJson);
+	FLfile.write(path + "/Animation.json", generateAnimation(symbol));
 
 	// Add items and fix resolutions
 	lib.editItem(TEMP_SPRITEMAP);
@@ -329,9 +329,8 @@ function exportAtlas(exportPath, symbolNames)
 		var id = SPRITEMAP_ID + i;
 		var exportId = (i == 0) ? 1 : Math.abs(i - spritemaps.length - 1);
 
-		exportSpritemap(id, exportPath, spritemaps[i], exportId);
+		exportSpritemap(id, exportPath, spritemaps[i++], exportId);
 		lib.deleteItem(id);
-		i++;
 	}
 
 	if (tmpSymbol)
@@ -396,31 +395,21 @@ function exportSpritemap(id, exportPath, smData, index)
 		while (i < l)
 		{
 			var limbData = atlasLimbs[i++].split("{").join("").split("}").join("").split("\n");
-			var splitFrame = limbData[1].split('"frame":').join("").split(",");
-
-			var rotated = limbData[2] == '"rotated":true,';
+			var splitFrame = limbData[1].substring(8).split(",");
 
 			var x = parseInt(splitFrame[0].substring(4));
 			var y = parseInt(splitFrame[1].substring(4));
 			var w = parseInt(splitFrame[2].substring(4));
 			var h = parseInt(splitFrame[3].substring(4));
 
-			var right = x + (rotated ? h : w);
-			var down = y + (rotated ? w : h);
-
-			if (right > smWidth)
-				smWidth = right;
-
-			if (down > smHeight)
-				smHeight = down;
+			smWidth = Math.max(smWidth, x + w);
+			smHeight = Math.max(smHeight, y + h);
 		}
 
-		smWidth += BrdPad;
-		smHeight += BrdPad;
-
 		sm.autoSize = false;
-		sm.sheetWidth = smWidth;
-		sm.sheetHeight = smHeight;
+		sm.sheetWidth = smWidth + BrdPad;
+		sm.sheetHeight = smHeight + BrdPad;
+		
 		sm.exportSpriteSheet(smPath, smSettings, true);
 	}
 
@@ -457,7 +446,7 @@ function exportSpritemap(id, exportPath, smData, index)
 var app = "";
 function makeSpritemap() {
 	var sm = new SpriteSheetExporter;
-	sm.algorithm = "maxRects";
+	sm.algorithm = algorithm;
 	sm.autoSize = true;
 	sm.borderPadding = BrdPad;
 	sm.shapePadding = ShpPad;
@@ -492,21 +481,12 @@ function generateAnimation(symbol)
 	jsonHeader(key("SYMBOL_DICTIONARY", "SD"));
 	jsonArray(key ("Symbols", "S"));
 
-	var dictionaryIndex = 0;
-
-	while (true)
+	var dictIndex = 0;
+	while (dictIndex < dictionary.length)
 	{
-		var itemSymbol = findItem(dictionary[dictionaryIndex++]);
-
-		if (itemSymbol == null)
-			break;
-
 		push('{\n');
-		parseSymbol(itemSymbol);
+		parseSymbol(findItem(dictionary[dictIndex++]));
 		push('},');
-
-		if (dictionaryIndex > dictionary.length - 1)
-			break;
 	}
 
 	removeTrail(1);
@@ -531,7 +511,8 @@ function parseSymbol(symbol)
 	jsonArray(key("LAYERS", "L"));
 
 	var l = 0;
-	while (l < layers.length)
+	var ll = layers.length;
+	while (l < ll)
 	{
 		var layer = layers[l];
 		if (layer.visible || !onlyVisibleLayers)
@@ -581,7 +562,8 @@ function parseFrames(frames, layerIndex, timeline)
 	jsonArray(key("Frames", "FR"));
 
 	var f = 0;
-	while (f < frames.length)
+	var fl = frames.length;
+	while (f < fl)
 	{
 		var frame = frames[f];
 		var pushFrame = (f == frame.startFrame);
@@ -596,9 +578,9 @@ function parseFrames(frames, layerIndex, timeline)
 			if (frame.name.length > 0)
 				jsonStr(key("name", "N"), frame.name);
 
-			jsonVar(key("index", "I"), frame.startFrame);
+			jsonVar(key("index", "I"), f);
 			jsonVar(key("duration", "DU"), frame.duration);
-			parseElements(frame.elements, frame.startFrame, layerIndex, timeline);
+			parseElements(frame.elements, f, layerIndex, timeline);
 			push('},');
 		}
 		f++;
@@ -613,9 +595,10 @@ function parseElements(elements, frameIndex, layerIndex, timeline)
 	jsonArray(key("elements", "E"));
 
 	var e = 0;
+	var el = elements.length;
 	var shapeQueue = [];
 
-	while (e < elements.length)
+	while (e < el)
 	{
 		var element = elements[e];
 		var elementType = element.elementType;
@@ -1136,6 +1119,5 @@ function push(data)
 
 function removeTrail(trail)
 {
-	var l = curJson.length -1;
-	curJson[l] = curJson[l].slice(0, -trail) + "\n";
+	curJson[curJson.length -1] = curJson[curJson.length -1].slice(0, -trail) + "\n";
 }
