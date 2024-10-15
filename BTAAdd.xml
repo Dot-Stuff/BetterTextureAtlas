@@ -1,0 +1,8 @@
+<dialog title="Generate A Texture Atlas" buttons="accept">
+
+<label value="Additional Params"/>
+
+<radiogroup id="params" groupbox="true" >
+<checkbox label="Inline Symbols" />
+</radiogroup>
+</dialog>

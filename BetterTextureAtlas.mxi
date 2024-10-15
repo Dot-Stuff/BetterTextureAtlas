@@ -1,0 +1,84 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<macromedia-extension
+	 name="Better Texture Atlas"
+	 version="1.0.0"
+	 type="command"
+	 requires-restart="true">
+
+	<author name="MaybeMaru and CheemsAndFriends" />
+
+	<products>
+		<product name="Flash" version="10" primary="true" />
+	</products>
+
+	<description>
+	<![CDATA[
+	____________________________________________________________________<br>
+____________________________________________________________________<br>
+<br>
+<br>
+<h2>&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;BETTER TEXTURE ATLAS</h2><br>
+____________________________________________________________________<br>
+____________________________________________________________________<br>
+<br>
+<h3>DESCRIPTION:</h3><br>
+--------------------------------------------------------------------------------------------------------------------------------------------<br>
+<br>
+&ensp;This command allows you to export <b>symbols</b> into a redesigned version of a &ensp;<b>Texture Atlas</b>, added by <b>Adobe</b> in <b>Animate 2018 CC</b><br>
+<br>
+____________________________________________________________________<br>
+<br>
+<h3>COMMAND OPTIONS:</h3><br>
+--------------------------------------------------------------------------------------------------------------------------------------------<br>
+<br>
+<ol><br>
+<li> <b>Image Dimensions</b>: Resolution size of the final exported spritemaps<br>
+<small>(<b>WARNING:</b> if you select <b>"Vectorized JSON"</b> as your data format this will be ignored.)</small></li><br>
+<li> <b>Optimize Dimensions</b>: Trim the spritemap so theres no transparent unused space<br>
+<small>(<b>WARNING:</b> if you select <b>"Vectorized JSON"</b> as your data format this will be ignored.)</small></li><br>
+<li> <b>Image Format</b>: The bit depth of the exported spritemaps. Useful for smaller sizes at the cost of possible lower quality<br>
+<small>(<b>WARNING:</b> if you select <b>"Vectorized JSON"</b> as your data format this will be ignored.)</small></li><br>
+<li> <b>Resolution</b>: The resolution of the limbs. from 0.01 to 999<br>
+<small>(<b>WARNING:</b> if you select <b>"Vectorized JSON"</b> as your data format this will be ignored.)</small></li><br>
+<li> <b>Algorithm</b>: Algorithm used to position the limbs on the spritemaps<br>
+<small>(<b>WARNING:</b> if you select <b>"Vectorized JSON"</b> as your data format this will be ignored.)</small></li><br>
+<li> <b>Data Format</b>: The format the Texture atlas will be. </li><br>
+<li> <b>Rotate</b>: Whether to allow Rotation for the limb positioning.<br>
+<small>(<b>WARNING:</b> This is only used when the Algorithm is set to Max Rects and the data format is set to <b>"Rasterized JSON"</b>)</small></li><br>
+<li> <b>Shape padding</b>: Pixels of padding between each limb<br>
+<small>(<b>WARNING:</b> if you select <b>"Vectorized JSON"</b> as your data format this will be ignored.)</small></li><br>
+<li> <b>Border padding</b>: Pixels of padding between the image and the generation of limbs itself<br>
+<small>(<b>WARNING:</b> if you select <b>"Vectorized JSON"</b> as your data format this will be ignored.)</small></li><br>
+<li> <b>Optimize Antimation.json file</b>: Whether to shorten Field names for better readability</li><br>
+<li> <b>Flatten skewed objects to bitmap</b>: Add symbols to the limb generation process that are skewed in favor of game engines that do not support skewing.</li><br>
+<li> <b>Export Path</b>: The path where the Texture Atlas will be exported to</li><br>
+</ol>
+	]]>
+	</description>
+
+	<ui-access>
+	<![CDATA[
+	_________________________________________________________<br>
+<br>
+<h3>WHERE CAN I ACCESS MY COMMAND?</h3><br>
+--------------------------------------------------------------------------------------------------------------------------------------------<br>
+<br>
+To access it, simply select on the menu <b> Commands > BetterTextureAtlas </b><br>
+A popup window will show up, revealing different export settings and an export path to export the texture atlas.
+	]]>
+	</ui-access>
+
+	<license-agreement>
+	<![CDATA[
+	MaybeMaru and CheemsAndFriends provides this extension 'as is' without any warranty of any kind as to the suitability of the extension for the licensees intended purpose. All risk as to the performance of the extension and it's contents are the sole responsibility of you, the licensee.<br>
+
+	]]>
+	</license-agreement>
+
+	<files>
+		<file source="BetterTextureAtlas.jsfl" destination="$flash/Commands" />
+		<file source="BTADialog.xml" destination="$flash/Commands" />
+		<file source="BTAlogo.swf" destination="$flash/Commands" />
+	</files>
+
+</macromedia-extension>

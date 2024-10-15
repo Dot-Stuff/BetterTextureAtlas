@@ -1,15 +1,129 @@
 <?xml version="1.0"?>
 <dialog title="Generate a Texture Atlas">
 
-	<flash src="$CONFIGDIRCommands\BTAlogo.swf" width="700" height="72"></flash>
-	<separator/>
+
+	
+	<flash src="$CONFIGDIRCommands\BTAlogo.swf" width="610" height="72"></flash>
+	<!-- <separator/> -->
 
 	<hbox>
 		<label value=" " />
-		<label value="Texture Atlas Export" id="stuff" control="radioGroup"/>
+		<label value="Texture Atlas Export" id="stuff" control="radioGroup" />
 	</hbox>
 
-	<radiogroup id="radioGroup" groupbox="true" label="Export Settings">
+	<script>
+
+		var save = [];
+		
+		if (FLfile.exists(fl.configURI + "Commands/saveBTA.txt"))
+			save = FLfile.read(fl.configURI + "Commands/saveBTA.txt").split("\n");
+
+		function myThing()
+		{
+			fl.trace(fl.xmlui.get("imgDims"));
+			var isVisible = fl.xmlui.getVisible("DFormat"); 
+			fl.trace(isVisible);
+			
+			fl.trace(fl.xmlui.get("algorithm"));
+			fl.xmlui.set("algorithm", "MaxRects");
+
+
+			fl.trace(save);
+		}
+
+		function addParams()
+		{
+			var add = fl.xmlPanel(fl.configURI + 'Commands/BTAAdd.xml');
+		}
+
+
+		function algorithmSet()
+		{
+			var value = "MaxRects";
+
+			if (save[7] != null)
+				value = save[7];
+
+			fl.xmlui.set("algorithm", value);
+
+			algorithmSel();
+		}
+
+		function imgFormatSet()
+		{
+			var value = "PNG 32 bits";
+
+			if (save[8] != null)
+				value = save[8];
+
+			fl.xmlui.set("imgFormat", value);
+		}
+
+
+		function algorithmSel()
+		{
+			var value = fl.xmlui.get("algorithm");
+
+			fl.xmlui.setEnabled("Rotate", value == "MaxRects");
+		}
+		function dFormatSel()
+		{
+			var value = fl.xmlui.get("DFormat");
+
+			
+			fl.xmlui.setEnabled("Rotate", value == "raster");
+			fl.xmlui.setEnabled("imgFormat", value == "raster");
+			fl.xmlui.setEnabled("imgDims", value == "raster");
+			fl.xmlui.setEnabled("ResSld", value == "raster");
+			fl.xmlui.setEnabled("ShpPad", value == "raster");
+			fl.xmlui.setEnabled("BrdPad", value == "raster");
+			fl.xmlui.setEnabled("OptDimens", value == "raster");
+			fl.xmlui.setEnabled("FlatSke", value == "raster");
+			fl.xmlui.setEnabled("algorithm", value == "raster");
+			fl.xmlui.setEnabled("cusWid", value == "raster");
+			fl.xmlui.setEnabled("cusHei", value == "raster");
+		}
+		function accept()
+		{
+			var saveBox = fl.xmlui.get("saveBox");
+
+			if (!FLfile.exists(FLfile.platformPathToURI(saveBox)))
+			{
+				saveAndClose();
+				return;
+			}
+			
+			var check = fl.xmlPanel(fl.configURI + 'Commands/BTAConfirm.xml');
+
+			if (check.dismiss == "accept")
+				saveAndClose();
+		}
+
+		function saveAndClose()
+		{
+
+			var save = [];
+			var saveArray = fl.xmlui.get("saveBox").split("\\");
+			saveArray.pop();
+			var savePath = saveArray.join("\\");
+			save[0] = savePath;
+			save[1] = fl.xmlui.get("ShpPad");
+			save[2] = fl.xmlui.get("BrdPad");
+			save[3] = fl.xmlui.get("ResSld");
+			save[4] = fl.xmlui.get("OptDimens");
+			save[5] = fl.xmlui.get("OptAn");
+			save[6] = fl.xmlui.get("FlatSke");
+
+			fl.trace(save);
+			fl.trace(fl.configURI + "Commands/saveBTA.txt");
+
+			FLfile.write(fl.configURI + "Commands/saveBTA.txt", save.join("\n"));
+			fl.xmlui.accept();
+		}
+		
+	</script>
+
+	<radiogroup id="radioGroup" groupbox="true" label="Texture Atlas Output">
 
 		<grid>
 
@@ -29,7 +143,7 @@
 							<row>
 								<label value="Image dimensions:" align="right"/>
 								<hbox>
-								<menulist id="imgDims" value="128" >
+								<menulist id="imgDims">
 									<menupop>
 										<menuitem label="Automatic Size" value="auto"/>
 										<menuitem label="64x64" value="64"/>
@@ -51,12 +165,23 @@
 								</vbox>
 								</hbox>
 							</row>
+							<row>
+								<label value="Width:" align="right"/>
+								<textbox id="cusWid" label="Your mom" maxlength="4" value="$RES" width="50" />
+
+		
+							</row>
+							<row>
+								<label value="Height:" align="right"/>
+								<textbox id="cusHei" label="Your mom" maxlength="4" value="$RES" width="50" />
+		
+							</row>
 							<row align="right">
 								<label value="Image Format:" align="right"/>
-								<menulist id="imgFormat">
+								<menulist id="imgFormat" oncreate="imgFormatSet()">
 									<menupop>
-										<menuitem label="PNG 32 bits" value="32bits"/>
-										<menuitem label="PNG 8 bits" value="8bits"/>
+										<menuitem label="PNG 32 bits"/>
+										<menuitem label="PNG 8 bits"/>
 									</menupop>
 								</menulist>
 							</row>
@@ -64,37 +189,16 @@
 							<!-- <row><label value=" " /></row> -->
 							<row align="right">
 								<label value="Resolution:" align="right"/>
-								<textbox id="ResSld" maxlength="3" value="$RES" width="50" />
+								<textbox id="ResSld" label="Your mom" maxlength="3" value="$RES" width="50" />
 							</row>
 							<row>
-								<label value="(rasterized only)" align="right"/>
+								<!-- <label value="(rasterized only)" align="right"/> -->
 		
 							</row>
 							<row><label value=" " /></row>
 						</rows>
 					</grid>
-<!-- 					
-					<hbox>
-						<label value=" " />
-						<vbox>
-							<vbox>
-								
-								<label value=" "/>
-								<label value=" "/>
-								<label value=" "/>
-								<label value=" "/>
-								<label value=" "/>
-				
-								<separator/>
-							</vbox>
-							<label value=" "/>
-							<label value=" "/>
-							<label value=" "/>
-							<label value=" "/>
-							<label value=" "/>
-							<separator/>
-						</vbox>
-					</hbox> -->
+					
 					<grid>
 		
 						<columns>
@@ -104,19 +208,21 @@
 						<rows>
 							<row align="right">
 								<label value="Algorithm: " control="xScale" align="right" />
-								<menulist id="algorithm">
+								<menulist id="algorithm" oncreate="algorithmSet()" onchange="algorithmSel()">
 										<menupop>
-											<menuitem label="Basic" value="basic"/>
-											<menuitem label="MaxRects" value="maxRects"/>
+											<menuitem label="Basic"/>
+											<menuitem label="MaxRects"/>
 										</menupop>
 								</menulist>
 							</row>
 							<row align="right">
 								<label value="Data Format: " control="DFormat" align="right" />
-								<menulist id="DFormat">
+								<menulist id="DFormat" oncreate="fl.xmlui.setEnabled('DFormat', false);" onchange="dFormatSel();">
 										<menupop>
+
+											
 											<menuitem label="Rasterised JSON" value="raster"/>
-											<menuitem label="Vectorised JSON" value="mesh"/>
+											<menuitem id="mesh" label="Vectorised JSON" value="mesh"/>
 										</menupop>
 								</menulist>
 							</row>
@@ -144,16 +250,33 @@
 
 		</grid>
 
+
 		<spacer/>
 		<spacer/>
 		<separator/>
 		<spacer/>
 		<spacer/>
-		<vbox>
-			<checkbox id="OptAn" checked="$OPTAN" label="Optimize Animation.json file" />
+		<grid>
+			<columns>
+				<column/>
+				<column/>
+				<column/>
+				<column/>
+			</columns>
 
-			<checkbox id="FlatSke" checked="$FLAT" label="Flatten skewed objects to bitmap" />
-		</vbox>
+			<rows>
+				<row>
+					<vbox>
+						<checkbox id="OptAn" checked="$OPTAN" label="Optimize Animation.json file" />
+
+						<checkbox id="FlatSke" checked="$FLAT" label="Flatten skewed objects to bitmap" />
+					</vbox>
+					<label value=" "/>
+					<label value=" "/>
+					<button align="center" label="Additional Params" oncommand="addParams();"/>
+				</row>
+			</rows>
+		</grid>
 
 		<spacer/>
 		<spacer/>
@@ -192,9 +315,7 @@
 			</row>
 			<row>
 				<choosefile size="40" value="$FILEURI" required="true" pathtype="absolute" id="saveBox" type="save" />
-				<label value=" "/>
-				<label value=" "/>
-				<label value=" "/>
+				<spacer/>
 				<label value=" "/>
 				<label value=" "/>
 				<label value=" "/>
@@ -213,10 +334,14 @@
 						<column/>
 						<column/>
 						<column/>
+						<column/>
+						<column/>
 					</columns>
 					<rows>
 						<row>
-							<button label="Export" oncommand="fl.xmlui.accept()" width="$BWI"/>
+							<button label="Testing" oncommand="myThing()" width="$BWI"/> -->
+							<label value="" />
+							<button label="Export" oncommand="accept()" width="$BWI"/>
 							<label value="" />
 							<button label="Cancel" oncommand="fl.xmlui.cancel()" width="$BWI"/>
 						</row>
@@ -225,4 +350,5 @@
 			</row>
 		</rows>
 	</grid>
+	
 </dialog>

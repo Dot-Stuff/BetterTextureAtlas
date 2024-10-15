@@ -1,0 +1,46 @@
+<dialog title="Generate a Texture Atlas">
+
+
+<script>
+    function bizzy()
+    {
+        <!-- fl.xmlui.set("pathy", "'DOING YOUR MOM D-D DOING YOUR MOM!!!'"); -->
+    }
+</script>
+
+<grid>
+    <columns>
+        <column/>
+        <column/>
+        <column/>
+    </columns>
+    <rows>
+        <row>
+            <flash src="warningBTA.swf" width="42" height="75"></flash>
+            <label value="" />
+            <vbox>
+                <label value="There's a Texture Atlas already with the same naming"/>
+                <label id="pathy" value=''/>
+                <label value= "Do you want to overwrite it?" />
+            </vbox>
+        </row>
+    </rows>
+</grid>
+
+<spacer/>
+<spacer/>
+        <grid>
+            <columns>
+                <column/>
+                <column/>
+                <column/>
+            </columns>
+            <rows>
+                <row align="right">
+                    <button label="Yes" align="auto" oncommand="fl.xmlui.accept()" width="50"/>
+                    <label value="" />
+                    <button label="No" align="auto" oncommand="fl.xmlui.cancel()" width="50"/>
+                </row>
+            </rows>
+        </grid>
+</dialog>
