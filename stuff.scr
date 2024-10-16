@@ -1,0 +1,22 @@
+var stuff = "";
+if (version[0] >= 13)
+{
+    if (version[0] < 20)
+        stuff = fl.getThemeColor("themeAppBackgroundColor");
+    else
+    {
+        stuff = fl.getThemeColor("themeAppBackgroundColor");
+        switch(stuff)
+        {
+                case "#404040": stuff = "#333333"; break;
+                case "#262626": stuff = "#1f1f1f"; break;
+                case "#B9B9B9": stuff = "#f5f5f5"; break;
+                case "#F2F2F2": stuff = "#ffffff"; break;
+        }
+    }
+}
+else {
+    stuff = "#f0f0f0";
+}
+
+FLfile.write(fl.configURI + "Commands/BTATheme.txt", stuff);

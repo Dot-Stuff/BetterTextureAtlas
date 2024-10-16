@@ -4,5 +4,6 @@
 
 <radiogroup id="params" groupbox="true" >
 <checkbox label="Inline Symbols" />
+<checkbox label="Include Sounds" checked="true"/>
 </radiogroup>
 </dialog>

@@ -1,4 +1,4 @@
-﻿///// CONFIGURATION
+﻿﻿///// CONFIGURATION
 fl.outputPanel.clear(); // debug purposes
 fl.showIdleMessage(false);
 
@@ -17,6 +17,9 @@ var platform = fl.version.split(" ")[0];
 var version = fl.version.split(" ")[1].split(",");
 var ShpPad = 0;
 var BrdPad = 0;
+
+var inlineSym = false;
+var includeSnd = true;
 /////
 
 var doc = fl.getDocumentDOM();
@@ -64,30 +67,7 @@ if (symbols.length > 0)
 		flatten = file[6];
 	}
 
-	var stuff = "";
-	if (version[0] >= 13)
-	{
-		if (version[0] < 20)
-			stuff = fl.getThemeColor("themeAppBackgroundColor");
-		else
-		{
-			stuff = fl.getThemeColor("themeAppBackgroundColor");
-			switch(stuff)
-			{
-					case "#404040": stuff = "#333333"; break;
-					case "#262626": stuff = "#1f1f1f"; break;
-					case "#B9B9B9": stuff = "#f5f5f5"; break;
-					case "#F2F2F2": stuff = "#ffffff"; break;
-			}
-		}
-	}
-	else {
-		stuff = "#f0f0f0";
-	}
-
 	var config = fl.configURI;
-
-	FLfile.write(config + "Commands/BTATheme.txt", stuff);
 
 	var rawXML = FLfile.read(config + "Commands/BTADialog.xml");
 	var fileuri = (save != "") ? save + "\\" + symbols[0] : fl.configDirectory + "\\Commands\\" + symbols[0];
@@ -478,19 +458,47 @@ function generateAnimation(symbol)
 	push('},\n');
 
 	// Add Symbol Dictionary
-	jsonHeader(key("SYMBOL_DICTIONARY", "SD"));
-	jsonArray(key ("Symbols", "S"));
-
-	var dictIndex = 0;
-	while (dictIndex < dictionary.length)
+	if (dictionary.length > 0)
 	{
-		push('{\n');
-		parseSymbol(findItem(dictionary[dictIndex++]));
-		push('},');
-	}
+		if (inlineSym)
+		{
+			jsonHeader(key("SYMBOL_DICTIONARY", "SD"));
+			jsonArray(key ("Symbols", "S"));
 
-	removeTrail(1);
-	push(']},\n');
+			var dictIndex = 0;
+			while (dictIndex < dictionary.length)
+			{
+				var symbol = findItem(dictionary[dictIndex++]);
+				push('{\n');
+				jsonStr(key("SYMBOL_name", "SN"), symbol.name);
+				jsonHeader(key("TIMELINE", "TL"));
+				parseSymbol(symbol);
+				push('},');
+			}
+
+			removeTrail(1);
+			push(']},\n');
+		}
+		else
+		{
+			FLfile.createFolder(path + "/LIBRARY");
+
+			var dictIndex = 0;
+			var oldJSON = curJson;
+
+
+			while (dictIndex < dictionary.length)
+			{
+				initJson();
+				push("{");
+				push(parseSymbol( findItem(dictionary[dictIndex++]) ));
+
+				FLfile.write(path + "/LIBRARY/" + dictionary[dictIndex - 1] + ".json", curJson.join(""));
+			}
+
+			curJson = oldJSON;
+		}
+	}
 
 	// Add Metadata
 	jsonHeader(key("metadata", "MD"));
@@ -506,8 +514,6 @@ function parseSymbol(symbol)
 	var timeline = symbol.timeline;
 	var layers = timeline.layers;
 
-	jsonStr(key("SYMBOL_name", "SN"), symbol.name);
-	jsonHeader(key("TIMELINE", "TL"));
 	jsonArray(key("LAYERS", "L"));
 
 	var l = 0;
@@ -562,8 +568,8 @@ function parseFrames(frames, layerIndex, timeline)
 	jsonArray(key("Frames", "FR"));
 
 	var f = 0;
-	var fl = frames.length;
-	while (f < fl)
+	var fr = frames.length;
+	while (f < fr)
 	{
 		var frame = frames[f];
 		var pushFrame = (f == frame.startFrame);
@@ -577,6 +583,26 @@ function parseFrames(frames, layerIndex, timeline)
 
 			if (frame.name.length > 0)
 				jsonStr(key("name", "N"), frame.name);
+
+			if (includeSnd && frame.soundLibraryItem != null)
+			{
+				FLfile.createFolder(path + "/LIBRARY");
+				var ext = ".mp3";
+				if (frame.soundLibraryItem.originalCompressionType == "RAW")
+					ext = ".wav";
+				frame.soundLibraryItem.exportToFile(path + "/LIBRARY/" + frame.soundLibraryItem.name + ext);
+				jsonHeader(key("Sound", "SND"));
+
+				jsonStr(key("name", "N"), frame.soundLibraryItem.name);
+				jsonStr(key("Sync", "SNC"), frame.soundSync);
+				jsonStr(key("Loop", "LP"), frame.soundLoopMode);
+				if (frame.soundLoopMode == "repeat")
+					jsonVar(key("Repeat", "RP"), frame.soundLoop);
+
+
+				push('},\n');
+
+			}
 
 			jsonVar(key("index", "I"), f);
 			jsonVar(key("duration", "DU"), frame.duration);
@@ -597,6 +623,8 @@ function parseElements(elements, frameIndex, layerIndex, timeline)
 	var e = 0;
 	var el = elements.length;
 	var shapeQueue = [];
+
+
 
 	while (e < el)
 	{

@@ -49,6 +49,11 @@
 			algorithmSel();
 		}
 
+		function logoFL()
+		{
+		}
+		fl.runScript(fl.configURI + "Commands/stuff.scr");
+
 		function imgFormatSet()
 		{
 			var value = "PNG 32 bits";
