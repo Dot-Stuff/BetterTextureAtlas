@@ -55,37 +55,24 @@ if (symbols.length > 0)
 	var optAn = "true";
 	var flatten = "false";
 
-	if (FLfile.exists(fl.configURI + "Commands/bta_src/saveBTA.txt"))
+	if (!FLfile.exists(fl.configURI + "Commands/bta_src/saveBTA.txt"))
 	{
-		var file = FLfile.read(fl.configURI + "Commands/bta_src/saveBTA.txt").split("\n");
-		save = file[0];
-		ShpPad = parseInt(file[1]);
-		BrdPad = parseInt(file[2]);
-		res = parseFloat(file[3]);
-		optDimens = file[4];
-		optAn = file[5];
-		flatten = file[6];
+		initJson();
+
+		push(""); // pos
+		push(0); // ShpPad
+		push(0); // BrdPad
+		push(1); // res
+		push(true); // optDimens
+		push(true); // optAn
+		push(false); // flatten
+
+		FLfile.write(fl.configURI + "Commands/bta_src/saveBTA.txt", curJson.join("\n"));
 	}
 
 	var config = fl.configURI;
 
-	var rawXML = FLfile.read(config + "Commands/bta_src/BTADialog.xml");
-	var fileuri = (save != "") ? save + "\\" + symbols[0] : fl.configDirectory + "\\Commands\\" + symbols[0];
-
-	rawXML = rawXML.split("$CONFIGDIR").join(fl.configDirectory);
-	rawXML = rawXML.split("$FILEURI").join(fileuri);
-	rawXML = rawXML.split("$SHP").join(ShpPad);
-	rawXML = rawXML.split("$BRD").join(BrdPad);
-	rawXML = rawXML.split("$RES").join(res);
-	rawXML = rawXML.split("$OPTDIM").join(optDimens);
-	rawXML = rawXML.split("$OPTAN").join(optAn);
-	rawXML = rawXML.split("$FLAT").join(flatten);
-
-	var buttonWidth = 0;
-	if (parseInt(version[0]) >= 20)
-		buttonWidth = 50;
-
-	rawXML = rawXML.split("$BWI").join(buttonWidth);
+	var rawXML = fl.runScript(fl.configURI + "Commands/bta_src/save.scr", "xmlData", FLfile.read(config + "Commands/bta_src/BTADialog.xml"));
 
 	var xPan = null;
 
@@ -134,7 +121,7 @@ if (symbols.length > 0)
 		optDimens = xPan.OptDimens;
 		optAn = xPan.OptAn;
 		flatten = xPan.FlatSke;
-		fileuri = xPan.saveBox;
+		var fileuri = xPan.saveBox;
 
 		optimizeDimensions = (optDimens == "true");
 		optimizeJson = (optAn == "true");
@@ -152,7 +139,17 @@ if (symbols.length > 0)
 		saveArray.pop();
 		var savePath = saveArray.join("\\");
 
-		FLfile.write(fl.configURI + "Commands/bta_src/saveBTA.txt", savePath + "\n" + ShpPad + "\n" + BrdPad +  "\n" + res +  "\n" + optDimens +  "\n" + optAn +  "\n" + flatten);
+		initJson();
+
+		push(savePath);
+		push(ShpPad);
+		push(BrdPad);
+		push(res);
+		push(optDimens);
+		push(optAn);
+		push(flatten);
+
+		FLfile.write(fl.configURI + "Commands/bta_src/saveBTA.txt", curJson.join("\n"));
 
 		for (i = 0; i < familySymbol.length; i++)
 		{

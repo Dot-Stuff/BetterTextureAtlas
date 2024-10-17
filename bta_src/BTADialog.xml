@@ -49,7 +49,7 @@
 			algorithmSel();
 		}
 
-		fl.runScript(fl.configURI + "Commands/bta_src/stuff.scr");
+		fl.runScript(fl.configURI + "Commands/bta_src/save.scr", "theme");
 
 		function imgFormatSet()
 		{

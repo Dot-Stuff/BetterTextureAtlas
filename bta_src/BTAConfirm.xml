@@ -29,6 +29,47 @@
 
 <spacer/>
 <spacer/>
+
+<grid>
+    <columns>
+
+        <column/>
+        <column/>
+        <column/>
+        <column/>
+        <column/>
+        <column/>
+        <column/>
+        <column/>
+        <column/>
+        <column/>
+        <column/>
+        <column/>
+        <column/>
+        <column/>
+        <column/>
+        <column/>
+
+    </columns>
+
+    <row>
+        
+        <label value="" />
+        <label value="" />
+        <label value="" />
+        <label value="" />
+        <label value="" />
+        <label value="" />
+        <label value="" />
+        <label value="" />
+        <label value="" />
+        <label value="" />
+        <label value="" />
+        <label value="" />
+        <label value="" />
+        <label value="" />
+        <label value="" />
+
         <grid>
             <columns>
                 <column/>
@@ -37,10 +78,15 @@
             </columns>
             <rows>
                 <row align="right">
-                    <button label="Yes" align="auto" oncommand="fl.xmlui.accept()" width="50"/>
+                    <button label="Yes" align="right" oncommand="fl.xmlui.accept()" width="50"/>
                     <label value="" />
-                    <button label="No" align="auto" oncommand="fl.xmlui.cancel()" width="50"/>
+                    <button label="No" align="right" oncommand="fl.xmlui.cancel()" width="50"/>
                 </row>
             </rows>
         </grid>
+
+    </row>
+</grid>
+
+
 </dialog>
