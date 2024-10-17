@@ -19,4 +19,4 @@ else {
     stuff = "#f0f0f0";
 }
 
-FLfile.write(fl.configURI + "Commands/BTATheme.txt", stuff);
+FLfile.write(fl.configURI + "Commands/bta_src/BTATheme.txt", stuff);
