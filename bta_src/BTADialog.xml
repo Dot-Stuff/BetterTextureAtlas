@@ -3,7 +3,7 @@
 
 
 	
-	<flash src="$CONFIGDIRCommands\BTAlogo.swf" width="610" height="72"></flash>
+	<flash src="$CONFIGDIRCommands\bta_src\BTAlogo.swf" width="610" height="72"></flash>
 	<!-- <separator/> -->
 
 	<hbox>
@@ -15,8 +15,8 @@
 
 		var save = [];
 		
-		if (FLfile.exists(fl.configURI + "Commands/saveBTA.txt"))
-			save = FLfile.read(fl.configURI + "Commands/saveBTA.txt").split("\n");
+		if (FLfile.exists(fl.configURI + "Commands/bta_src/saveBTA.txt"))
+			save = FLfile.read(fl.configURI + "Commands/bta_src/saveBTA.txt").split("\n");
 
 		function myThing()
 		{
@@ -33,7 +33,7 @@
 
 		function addParams()
 		{
-			var add = fl.xmlPanel(fl.configURI + 'Commands/BTAAdd.xml');
+			var add = fl.xmlPanel(fl.configURI + 'Commands/bta_src/BTAAdd.xml');
 		}
 
 
@@ -52,7 +52,7 @@
 		function logoFL()
 		{
 		}
-		fl.runScript(fl.configURI + "Commands/stuff.scr");
+		fl.runScript(fl.configURI + "Commands/bta_src/stuff.scr");
 
 		function imgFormatSet()
 		{
@@ -98,7 +98,7 @@
 				return;
 			}
 			
-			var check = fl.xmlPanel(fl.configURI + 'Commands/BTAConfirm.xml');
+			var check = fl.xmlPanel(fl.configURI + 'Commands/bta_src/BTAConfirm.xml');
 
 			if (check.dismiss == "accept")
 				saveAndClose();
@@ -120,9 +120,9 @@
 			save[6] = fl.xmlui.get("FlatSke");
 
 			fl.trace(save);
-			fl.trace(fl.configURI + "Commands/saveBTA.txt");
+			fl.trace(fl.configURI + "Commands/bta_src/saveBTA.txt");
 
-			FLfile.write(fl.configURI + "Commands/saveBTA.txt", save.join("\n"));
+			FLfile.write(fl.configURI + "Commands/bta_src/saveBTA.txt", save.join("\n"));
 			fl.xmlui.accept();
 		}
 		

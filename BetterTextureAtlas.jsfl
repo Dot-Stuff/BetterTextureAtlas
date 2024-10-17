@@ -18,7 +18,7 @@ var version = fl.version.split(" ")[1].split(",");
 var ShpPad = 0;
 var BrdPad = 0;
 
-var inlineSym = false;
+var inlineSym = true;
 var includeSnd = true;
 /////
 
@@ -55,9 +55,9 @@ if (symbols.length > 0)
 	var optAn = "true";
 	var flatten = "false";
 
-	if (FLfile.exists(fl.configURI + "Commands/saveBTA.txt"))
+	if (FLfile.exists(fl.configURI + "Commands/bta_src/saveBTA.txt"))
 	{
-		var file = FLfile.read(fl.configURI + "Commands/saveBTA.txt").split("\n");
+		var file = FLfile.read(fl.configURI + "Commands/bta_src/saveBTA.txt").split("\n");
 		save = file[0];
 		ShpPad = parseInt(file[1]);
 		BrdPad = parseInt(file[2]);
@@ -69,7 +69,7 @@ if (symbols.length > 0)
 
 	var config = fl.configURI;
 
-	var rawXML = FLfile.read(config + "Commands/BTADialog.xml");
+	var rawXML = FLfile.read(config + "Commands/bta_src/BTADialog.xml");
 	var fileuri = (save != "") ? save + "\\" + symbols[0] : fl.configDirectory + "\\Commands\\" + symbols[0];
 
 	rawXML = rawXML.split("$CONFIGDIR").join(fl.configDirectory);
@@ -92,7 +92,7 @@ if (symbols.length > 0)
 	// Flash doesnt support direct panels from strings so we gotta create a temp xml
 	if (parseInt(version[0]) < 15 && parseInt(version[1]) < 1)
 	{
-		var tempP = config + "Commands/_BTAD.xml";
+		var tempP = config + "Commands/bta_src/_BTAD.xml";
 		FLfile.write(tempP, rawXML, null);
 		xPan = fl.xmlPanel(tempP);
 		FLfile.remove(tempP);
@@ -152,7 +152,7 @@ if (symbols.length > 0)
 		saveArray.pop();
 		var savePath = saveArray.join("\\");
 
-		FLfile.write(fl.configURI + "Commands/saveBTA.txt", savePath + "\n" + ShpPad + "\n" + BrdPad +  "\n" + res +  "\n" + optDimens +  "\n" + optAn +  "\n" + flatten);
+		FLfile.write(fl.configURI + "Commands/bta_src/saveBTA.txt", savePath + "\n" + ShpPad + "\n" + BrdPad +  "\n" + res +  "\n" + optDimens +  "\n" + optAn +  "\n" + flatten);
 
 		for (i = 0; i < familySymbol.length; i++)
 		{
@@ -407,7 +407,7 @@ function exportSpritemap(id, exportPath, smData, index)
 
 		var name = parseInt(formatLimbName(limbData[0].slice(0, -2))) + smData.index;
 		var frame = limbData[1].substring(9, limbData[1].length - 2);
-		var rotated = limbData[2] == '"rotated":true,';
+		var rotated = limbData[2].slice(0, -1);
 
 		smJson.push('{"SPRITE":{"name":"' +  name + '",' + frame + ',' + rotated + '}}');
 		if (l < atlasLimbs.length - 1) smJson.push(',\n');
@@ -455,7 +455,7 @@ function generateAnimation(symbol)
 	}
 
 	parseSymbol(symbol);
-	push('},\n');
+	push(',\n');
 
 	// Add Symbol Dictionary
 	if (dictionary.length > 0)
@@ -486,12 +486,11 @@ function generateAnimation(symbol)
 			var dictIndex = 0;
 			var oldJSON = curJson;
 
-
 			while (dictIndex < dictionary.length)
 			{
 				initJson();
 				push("{");
-				push(parseSymbol( findItem(dictionary[dictIndex++]) ));
+				push(parseSymbol(findItem(dictionary[dictIndex++]) ));
 
 				FLfile.write(path + "/LIBRARY/" + dictionary[dictIndex - 1] + ".json", curJson.join(""));
 			}
@@ -596,12 +595,11 @@ function parseFrames(frames, layerIndex, timeline)
 				jsonStr(key("name", "N"), frame.soundLibraryItem.name + ext);
 				jsonStr(key("Sync", "SNC"), frame.soundSync);
 				jsonStr(key("Loop", "LP"), frame.soundLoopMode);
+				
 				if (frame.soundLoopMode == "repeat")
 					jsonVar(key("Repeat", "RP"), frame.soundLoop);
 
-
 				push('},\n');
-
 			}
 
 			jsonVar(key("index", "I"), f);
