@@ -593,7 +593,7 @@ function parseFrames(frames, layerIndex, timeline)
 				frame.soundLibraryItem.exportToFile(path + "/LIBRARY/" + frame.soundLibraryItem.name + ext);
 				jsonHeader(key("Sound", "SND"));
 
-				jsonStr(key("name", "N"), frame.soundLibraryItem.name);
+				jsonStr(key("name", "N"), frame.soundLibraryItem.name + ext);
 				jsonStr(key("Sync", "SNC"), frame.soundSync);
 				jsonStr(key("Loop", "LP"), frame.soundLoopMode);
 				if (frame.soundLoopMode == "repeat")
