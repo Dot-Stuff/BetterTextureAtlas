@@ -55,9 +55,9 @@ if (symbols.length > 0)
 	var optAn = "true";
 	var flatten = "false";
 
-	if (FLfile.exists(fl.configURI + "Commands/saveBTA.txt"))
+	if (FLfile.exists(fl.configURI + "Commands/bta_src/saveBTA.txt"))
 	{
-		var file = FLfile.read(fl.configURI + "Commands/saveBTA.txt").split("\n");
+		var file = FLfile.read(fl.configURI + "Commands/bta_src/saveBTA.txt").split("\n");
 		save = file[0];
 		ShpPad = parseInt(file[1]);
 		BrdPad = parseInt(file[2]);
@@ -69,7 +69,7 @@ if (symbols.length > 0)
 
 	var config = fl.configURI;
 
-	var rawXML = FLfile.read(config + "Commands/BTADialog.xml");
+	var rawXML = FLfile.read(config + "Commands/bta_src/BTADialog.xml");
 	var fileuri = (save != "") ? save + "\\" + symbols[0] : fl.configDirectory + "\\Commands\\" + symbols[0];
 
 	rawXML = rawXML.split("$CONFIGDIR").join(fl.configDirectory);
@@ -92,7 +92,7 @@ if (symbols.length > 0)
 	// Flash doesnt support direct panels from strings so we gotta create a temp xml
 	if (parseInt(version[0]) < 15 && parseInt(version[1]) < 1)
 	{
-		var tempP = config + "Commands/_BTAD.xml";
+		var tempP = config + "Commands/bta_src/_BTAD.xml";
 		FLfile.write(tempP, rawXML, null);
 		xPan = fl.xmlPanel(tempP);
 		FLfile.remove(tempP);
@@ -152,7 +152,7 @@ if (symbols.length > 0)
 		saveArray.pop();
 		var savePath = saveArray.join("\\");
 
-		FLfile.write(fl.configURI + "Commands/saveBTA.txt", savePath + "\n" + ShpPad + "\n" + BrdPad +  "\n" + res +  "\n" + optDimens +  "\n" + optAn +  "\n" + flatten);
+		FLfile.write(fl.configURI + "Commands/bta_src/saveBTA.txt", savePath + "\n" + ShpPad + "\n" + BrdPad +  "\n" + res +  "\n" + optDimens +  "\n" + optAn +  "\n" + flatten);
 
 		for (i = 0; i < familySymbol.length; i++)
 		{
