@@ -18,7 +18,7 @@ var version = fl.version.split(" ")[1].split(",");
 var ShpPad = 0;
 var BrdPad = 0;
 
-var inlineSym = false;
+var inlineSym = true;
 var includeSnd = true;
 /////
 
@@ -407,7 +407,7 @@ function exportSpritemap(id, exportPath, smData, index)
 
 		var name = parseInt(formatLimbName(limbData[0].slice(0, -2))) + smData.index;
 		var frame = limbData[1].substring(9, limbData[1].length - 2);
-		var rotated = limbData[2] == '"rotated":true,';
+		var rotated = limbData[2].slice(0, -1);
 
 		smJson.push('{"SPRITE":{"name":"' +  name + '",' + frame + ',' + rotated + '}}');
 		if (l < atlasLimbs.length - 1) smJson.push(',\n');
@@ -455,7 +455,7 @@ function generateAnimation(symbol)
 	}
 
 	parseSymbol(symbol);
-	push('},\n');
+	push(',\n');
 
 	// Add Symbol Dictionary
 	if (dictionary.length > 0)
@@ -486,12 +486,11 @@ function generateAnimation(symbol)
 			var dictIndex = 0;
 			var oldJSON = curJson;
 
-
 			while (dictIndex < dictionary.length)
 			{
 				initJson();
 				push("{");
-				push(parseSymbol( findItem(dictionary[dictIndex++]) ));
+				push(parseSymbol(findItem(dictionary[dictIndex++]) ));
 
 				FLfile.write(path + "/LIBRARY/" + dictionary[dictIndex - 1] + ".json", curJson.join(""));
 			}
@@ -596,12 +595,11 @@ function parseFrames(frames, layerIndex, timeline)
 				jsonStr(key("name", "N"), frame.soundLibraryItem.name);
 				jsonStr(key("Sync", "SNC"), frame.soundSync);
 				jsonStr(key("Loop", "LP"), frame.soundLoopMode);
+				
 				if (frame.soundLoopMode == "repeat")
 					jsonVar(key("Repeat", "RP"), frame.soundLoop);
 
-
 				push('},\n');
-
 			}
 
 			jsonVar(key("index", "I"), f);
