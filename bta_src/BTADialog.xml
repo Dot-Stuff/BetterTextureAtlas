@@ -49,9 +49,6 @@
 			algorithmSel();
 		}
 
-		function logoFL()
-		{
-		}
 		fl.runScript(fl.configURI + "Commands/bta_src/stuff.scr");
 
 		function imgFormatSet()
