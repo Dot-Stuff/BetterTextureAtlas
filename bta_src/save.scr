@@ -5,7 +5,7 @@ function xmlData(data)
     var saveData = FLfile.read(config + "Commands/bta_src/saveBTA.txt").split("\n");
 
     fl.trace(saveData);
-	var fileuri = (save != "") ? saveData[0] + "\\" + symbols[0] : fl.configDirectory + "\\Commands\\" + symbols[0];
+	var fileuri = (saveData[0] != "") ? saveData[0] + "\\" + symbols[0] : fl.configDirectory + "\\Commands\\" + symbols[0];
 
 
 	data = data.split("$CONFIGDIR").join(fl.configDirectory);
