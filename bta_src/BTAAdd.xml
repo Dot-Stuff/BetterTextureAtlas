@@ -5,5 +5,7 @@
 <radiogroup id="params" groupbox="true" >
 <checkbox label="Inline Symbols" />
 <checkbox label="Include Sounds" checked="true"/>
+<checkbox label="Bake One Frame Symbols" checked="true"/>
 </radiogroup>
+
 </dialog>
