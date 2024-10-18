@@ -145,7 +145,7 @@
 							<row>
 								<label value="Image dimensions:" align="right"/>
 								<hbox>
-								<menulist id="imgDims">
+								<menulist id="imgDims" oncreate="fl.xmlui.setEnabled('imgDims', false);">
 									<menupop>
 										<menuitem label="Automatic Size" value="auto"/>
 										<menuitem label="64x64" value="64"/>
@@ -161,7 +161,7 @@
 								<vbox>
 									<hbox>
 										<label value= " "/>
-										<checkbox id="OptDimens" checked="$OPTDIM" label="Optimize dimensions" />
+										<checkbox id="OptDimens" checked="true" oncreate="fl.xmlui.setEnabled('OptDimens', false);" label="Optimize dimensions" />
 									</hbox>
 									<label value= " "/>
 								</vbox>
@@ -169,13 +169,13 @@
 							</row>
 							<row>
 								<label value="Width:" align="right"/>
-								<textbox id="cusWid" label="Your mom" maxlength="4" value="$RES" width="50" />
+								<textbox id="cusWid" label="Your mom" maxlength="4" value="auto" oncreate="fl.xmlui.setEnabled('cusWid', false);" width="50" />
 
 		
 							</row>
 							<row>
 								<label value="Height:" align="right"/>
-								<textbox id="cusHei" label="Your mom" maxlength="4" value="$RES" width="50" />
+								<textbox id="cusHei" label="Your mom" maxlength="4" value="auto" oncreate="fl.xmlui.setEnabled('cusHei', false);" width="50" />
 		
 							</row>
 							<row align="right">
