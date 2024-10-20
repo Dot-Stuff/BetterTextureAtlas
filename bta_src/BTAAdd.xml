@@ -3,9 +3,27 @@
 <label value="Additional Params"/>
 
 <radiogroup id="params" groupbox="true" >
-<checkbox label="Inline Symbols" />
-<checkbox label="Include Sounds" checked="true"/>
-<checkbox label="Bake One Frame Symbols" checked="true"/>
+
+<grid>
+    <columns>
+        <column/>
+        <column/>
+        <column/>
+    </columns>
+    <rows>
+        <row>
+            <checkbox label="Inline Symbols" />
+            <checkbox label="Bake All Texts" />
+        </row>
+        <row>
+            <checkbox label="Include Sounds" checked="true"/>
+        </row>
+        <row>
+            <checkbox label="Bake One Frame Symbols" checked="true"/>
+        </row>
+    </rows>
+</grid>
+
 </radiogroup>
 
 </dialog>

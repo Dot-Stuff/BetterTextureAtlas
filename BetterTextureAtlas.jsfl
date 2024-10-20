@@ -21,7 +21,9 @@ var BrdPad = 0;
 var inlineSym = false;
 var includeSnd = true;
 
-var bakeOneFR = true;
+var bakeOneFR = false;
+
+var bakeTexts = false;
 /////
 
 var doc = fl.getDocumentDOM();
@@ -186,6 +188,8 @@ var frameQueue;
 
 var dictionary;
 
+var ogSym;
+
 function exportAtlas(exportPath, symbolNames)
 {
 	SPRITEMAP_ID = "__BTA_TEMP_SPRITEMAP_";
@@ -241,6 +245,8 @@ function exportAtlas(exportPath, symbolNames)
 	TEMP_TIMELINE = TEMP_ITEM.timeline;
 	TEMP_LAYER = TEMP_TIMELINE.layers[0];
 	TEMP_TIMELINE.removeFrames(0,0);
+
+	ogSym = symbol;
 
 	// Write Animation.json
 	FLfile.write(path + "/Animation.json", generateAnimation(symbol));
@@ -454,6 +460,7 @@ function generateAnimation(symbol)
 	}
 
 	parseSymbol(symbol);
+	
 	push(',\n');
 
 	// Add Symbol Dictionary
@@ -514,7 +521,7 @@ function parseSymbol(symbol)
 
 	jsonArray(key("LAYERS", "L"));
 
-	if (bakeOneFR && timeline.frameCount == 1)
+	if (bakeOneFR && symbol != ogSym && timeline.frameCount == 1)
 	{
 		push('{\n');
 		jsonStr(key("Layer_name", "LN"), "Layer 1");
@@ -603,8 +610,9 @@ function parseFrames(frames, layerIndex, timeline)
 		var frame = frames[f];
 		var pushFrame = (f == frame.startFrame);
 
-		if (frame.tweenType != "none" && bakedTweens)
-			pushFrame = true;
+		if (frame.tweenType != "none")
+		{
+		}
 
 		if (pushFrame)
 		{
@@ -612,6 +620,71 @@ function parseFrames(frames, layerIndex, timeline)
 
 			if (frame.name.length > 0)
 				jsonStr(key("name", "N"), frame.name);
+
+			if (frame.tweenType != "none")
+			{
+				jsonHeader(key("tween", "TWN"));
+
+				var isCubic = frame.getCustomEase() != null;
+
+				if (isCubic)
+				{	
+					// FLfile.createFolder(path + "/LIBRARY");
+					jsonArray(key("curve", "CV"));
+					var eases = frame.getCustomEase();
+					for (var i = 0; i < eases.length; i++)
+					{
+						var field = eases[i];
+						push("{");
+						jsonVar("x", field.x);
+						jsonVarEnd("y", field.y);
+						push("},\n");
+					}
+
+					removeTrail(2);
+
+					push("],\n");
+					// var oldJSON = curJson;
+					// initJson();
+					
+					// push("{\n");
+
+
+					// FLfile.write(path + "/LIBRARY/eases.json", );
+
+				}
+				else
+				{
+					jsonVar(key("ease", "ES"), frame.tweenEasing);
+				}
+				
+				switch (frame.tweenType)
+				{
+					case "motion": // "classic"
+					jsonStr(key("type", "T"), key("motion", "MT"));
+					jsonStr(key("rotate", "RT"), frame.motionTweenRotate);
+					jsonVar(key("rotateTimes", "RTT"), frame.motionTweenRotateTimes);
+					jsonVar(key("scale", "SL"), frame.motionTweenScale);
+					jsonVar(key("snap", "SP"), frame.motionTweenSnap);
+					jsonVarEnd(key("sync", "SC"), frame.motionTweenSync);
+
+					break;
+					case "motion object":
+					jsonStr(key("type", "T"), key("motion_OBJECT", "MTO"));
+
+					fl.trace(frame.getMotionObjectXML());
+					
+					
+					break;
+					case "shape":
+					jsonStr(key("type", "T"), key("shape", "SHP"));
+					
+
+					break;
+				}	
+
+				push("},\n");
+			}
 
 			if (includeSnd && frame.soundLibraryItem != null)
 			{
@@ -627,8 +700,9 @@ function parseFrames(frames, layerIndex, timeline)
 				jsonStr(key("Loop", "LP"), frame.soundLoopMode);
 				
 				if (frame.soundLoopMode == "repeat")
-					jsonVar(key("Repeat", "RP"), frame.soundLoop);
-
+					jsonVarEnd(key("Repeat", "RP"), frame.soundLoop);
+				else
+					removeTrail(1);
 				push('},\n');
 			}
 
@@ -703,12 +777,15 @@ function parseElements(elements, frameIndex, layerIndex, timeline)
 			case "text":
 				switch (element.textType)
 				{
-					case "static":
-						parseShape(timeline, layerIndex, frameIndex, [e], false);
+					case "static": // TODO: add missing text types
+					case "dynamic": 
+					case "input": 
+						fl.trace(element.useDeviceFonts);
+						if (!element.useDeviceFonts || bakeTexts)
+							parseShape(timeline, layerIndex, frameIndex, [e], false);
+						else
+							parseTextInstance(element);
 					break;
-					// TODO: add missing text types
-					case "dynamic": break;
-					case "input": 	break;
 				}
 			break;
 			// TODO: add missing (deprecated) element types
@@ -729,6 +806,102 @@ function parseElements(elements, frameIndex, layerIndex, timeline)
 	}
 
 	push(']');
+}
+
+function parseTextInstance(text)
+{
+	jsonHeader(key("textFIELD_Instance", "TFI"));
+	jsonStr(key("text", "TXT"), text.getTextString());
+	jsonStr(key("type", "T"), text.textType);
+	if (text.textType != "static")
+		jsonStr(key("Instance_name", "IN"), text.name);
+
+	var orientation = "";
+
+	switch (text.orientation)
+	{
+		case "horizontal":
+		orientation = key("horizontal", "HR");
+		break;
+		case "vertical left to right":
+			orientation = key("vertical right to left", "VLTR");
+		break;
+		case "vertical right to left":
+
+		orientation = key("vertical right to left", "VRTL");
+		break;
+	}
+
+	jsonStr(key("orientation", "ORT"), orientation);
+
+	var linetype = "";
+
+	if (text.textType != "static")
+	{
+		switch (text.lineType)
+		{
+			case "single line":
+				linetype = key("single line", "SL");
+			break;
+			case "multiline":
+				linetype = key("multiline", "ML");
+			break;
+			case "multiline no wrap":
+
+				linetype = key("multiline no wrap", "MLN");
+			break;
+			case "password":
+
+				linetype = key("password", "PSW");
+			break;
+		}
+	}
+
+	jsonStr(key("lineType", "LT"), linetype);
+
+	var index = 0;
+	
+	jsonArray(key("attributes", "ATR"));
+	for (var i = 0; i < text.textRuns.length; i++)
+	{
+		push("{\n");
+		var run = text.textRuns[i];
+
+		jsonVar(key("offset", "OF"), index);
+		jsonVar(key("length", "LEN"), run.characters.length);
+		jsonVar(key("alias", "ALS"), run.textAttrs.aliasText);
+		jsonStr(key("align", "ALN"), run.textAttrs.alignment);
+		jsonVar(key("autoKern", "AUK"), run.textAttrs.autoKern);
+		jsonVar(key("bold", "BL"), run.textAttrs.bold);
+		jsonVar(key("italic", "IT"), run.textAttrs.italic);
+		jsonStr(key("charPosition", "CPS"), run.textAttrs.characterPosition);
+		jsonVar(key("charSpacing", "CSP"), run.textAttrs.characterSpacing);
+		jsonVar(key("lineSpacing", "LSP"), run.textAttrs.lineSpacing);
+		jsonStr(key("font", "F"), run.textAttrs.face);
+		jsonVar(key("Size", "SZ"), run.textAttrs.size);
+		jsonStr(key("color", "C"), run.textAttrs.fillColor);
+		jsonStr(key("indent", "IND"), run.textAttrs.indent);
+		jsonVar(key("leftMargin", "LFM"), run.textAttrs.leftMargin);
+		jsonVar(key("rightMargin", "RFM"), run.textAttrs.rightMargin);
+		jsonStrEnd("URL", run.textAttrs.url);
+
+
+		
+		index += run.characters.length;
+
+		push("},\n");
+	}
+
+	removeTrail(2);
+	push("],\n");
+
+	jsonVar(key("border", "BRD"), text.border);
+	jsonVar(key("alias_SHARPNESS", "ALSRP"), text.antiAliasSharpness);
+	jsonVar(key("alias_thickness", "ALTHK"), text.antiAliasThickness);
+	jsonVarEnd("MAX", text.maxCharacters);
+
+
+	push("}\n");
 }
 
 function parseBitmapInstance(bitmap)
