@@ -651,7 +651,6 @@ function parseFrames(frames, layerIndex, timeline)
 
 
 					// FLfile.write(path + "/LIBRARY/eases.json", );
-
 				}
 				else
 				{
@@ -671,12 +670,11 @@ function parseFrames(frames, layerIndex, timeline)
 					break;
 					case "motion object":
 					jsonStr(key("type", "T"), key("motion_OBJECT", "MTO"));
-					parseMotionObject(frame.getMotionObjectXML());
+					parseMotionObject(xmlToObject(frame.getMotionObjectXML()));
 					
 					break;
 					case "shape":
 					jsonStr(key("type", "T"), key("shape", "SHP"));
-					
 
 					break;
 				}	
@@ -718,22 +716,14 @@ function parseFrames(frames, layerIndex, timeline)
 
 // This is what pain looks like
 // I hope adobe burns to the ground for only allowing this data as a xml
-function parseMotionObject(motionObjectXml)
+function parseMotionObject(motionData)
 {
-	var motionData = xmlToObject(motionObjectXml);
-
 	// Time Map
 	var timemap = motionData.TimeMap;
 	jsonHeader(key("timeMap", "TM"));
 	jsonVar(key("strength", "S"), timemap.strength);
 	jsonStrEnd(key("type", "T"), timemap.type);
 	push("},\n");
-
-	/* not sure if this is needed atm
-	// Metadata 
-	var metadata = motionData.metadata[0];
-	jsonHeader(key("metadata", "MD"));		
-	push("},\n");*/
 
 	// Property Container
 	var propCont = motionData.PropertyContainer.PropertyContainer;
@@ -742,25 +732,20 @@ function parseMotionObject(motionObjectXml)
 	var c = 0;
 	while (c < propCont.length)
 	{
-		var cont = propCont[c];
-		c++;
-
 		// only output changed containers
+		var cont = propCont[c++];
 		if (cont.Property == undefined)
 			continue;
 
 		push("{\n");
-
 		jsonStr("id", cont.id);
 		jsonArray(key("properties", "P"));
 
 		var p = 0;
 		while (p < cont.Property.length)
 		{
-			var prop = cont.Property[p];
-			p++;
-
 			// only output changed properties
+			var prop = cont.Property[p++];
 			if (!isArray(prop.Keyframe))
 				continue;
 
@@ -771,9 +756,7 @@ function parseMotionObject(motionObjectXml)
 			var kf = 0;
 			while (kf < prop.Keyframe.length)
 			{
-				var keyframe = prop.Keyframe[kf];
-				kf++;
-
+				var keyframe = prop.Keyframe[kf++];
 				push("{\n");
 				jsonVar(key("anchor", "ANC"), "[" + keyframe.anchor + "]");
 				jsonVar(key("next", "NXT"), "[" + keyframe.next + "]");
