@@ -1,4 +1,4 @@
-﻿﻿///// CONFIGURATION
+﻿///// CONFIGURATION
 fl.outputPanel.clear(); // debug purposes
 fl.showIdleMessage(false);
 
@@ -366,7 +366,7 @@ function exportSpritemap(id, exportPath, smData, index)
 	var sm = smData.sm;
 	sm.exportSpriteSheet(smPath, smSettings, true);
 
-	if (optimizeDimensions)
+	if (optimizeDimensions) for (__ = 0; __ < 2; __++) // TODO: figure out a better way to double-check trimmed resolutions
 	{
 		var smWidth = 1;
 		var smHeight = 1;
@@ -451,7 +451,7 @@ function generateAnimation(symbol)
 
 	// Add Animation
 	jsonHeader(key("ANIMATION", "AN"));
-	jsonStr(key("name", "N"), doc.name.slice(0, -4));
+	jsonStr(key("name", "N"), doc.name.split(".fla").join(""));
 
 	if (instance != null) {
 		jsonHeader(key("StageInstance", "STI"));
@@ -671,9 +671,7 @@ function parseFrames(frames, layerIndex, timeline)
 					break;
 					case "motion object":
 					jsonStr(key("type", "T"), key("motion_OBJECT", "MTO"));
-
-					fl.trace(frame.getMotionObjectXML());
-					
+					parseMotionObject(frame.getMotionObjectXML());
 					
 					break;
 					case "shape":
@@ -716,6 +714,84 @@ function parseFrames(frames, layerIndex, timeline)
 
 	removeTrail(1);
 	push(']');
+}
+
+// This is what pain looks like
+// I hope adobe burns to the ground for only allowing this data as a xml
+function parseMotionObject(motionObjectXml)
+{
+	var motionData = xmlToObject(motionObjectXml);
+
+	// Time Map
+	var timemap = motionData.TimeMap;
+	jsonHeader(key("timeMap", "TM"));
+	jsonVar(key("strength", "S"), timemap.strength);
+	jsonStrEnd(key("type", "T"), timemap.type);
+	push("},\n");
+
+	/* not sure if this is needed atm
+	// Metadata 
+	var metadata = motionData.metadata[0];
+	jsonHeader(key("metadata", "MD"));		
+	push("},\n");*/
+
+	// Property Container
+	var propCont = motionData.PropertyContainer.PropertyContainer;
+	jsonArray(key("propertyContainer", "PC"));
+
+	var c = 0;
+	while (c < propCont.length)
+	{
+		var cont = propCont[c];
+		c++;
+
+		// only output changed containers
+		if (cont.Property == undefined)
+			continue;
+
+		push("{\n");
+
+		jsonStr("id", cont.id);
+		jsonArray(key("properties", "P"));
+
+		var p = 0;
+		while (p < cont.Property.length)
+		{
+			var prop = cont.Property[p];
+			p++;
+
+			// only output changed properties
+			if (!isArray(prop.Keyframe))
+				continue;
+
+			push("{\n");
+			jsonStr("ID", prop.id);
+			jsonArray(key("Keyframes", "KFR"));
+
+			var kf = 0;
+			while (kf < prop.Keyframe.length)
+			{
+				var keyframe = prop.Keyframe[kf];
+				kf++;
+
+				push("{\n");
+				jsonVar(key("anchor", "ANC"), "[" + keyframe.anchor + "]");
+				jsonVar(key("next", "NXT"), "[" + keyframe.next + "]");
+				jsonVar(key("previous", "PRV"), "[" + keyframe.previous + "]");
+				jsonVarEnd(key("index", "I"), keyframe.timevalue / 1000);
+				push("},");
+			}
+
+			removeTrail(1);
+			push("]},");
+		}
+
+		removeTrail(1);
+		push("]},");
+	}
+	
+	removeTrail(1);
+	push("]\n");
 }
 
 function parseElements(elements, frameIndex, layerIndex, timeline)
@@ -1341,6 +1417,17 @@ function measure(func)
 	fl.trace("" + (Date.now() - last) + "ms");
 }
 
+function traceFields(value)
+{
+	for (var field in value)
+		fl.trace(field + ": " + value[field]);
+}
+
+function isArray(value)
+{
+	return value.push != undefined;
+}
+
 var curJson;
 
 function initJson()
@@ -1356,4 +1443,49 @@ function push(data)
 function removeTrail(trail)
 {
 	curJson[curJson.length -1] = curJson[curJson.length -1].slice(0, -trail) + "\n";
+}
+
+function xmlToObject(__xml)
+{
+    var rawXML = String(__xml);
+    rawXML = rawXML.split("\n").join();
+
+    var xmlData = new XML(rawXML);
+    return xmlNode(xmlData);
+}
+
+function xmlNode(xml)
+{
+    var obj = {};
+
+	var at = 0;
+	while (at < xml.attributes().length())
+    {
+        var attribute = xml.attributes()[at];
+        obj[attribute.name()] = attribute.toString();
+        at++;
+    }
+
+	var j = 0;
+    while (j < xml.children().length())
+	{
+        var child = xml.children()[j];
+        var childName = child.name();
+        j++;
+
+		if (obj[childName] == undefined) // Basic value
+		{
+			obj[childName] = xmlNode(child);
+		}
+		else if (isArray(obj[childName])) // Repeated value
+		{
+			obj[childName].push(xmlNode(child));
+		}
+		else // Start of repeated value
+		{
+			obj[childName] = [obj[childName], xmlNode(child)];
+		}
+    }
+    
+    return obj;
 }
