@@ -506,12 +506,37 @@ function generateAnimation(symbol)
 	}
 
 	// Add Metadata
-	jsonHeader(key("metadata", "MD"));
-	jsonStr(key("version", "V"), BTA_version);
-	jsonVarEnd(key("framerate", "FRT"), doc.frameRate);
-	push('}}');
+	if (inlineSym)
+	{
+		jsonHeader(key("metadata", "MD"));
+		metadata();
+		push('}}');
+	}
+	else
+	{
+		removeTrail(2);
+		push("}");
+		
+		var oldJSON = curJson;
+
+		initJson();
+
+		push("{\n");
+		metadata();
+		push("}\n");
+
+		FLfile.write(path + "/metadata.json", curJson.join(""));
+
+		curJson = oldJSON;
+	}
 
 	return curJson.join("");
+}
+
+function metadata()
+{
+	jsonStr(key("version", "V"), BTA_version);
+	jsonVarEnd(key("framerate", "FRT"), doc.frameRate);
 }
 
 function parseSymbol(symbol)
