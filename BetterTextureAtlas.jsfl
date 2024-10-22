@@ -459,9 +459,12 @@ function generateAnimation(symbol)
 		push('},\n');
 	}
 
+	jsonHeader(key("TIMELINE", "TL"));
+
 	parseSymbol(symbol);
+
 	
-	push(',\n');
+	push('},\n');
 
 	// Add Symbol Dictionary
 	if (dictionary.length > 0)
