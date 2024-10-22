@@ -459,6 +459,8 @@ function generateAnimation(symbol)
 		push('},\n');
 	}
 
+	jsonStr(key("SYMBOL_name", "SN"), symbol.name);
+
 	jsonHeader(key("TIMELINE", "TL"));
 
 	parseSymbol(symbol);
