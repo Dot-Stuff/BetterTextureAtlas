@@ -52,8 +52,6 @@ else if (lib.getSelectedItems().length > 0)
 
 if (symbols.length > 0)
 {
-	var save = "";
-
 	var res = 1.0;
 	var optDimens = "true";
 	var optAn = "true";
@@ -61,17 +59,17 @@ if (symbols.length > 0)
 
 	if (!FLfile.exists(fl.configURI + "Commands/bta_src/saveBTA.txt"))
 	{
-		initJson();
+		var saveConfig = [
+			"", // pos
+			0, // ShpPad
+			0, // BrdPad
+			1, // res
+			true, // optDimens
+			true, // optAn
+			false // flatten
+		];
 
-		push(""); // pos
-		push(0); // ShpPad
-		push(0); // BrdPad
-		push(1); // res
-		push(true); // optDimens
-		push(true); // optAn
-		push(false); // flatten
-
-		FLfile.write(fl.configURI + "Commands/bta_src/saveBTA.txt", curJson.join("\n"));
+		FLfile.write(fl.configURI + "Commands/bta_src/saveBTA.txt", saveConfig.join("\n"));
 	}
 
 	var config = fl.configURI;
@@ -133,6 +131,9 @@ if (symbols.length > 0)
 		resolution = parseFloat(res);
 		resScale =  1 / resolution;
 
+		// Reduce if statements
+		key = optimizeJson ? function (a, b) {return b} : function (a, b) {return a};
+
 		// First ask for the export folder
 		var path = formatPath(fileuri);
 
@@ -143,17 +144,17 @@ if (symbols.length > 0)
 		saveArray.pop();
 		var savePath = saveArray.join("\\");
 
-		initJson();
-
-		push(savePath);
-		push(ShpPad);
-		push(BrdPad);
-		push(res);
-		push(optDimens);
-		push(optAn);
-		push(flatten);
-
-		FLfile.write(fl.configURI + "Commands/bta_src/saveBTA.txt", curJson.join("\n"));
+		var saveConfig = [
+			savePath,
+			ShpPad,
+			BrdPad,
+			res,
+			optDimens,
+			optAn,
+			flatten
+		];
+		
+		FLfile.write(fl.configURI + "Commands/bta_src/saveBTA.txt", saveConfig.join("\n"));
 
 		for (i = 0; i < familySymbol.length; i++)
 		{
@@ -492,18 +493,14 @@ function generateAnimation(symbol)
 			FLfile.createFolder(path + "/LIBRARY");
 
 			var dictIndex = 0;
-			var oldJSON = curJson;
-
 			while (dictIndex < dictionary.length)
 			{
 				initJson();
 				push("{");
 				push(parseSymbol(findItem(dictionary[dictIndex++]) ));
 
-				FLfile.write(path + "/LIBRARY/" + dictionary[dictIndex - 1] + ".json", curJson.join(""));
+				FLfile.write(path + "/LIBRARY/" + dictionary[dictIndex - 1] + ".json", closeJson());
 			}
-
-			curJson = oldJSON;
 		}
 	}
 
@@ -518,8 +515,6 @@ function generateAnimation(symbol)
 	{
 		removeTrail(2);
 		push("}");
-		
-		var oldJSON = curJson;
 
 		initJson();
 
@@ -527,12 +522,10 @@ function generateAnimation(symbol)
 		metadata();
 		push("}\n");
 
-		FLfile.write(path + "/metadata.json", curJson.join(""));
-
-		curJson = oldJSON;
+		FLfile.write(path + "/metadata.json", closeJson());
 	}
 
-	return curJson.join("");
+	return closeJson();
 }
 
 function metadata()
@@ -1409,10 +1402,7 @@ function findItem(name) {
 	return null;
 }
 
-function key(normal, optimized) {
-	return optimizeJson ? optimized : normal;
-}
-
+function key(normal, optimized) 	{ return optimizeJson ? optimized : normal; }
 function jsonVarEnd(name, value)	{ push('"' + name +'":' + value + '\n'); }
 function jsonVar(name, value)		{ push('"' + name +'":' + value + ',\n'); }
 function jsonStrEnd(name, value)	{ push('"' + name + '":"' + value + '"\n'); }
@@ -1438,11 +1428,20 @@ function isArray(value)
 	return value.push != undefined;
 }
 
-var curJson;
+var lastJson = undefined;
+var curJson = undefined;
 
 function initJson()
 {
+	lastJson = curJson;
 	curJson = [];
+}
+
+function closeJson()
+{
+	var result = curJson != undefined ? curJson.join("") : "";
+	curJson = lastJson;
+	return result;
 }
 
 function push(data)
