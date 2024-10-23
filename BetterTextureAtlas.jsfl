@@ -422,13 +422,12 @@ function exportSpritemap(id, exportPath, smData, index)
 	smJson.push(']},\n"meta":');
 
 	var metaData = atlasLimbs.pop().split('"meta":')[1];
-	metaData = metaData.split(app.split(" ").join("")).join(app + " (Better TA Extension)");
+	metaData = metaData.split(sm.app.split(" ").join("")).join(sm.app + " (Better TA Extension)");
 	smJson.push(metaData.split("scale").join("resolution").slice(0, -1));
 
 	FLfile.write(smPath + ".json", smJson.join(""));
 }
 
-var app = "";
 function makeSpritemap() {
 	var sm = new SpriteSheetExporter;
 	sm.algorithm = algorithm;
@@ -439,8 +438,6 @@ function makeSpritemap() {
 	sm.allowTrimming = true;
 	sm.stackDuplicate = true;
 	sm.layoutFormat = "JSON-Array";
-
-	app = sm.app;
 	return sm;
 }
 
@@ -1149,10 +1146,10 @@ function parseSymbolInstance(instance)
 		jsonStr(key("symbolType", "ST"), type);
 	}
 
-	jsonHeader(key("transformationPoint", "TRP"));
-	jsonVar("x", instance.transformX);
-	jsonVarEnd("y", instance.transformY);
-	push("},\n");
+	jsonVar(key("transformationPoint", "TRP"),
+		'{"x":' + instance.transformX +
+		',"y":' + instance.transformY + "}"
+	);
 
 	if (instance.colorMode != "none") {
 		jsonHeader(key("color", "C"));
