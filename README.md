@@ -17,9 +17,9 @@ Adding features and fixing its Animation file format so it presents more data fo
   * [x] Blend Mode Support
   * [x] Matrix reformatting
   * [x] Multi-Symbol Support
-  * [ ] Extra Metadata
-  * [ ] Dynamic Tweening values
-  * [ ] Sound support with its according settings (Event, Stream)
+  * [x] Extra Metadata
+  * [x] Dynamic Tweening values
+  * [x] Sound support with its according settings (Event, Stream)
   * [ ] Vector Support 
 </details>
 
