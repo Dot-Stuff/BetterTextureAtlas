@@ -9,8 +9,6 @@ var algorithm = "maxRects";
 var onlyVisibleLayers = true;
 var optimizeDimensions = true;
 var optimizeJson = true;
-var bakedFilters = false; // TODO
-var bakedTweens = true; // TODO: add non-baked tweens
 var flattenSkewing = false;
 var resolution = 1.0;
 var platform = fl.version.split(" ")[0];
@@ -21,8 +19,9 @@ var BrdPad = 0;
 var inlineSym = false;
 var includeSnd = true;
 
+var bakedFilters = false; // TODO
+var bakedTweens = true; // TODO: add non-baked tweens
 var bakeOneFR = false;
-
 var bakeTexts = false;
 /////
 
@@ -52,8 +51,6 @@ else if (lib.getSelectedItems().length > 0)
 
 if (symbols.length > 0)
 {
-	var save = "";
-
 	var res = 1.0;
 	var optDimens = "true";
 	var optAn = "true";
@@ -61,17 +58,17 @@ if (symbols.length > 0)
 
 	if (!FLfile.exists(fl.configURI + "Commands/bta_src/saveBTA.txt"))
 	{
-		initJson();
+		var saveConfig = [
+			"", // pos
+			0, // ShpPad
+			0, // BrdPad
+			1, // res
+			true, // optDimens
+			true, // optAn
+			false // flatten
+		];
 
-		push(""); // pos
-		push(0); // ShpPad
-		push(0); // BrdPad
-		push(1); // res
-		push(true); // optDimens
-		push(true); // optAn
-		push(false); // flatten
-
-		FLfile.write(fl.configURI + "Commands/bta_src/saveBTA.txt", curJson.join("\n"));
+		FLfile.write(fl.configURI + "Commands/bta_src/saveBTA.txt", saveConfig.join("\n"));
 	}
 
 	var config = fl.configURI;
@@ -133,6 +130,9 @@ if (symbols.length > 0)
 		resolution = parseFloat(res);
 		resScale =  1 / resolution;
 
+		// Reduce if statements
+		key = optimizeJson ? function (a, b) {return b} : function (a, b) {return a};
+
 		// First ask for the export folder
 		var path = formatPath(fileuri);
 
@@ -173,9 +173,7 @@ var TEMP_TIMELINE;
 var TEMP_LAYER;
 var smIndex;
 
-var addedItems;
 var frameQueue;
-
 var dictionary;
 
 var ogSym;
@@ -184,7 +182,6 @@ function exportAtlas(exportPath, symbolNames)
 {
 	SPRITEMAP_ID = "__BTA_TEMP_SPRITEMAP_";
 	TEMP_SPRITEMAP = SPRITEMAP_ID + "0";
-	addedItems = [];
 	frameQueue = [];
 	smIndex = 0;
 
@@ -238,54 +235,51 @@ function exportAtlas(exportPath, symbolNames)
 
 	ogSym = symbol;
 
+	//measure(function () {
+
 	// Write Animation.json
 	FLfile.write(path + "/Animation.json", generateAnimation(symbol));
 
 	// Add items and fix resolutions
-	lib.editItem(TEMP_SPRITEMAP);
+	var editedQueue = false;
 	var pos = {x:0, y:0};
 
 	var i = 0;
-	var l = frameQueue.length;
-	while (i < l)
+	while (i < frameQueue.length)
 	{
-		var id = frameQueue[i];
-		var isBitmapFrame = (typeof id === "string");
+		var queuedFrame = frameQueue[i].split("_");
+		var type = queuedFrame.shift();
+		var id = queuedFrame.join("");
 
-		if (isBitmapFrame)
+		if (type == "ITEM") // Push the item frame
 		{
+			if (!editedQueue)
+			{
+				editedQueue = true;
+				lib.editItem(TEMP_SPRITEMAP);
+			}
+
 			TEMP_TIMELINE.currentFrame = i;
 			lib.addItemToDocument(pos, id);
+			
+			// TODO: only do resolution < 1 if its a bitmap item
 			if (resolution < 1) {
-				var bitmap = TEMP_LAYER.frames[i].elements[0];
-				bitmap.scaleX = bitmap.scaleY = resolution;
+				var item = TEMP_LAYER.frames[i].elements[0];
+				item.scaleX = item.scaleY = resolution;
 			}
 		}
-		/* // TODO: this fucks up the matrix and other crap, will fix later
-		else if (resolution != 1)
+		else // TODO: do some lines to fills crap here for changing resolutions
 		{
-			var shape = TEMP_LAYER.frames[i].elements[id];
-			if (shape.isGroup)
-			{
-				shape.scaleX *= resolution;
-				shape.scaleY *= resolution;
-			}
-			else
-			{
-				TEMP_TIMELINE.currentFrame = i;
-				doc.selection = [shape];
-				doc.convertLinesToFills();
 
-				var elements = TEMP_LAYER.frames[i].elements;
-				for (e = 0; e < elements.length; e++) {
-					var element = elements[e];
-					if (e == id) element.scaleX = element.scaleY = resolution;
-				}
-			}
-		}*/
+		}
 
 		i++;
 	}
+
+	if (editedQueue)
+		doc.exitEditMode();
+
+	//});
 
 	// Generate Spritemap
 	var sm = makeSpritemap();
@@ -310,8 +304,6 @@ function exportAtlas(exportPath, symbolNames)
 
 	if (tmpSymbol)
 		lib.deleteItem(symbol.name);
-
-	doc.exitEditMode();
 
 	fl.trace("Exported to folder: " + exportPath);
 }
@@ -412,13 +404,12 @@ function exportSpritemap(id, exportPath, smData, index)
 	smJson.push(']},\n"meta":');
 
 	var metaData = atlasLimbs.pop().split('"meta":')[1];
-	metaData = metaData.split(app.split(" ").join("")).join(app + " (Better TA Extension)");
+	metaData = metaData.split(sm.app.split(" ").join("")).join(sm.app + " (Better TA Extension)");
 	smJson.push(metaData.split("scale").join("resolution").slice(0, -1));
 
 	FLfile.write(smPath + ".json", smJson.join(""));
 }
 
-var app = "";
 function makeSpritemap() {
 	var sm = new SpriteSheetExporter;
 	sm.algorithm = algorithm;
@@ -429,8 +420,6 @@ function makeSpritemap() {
 	sm.allowTrimming = true;
 	sm.stackDuplicate = true;
 	sm.layoutFormat = "JSON-Array";
-
-	app = sm.app;
 	return sm;
 }
 
@@ -454,7 +443,6 @@ function generateAnimation(symbol)
 	jsonHeader(key("TIMELINE", "TL"));
 
 	parseSymbol(symbol);
-
 	
 	push('},\n');
 
@@ -485,18 +473,14 @@ function generateAnimation(symbol)
 			FLfile.createFolder(path + "/LIBRARY");
 
 			var dictIndex = 0;
-			var oldJSON = curJson;
-
 			while (dictIndex < dictionary.length)
 			{
 				initJson();
 				push("{");
 				push(parseSymbol(findItem(dictionary[dictIndex++]) ));
 
-				FLfile.write(path + "/LIBRARY/" + dictionary[dictIndex - 1] + ".json", curJson.join(""));
+				FLfile.write(path + "/LIBRARY/" + dictionary[dictIndex - 1] + ".json", closeJson());
 			}
-
-			curJson = oldJSON;
 		}
 	}
 
@@ -511,8 +495,6 @@ function generateAnimation(symbol)
 	{
 		removeTrail(2);
 		push("}");
-		
-		var oldJSON = curJson;
 
 		initJson();
 
@@ -520,12 +502,10 @@ function generateAnimation(symbol)
 		metadata();
 		push("}\n");
 
-		FLfile.write(path + "/metadata.json", curJson.join(""));
-
-		curJson = oldJSON;
+		FLfile.write(path + "/metadata.json", closeJson());
 	}
 
-	return curJson.join("");
+	return closeJson();
 }
 
 function metadata()
@@ -541,23 +521,19 @@ function parseSymbol(symbol)
 
 	jsonArray(key("LAYERS", "L"));
 
+	// TODO: rework this into bake shape layers
 	if (bakeOneFR && symbol != ogSym && timeline.frameCount == 1)
 	{
-		push('{\n');
+		push('{');
 		jsonStr(key("Layer_name", "LN"), "Layer 1");
 		jsonArray(key("Frames", "FR"));
-		push('{\n');
+		push('{');
 		jsonVar(key("index", "I"), 0);
 		jsonVar(key("duration", "DU"), 1);
-		jsonArray(key("Frames", "FR"));
-		push('{\n');
 		jsonArray(key("elements", "E"));
-		push('{\n');
-
-		pushSymbolSpritemap(symbol);
-		
-		push('}]}]}]}]}');
-
+		push('{');
+		pushFrameSpritemap(timeline);
+		push('}]}]}]}');
 		return;
 	}
 
@@ -608,17 +584,6 @@ function parseSymbol(symbol)
 	push(']}');
 }
 
-function pushSymbolSpritemap(symbol)
-{
-
-	var matrix = {a:1., b:0., c:0., d:1., tx: 0, ty: 0};
-
-	matrix.a *= resScale;
-	matrix.d *= resScale;
-
-	var itemIndex = pushItemSpritemap(symbol);
-	return parseAtlasInstance(matrix, itemIndex);
-}
 function parseFrames(frames, layerIndex, timeline)
 {
 	jsonArray(key("Frames", "FR"));
@@ -805,16 +770,12 @@ function parseElements(elements, frameIndex, layerIndex, timeline)
 	var el = elements.length;
 	var shapeQueue = [];
 
-
-
 	while (e < el)
 	{
 		var element = elements[e];
 		var elementType = element.elementType;
-
-		var isShape = elementType == "shape";
-		if (isShape) isShape = !element.isGroup;
-
+		var isShape = (elementType == "shape") ? !element.isGroup : false;
+		
 		if (isShape) // Adobe sometimes forgets how their own software works
 		{
 			shapeQueue.push(e);
@@ -936,15 +897,15 @@ function parseTextInstance(text)
 		}
 	}
 
-	jsonStr(key("lineType", "LT"), linetype);
-
-	var index = 0;
-	
+	jsonStr(key("lineType", "LT"), linetype);	
 	jsonArray(key("attributes", "ATR"));
-	for (var i = 0; i < text.textRuns.length; i++)
+	
+	var t = 0;
+	var index = 0;
+	while (t < text.textRuns.length)
 	{
 		push("{\n");
-		var run = text.textRuns[i];
+		var run = text.textRuns[t++];
 
 		jsonVar(key("offset", "OF"), index);
 		jsonVar(key("length", "LEN"), run.characters.length);
@@ -963,8 +924,6 @@ function parseTextInstance(text)
 		jsonVar(key("leftMargin", "LFM"), run.textAttrs.leftMargin);
 		jsonVar(key("rightMargin", "RFM"), run.textAttrs.rightMargin);
 		jsonStrEnd("URL", run.textAttrs.url);
-
-
 		
 		index += run.characters.length;
 
@@ -978,7 +937,6 @@ function parseTextInstance(text)
 	jsonVar(key("alias_SHARPNESS", "ALSRP"), text.antiAliasSharpness);
 	jsonVar(key("alias_thickness", "ALTHK"), text.antiAliasThickness);
 	jsonVarEnd("MAX", text.maxCharacters);
-
 
 	push("}\n");
 }
@@ -1044,17 +1002,40 @@ function parseAtlasInstance(matrix, name)
 	push('}');
 }
 
+function pushFrameSpritemap(timeline)
+{
+	timeline.setSelectedLayers(0, true);
+	timeline.copyFrames(0, 0);
+	TEMP_TIMELINE.pasteFrames(smIndex);
+	frameQueue.push("ELEMENT_" + smIndex);	
+
+	if (resolution != 1)
+	{
+		var e = 0;
+		var elements = TEMP_LAYER.frames[smIndex].elements;
+		while (e < elements.length)
+		{
+			var item = elements[e++];
+			item.scaleX *= resolution;
+			item.scaleY *= resolution;
+		}
+	}
+
+	var matrix = {a:resScale, b:0., c:0., d:resScale, tx: 0, ty: 0};
+	parseAtlasInstance(matrix, smIndex);
+	smIndex++;
+}
+
 function pushItemSpritemap(item)
 {
-	var name = item.name;
-	var index = addedItems.indexOf(name);
+	var name = "ITEM_" + item.name;
+	var index = frameQueue.indexOf(name);
 
 	if (index == -1) {
 		TEMP_TIMELINE.insertBlankKeyframe(smIndex);
-		addedItems.push(name);
 		frameQueue.push(name);
-		index = addedItems.length - 1;
 		smIndex++;
+		return frameQueue.length - 1;
 	}
 
 	return index;
@@ -1109,7 +1090,7 @@ function pushElementSpritemap(timeline, layerIndex, frameIndex, elementIndices)
 		e++;
 	}
 
-	//frameQueue.push(smIndex);
+	frameQueue.push("ELEMENT_" + smIndex);
 	smIndex++;
 
 	return shapes;
@@ -1139,10 +1120,10 @@ function parseSymbolInstance(instance)
 		jsonStr(key("symbolType", "ST"), type);
 	}
 
-	jsonHeader(key("transformationPoint", "TRP"));
-	jsonVar("x", instance.transformX);
-	jsonVarEnd("y", instance.transformY);
-	push("},\n");
+	jsonVar(key("transformationPoint", "TRP"),
+		'{"x":' + instance.transformX +
+		',"y":' + instance.transformY + "}"
+	);
 
 	if (instance.colorMode != "none") {
 		jsonHeader(key("color", "C"));
@@ -1402,10 +1383,7 @@ function findItem(name) {
 	return null;
 }
 
-function key(normal, optimized) {
-	return optimizeJson ? optimized : normal;
-}
-
+function key(normal, optimized) 	{ return optimizeJson ? optimized : normal; }
 function jsonVarEnd(name, value)	{ push('"' + name +'":' + value + '\n'); }
 function jsonVar(name, value)		{ push('"' + name +'":' + value + ',\n'); }
 function jsonStrEnd(name, value)	{ push('"' + name + '":"' + value + '"\n'); }
@@ -1431,11 +1409,20 @@ function isArray(value)
 	return value.push != undefined;
 }
 
-var curJson;
+var lastJson = undefined;
+var curJson = undefined;
 
 function initJson()
 {
+	lastJson = curJson;
 	curJson = [];
+}
+
+function closeJson()
+{
+	var result = curJson != undefined ? curJson.join("") : "";
+	curJson = lastJson;
+	return result;
 }
 
 function push(data)
@@ -1451,8 +1438,6 @@ function removeTrail(trail)
 function xmlToObject(__xml)
 {
     var rawXML = String(__xml);
-    rawXML = rawXML.split("\n").join();
-
     var xmlData = new XML(rawXML);
     return xmlNode(xmlData);
 }
