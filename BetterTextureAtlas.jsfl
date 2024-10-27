@@ -9,8 +9,6 @@ var algorithm = "maxRects";
 var onlyVisibleLayers = true;
 var optimizeDimensions = true;
 var optimizeJson = true;
-var bakedFilters = false; // TODO
-var bakedTweens = true; // TODO: add non-baked tweens
 var flattenSkewing = false;
 var resolution = 1.0;
 var platform = fl.version.split(" ")[0];
@@ -21,8 +19,9 @@ var BrdPad = 0;
 var inlineSym = false;
 var includeSnd = true;
 
+var bakedFilters = false; // TODO
+var bakedTweens = true; // TODO: add non-baked tweens
 var bakeOneFR = false;
-
 var bakeTexts = false;
 /////
 
@@ -184,9 +183,7 @@ var TEMP_TIMELINE;
 var TEMP_LAYER;
 var smIndex;
 
-var addedItems;
 var frameQueue;
-
 var dictionary;
 
 var ogSym;
@@ -195,7 +192,6 @@ function exportAtlas(exportPath, symbolNames)
 {
 	SPRITEMAP_ID = "__BTA_TEMP_SPRITEMAP_";
 	TEMP_SPRITEMAP = SPRITEMAP_ID + "0";
-	addedItems = [];
 	frameQueue = [];
 	smIndex = 0;
 
@@ -253,47 +249,37 @@ function exportAtlas(exportPath, symbolNames)
 	FLfile.write(path + "/Animation.json", generateAnimation(symbol));
 
 	// Add items and fix resolutions
-	lib.editItem(TEMP_SPRITEMAP);
+	var editedQueue = false;
 	var pos = {x:0, y:0};
 
 	var i = 0;
-	var l = frameQueue.length;
-	while (i < l)
+	while (i < frameQueue.length)
 	{
-		var id = frameQueue[i];
-		var isBitmapFrame = (typeof id === "string");
+		var queuedFrame = frameQueue[i].split("_");
+		var type = queuedFrame.shift();
+		var id = queuedFrame.join("");
 
-		if (isBitmapFrame)
+		if (type == "ITEM") // Push the item frame
 		{
+			if (!editedQueue)
+			{
+				editedQueue = true;
+				lib.editItem(TEMP_SPRITEMAP);
+			}
+
 			TEMP_TIMELINE.currentFrame = i;
 			lib.addItemToDocument(pos, id);
+			
+			// TODO: only do resolution < 1 if its a bitmap item
 			if (resolution < 1) {
-				var bitmap = TEMP_LAYER.frames[i].elements[0];
-				bitmap.scaleX = bitmap.scaleY = resolution;
+				var item = TEMP_LAYER.frames[i].elements[0];
+				item.scaleX = item.scaleY = resolution;
 			}
 		}
-		/* // TODO: this fucks up the matrix and other crap, will fix later
-		else if (resolution != 1)
+		else // TODO: do some lines to fills crap here for changing resolutions
 		{
-			var shape = TEMP_LAYER.frames[i].elements[id];
-			if (shape.isGroup)
-			{
-				shape.scaleX *= resolution;
-				shape.scaleY *= resolution;
-			}
-			else
-			{
-				TEMP_TIMELINE.currentFrame = i;
-				doc.selection = [shape];
-				doc.convertLinesToFills();
 
-				var elements = TEMP_LAYER.frames[i].elements;
-				for (e = 0; e < elements.length; e++) {
-					var element = elements[e];
-					if (e == id) element.scaleX = element.scaleY = resolution;
-				}
-			}
-		}*/
+		}
 
 		i++;
 	}
@@ -322,7 +308,8 @@ function exportAtlas(exportPath, symbolNames)
 	if (tmpSymbol)
 		lib.deleteItem(symbol.name);
 
-	doc.exitEditMode();
+	if (editedQueue)
+		doc.exitEditMode();
 
 	fl.trace("Exported to folder: " + exportPath);
 }
@@ -541,6 +528,7 @@ function parseSymbol(symbol)
 
 	jsonArray(key("LAYERS", "L"));
 
+	/* TODO: rework this into bake shape layers
 	if (bakeOneFR && symbol != ogSym && timeline.frameCount == 1)
 	{
 		push('{\n');
@@ -559,7 +547,7 @@ function parseSymbol(symbol)
 		push('}]}]}]}]}');
 
 		return;
-	}
+	}*/
 
 	var l = 0;
 	var ll = layers.length;
@@ -610,15 +598,11 @@ function parseSymbol(symbol)
 
 function pushSymbolSpritemap(symbol)
 {
-
-	var matrix = {a:1., b:0., c:0., d:1., tx: 0, ty: 0};
-
-	matrix.a *= resScale;
-	matrix.d *= resScale;
-
+	var matrix = {a:resScale, b:0., c:0., d:resScale, tx: 0, ty: 0};
 	var itemIndex = pushItemSpritemap(symbol);
 	return parseAtlasInstance(matrix, itemIndex);
 }
+
 function parseFrames(frames, layerIndex, timeline)
 {
 	jsonArray(key("Frames", "FR"));
@@ -805,16 +789,12 @@ function parseElements(elements, frameIndex, layerIndex, timeline)
 	var el = elements.length;
 	var shapeQueue = [];
 
-
-
 	while (e < el)
 	{
 		var element = elements[e];
 		var elementType = element.elementType;
-
-		var isShape = elementType == "shape";
-		if (isShape) isShape = !element.isGroup;
-
+		var isShape = (elementType == "shape") ? !element.isGroup : false;
+		
 		if (isShape) // Adobe sometimes forgets how their own software works
 		{
 			shapeQueue.push(e);
@@ -936,15 +916,15 @@ function parseTextInstance(text)
 		}
 	}
 
-	jsonStr(key("lineType", "LT"), linetype);
-
-	var index = 0;
-	
+	jsonStr(key("lineType", "LT"), linetype);	
 	jsonArray(key("attributes", "ATR"));
-	for (var i = 0; i < text.textRuns.length; i++)
+	
+	var t = 0;
+	var index = 0;
+	while (t < text.textRuns.length)
 	{
 		push("{\n");
-		var run = text.textRuns[i];
+		var run = text.textRuns[t++];
 
 		jsonVar(key("offset", "OF"), index);
 		jsonVar(key("length", "LEN"), run.characters.length);
@@ -963,8 +943,6 @@ function parseTextInstance(text)
 		jsonVar(key("leftMargin", "LFM"), run.textAttrs.leftMargin);
 		jsonVar(key("rightMargin", "RFM"), run.textAttrs.rightMargin);
 		jsonStrEnd("URL", run.textAttrs.url);
-
-
 		
 		index += run.characters.length;
 
@@ -978,7 +956,6 @@ function parseTextInstance(text)
 	jsonVar(key("alias_SHARPNESS", "ALSRP"), text.antiAliasSharpness);
 	jsonVar(key("alias_thickness", "ALTHK"), text.antiAliasThickness);
 	jsonVarEnd("MAX", text.maxCharacters);
-
 
 	push("}\n");
 }
@@ -1046,15 +1023,14 @@ function parseAtlasInstance(matrix, name)
 
 function pushItemSpritemap(item)
 {
-	var name = item.name;
-	var index = addedItems.indexOf(name);
+	var name = "ITEM_" + item.name;
+	var index = frameQueue.indexOf(name);
 
 	if (index == -1) {
 		TEMP_TIMELINE.insertBlankKeyframe(smIndex);
-		addedItems.push(name);
 		frameQueue.push(name);
-		index = addedItems.length - 1;
 		smIndex++;
+		return frameQueue.length - 1;
 	}
 
 	return index;
@@ -1109,7 +1085,7 @@ function pushElementSpritemap(timeline, layerIndex, frameIndex, elementIndices)
 		e++;
 	}
 
-	//frameQueue.push(smIndex);
+	frameQueue.push("ELEMENT_" + smIndex);
 	smIndex++;
 
 	return shapes;
@@ -1457,8 +1433,6 @@ function removeTrail(trail)
 function xmlToObject(__xml)
 {
     var rawXML = String(__xml);
-    rawXML = rawXML.split("\n").join();
-
     var xmlData = new XML(rawXML);
     return xmlNode(xmlData);
 }
