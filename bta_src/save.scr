@@ -1,8 +1,36 @@
 var version = fl.version.split(" ")[1].split(",");
 
-function xmlData(data)
+function xmlData()
 {
-    var saveData = FLfile.read(config + "Commands/bta_src/saveBTA.txt").split("\n");
+    var data = FLfile.read(fl.configURI + "Commands/bta_src/BTADialog.xml");
+    var saveData = FLfile.read(fl.configURI + "Commands/bta_src/saveBTA.txt").split("\n");
+
+    fl.trace(saveData);
+	var fileuri = (saveData[0] != "") ? saveData[0] + "\\" + symbols[0] : fl.configDirectory + "\\Commands\\" + symbols[0];
+
+
+	data = data.split("$CONFIGDIR").join(fl.configDirectory);
+	data = data.split("$FILEURI").join(fileuri);
+	data = data.split("$SHP").join(saveData[1]);
+	data = data.split("$BRD").join(saveData[2]);
+	data = data.split("$RES").join(saveData[3]);
+	data = data.split("$OPTDIM").join(saveData[4]);
+	data = data.split("$OPTAN").join(saveData[5]);
+	data = data.split("$FLAT").join(saveData[6]);
+
+	var buttonWidth = 0;
+	if (parseInt(version[0]) >= 20)
+		buttonWidth = 50;
+
+	data = data.split("$BWI").join(buttonWidth);
+
+    return data;
+}
+
+function xmlAddData()
+{
+    var data = FLfile.read(fl.configURI + "Commands/bta_src/BTADialog.xml");
+    var saveData = FLfile.read(fl.configURI + "Commands/bta_src/saveBTA.txt").split("\n");
 
     fl.trace(saveData);
 	var fileuri = (saveData[0] != "") ? saveData[0] + "\\" + symbols[0] : fl.configDirectory + "\\Commands\\" + symbols[0];

@@ -12,14 +12,14 @@
     </columns>
     <rows>
         <row>
-            <checkbox label="Inline Symbols" />
-            <checkbox label="Bake All Texts" />
+            <checkbox label="Inline Symbols" id="InSym"/>
+            <checkbox label="Bake All Texts" id="BATX"/>
         </row>
         <row>
-            <checkbox label="Include Sounds" checked="true"/>
+            <checkbox label="Include Sounds" checked="true" id="INCS"/>
         </row>
         <row>
-            <checkbox label="Bake One Frame Symbols" checked="true"/>
+            <checkbox label="Bake One Frame Symbols" checked="true" id="BOFS"/>
         </row>
     </rows>
 </grid>

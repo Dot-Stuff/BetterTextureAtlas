@@ -73,7 +73,7 @@ if (symbols.length > 0)
 
 	var config = fl.configURI;
 
-	var rawXML = fl.runScript(fl.configURI + "Commands/bta_src/save.scr", "xmlData", FLfile.read(config + "Commands/bta_src/BTADialog.xml"));
+	var rawXML = fl.runScript(fl.configURI + "Commands/bta_src/save.scr", "xmlData");
 
 	var xPan = null;
 
@@ -143,17 +143,7 @@ if (symbols.length > 0)
 		saveArray.pop();
 		var savePath = saveArray.join("\\");
 
-		var saveConfig = [
-			savePath,
-			ShpPad,
-			BrdPad,
-			res,
-			optDimens,
-			optAn,
-			flatten
-		];
-		
-		FLfile.write(fl.configURI + "Commands/bta_src/saveBTA.txt", saveConfig.join("\n"));
+		initJson();
 
 		for (i = 0; i < familySymbol.length; i++)
 		{
@@ -324,7 +314,7 @@ function divideSpritemap(smData, symbol)
 {
 	var parent = smData.sm;
 	var framesLength = symbol.timeline.layers[0].frames.length;
-	var cutFrames = Math.floor(framesLength / 2);
+	var cutFrames = Math.floor(framesLength * 0.5);
 
 	var nextSmID = SPRITEMAP_ID + spritemaps.length;
 	lib.addNewItem("graphic", nextSmID);
@@ -760,7 +750,7 @@ function parseMotionObject(motionData)
 				jsonVar(key("anchor", "ANC"), "[" + keyframe.anchor + "]");
 				jsonVar(key("next", "NXT"), "[" + keyframe.next + "]");
 				jsonVar(key("previous", "PRV"), "[" + keyframe.previous + "]");
-				jsonVarEnd(key("index", "I"), keyframe.timevalue / 1000);
+				jsonVarEnd(key("index", "I"), keyframe.timevalue * 0.001);
 				push("},");
 			}
 
@@ -1155,18 +1145,18 @@ function parseSymbolInstance(instance)
 			case "tint":
 				jsonStr(modeKey, key("Tint", "T"));
 				jsonStr(key("tintColor", "TC"), instance.tintColor);
-				jsonVarEnd(key("tintMultiplier", "TM"), instance.tintPercent / 100);
+				jsonVarEnd(key("tintMultiplier", "TM"), instance.tintPercent * 0.01);
 			break;
 			case "alpha":
 				jsonStr(modeKey, key("Alpha", "CA"));
-				jsonVarEnd(key("alphaMultiplier", "AM"), instance.colorAlphaPercent / 100);
+				jsonVarEnd(key("alphaMultiplier", "AM"), instance.colorAlphaPercent * 0.01);
 			break;
 			case "advanced":
 				jsonStr(modeKey, key("Advanced", "AD"));
-				jsonVar(key("RedMultiplier", "RM"), instance.colorRedPercent / 100);
-				jsonVar(key("greenMultiplier", "GM"), instance.colorGreenPercent / 100);
-				jsonVar(key("blueMultiplier", "BM"), instance.colorBluePercent / 100);
-				jsonVar(key("alphaMultiplier", "AM"), instance.colorAlphaPercent / 100);
+				jsonVar(key("RedMultiplier", "RM"), instance.colorRedPercent * 0.01);
+				jsonVar(key("greenMultiplier", "GM"), instance.colorGreenPercent * 0.01);
+				jsonVar(key("blueMultiplier", "BM"), instance.colorBluePercent * 0.01);
+				jsonVar(key("alphaMultiplier", "AM"), instance.colorAlphaPercent * 0.01);
 				jsonVar(key("redOffset", "RO"), instance.colorRedAmount);
 				jsonVar(key("greenOffset", "GO"), instance.colorGreenAmount);
 				jsonVar(key("blueOffset", "BO"), instance.colorBlueAmount);
