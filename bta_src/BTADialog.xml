@@ -1,7 +1,5 @@
 <?xml version="1.0"?>
 <dialog title="Generate a Texture Atlas">
-
-
 	
 	<flash src="$CONFIGDIRCommands\bta_src\BTAlogo.swf" width="610" height="72"></flash>
 	<!-- <separator/> -->
@@ -115,8 +113,10 @@
 			save[4] = fl.xmlui.get("OptDimens");
 			save[5] = fl.xmlui.get("OptAn");
 			save[6] = fl.xmlui.get("FlatSke");
+			save[7] = fl.xmlui.get("algorithm");
+			save[8] = fl.xmlui.get("imgFormat");
 
-			fl.trace(save);
+			fl.trace(save.join("\n"));
 			fl.trace(fl.configURI + "Commands/bta_src/saveBTA.txt");
 
 			FLfile.write(fl.configURI + "Commands/bta_src/saveBTA.txt", save.join("\n"));
@@ -310,6 +310,8 @@
 			<column/>
 			<column/>
 			<column/>
+			<column/>
+			<column/>
 		</columns>
 		<rows>
 			<row>
@@ -330,19 +332,17 @@
 				<label value=" "/>
 				<label value=" "/>
 				<label value=" "/>
+				<label value=" "/>
+				<label value=" "/>
 				<spacer/>
 				<grid>
 					<columns>
 						<column/>
 						<column/>
 						<column/>
-						<column/>
-						<column/>
 					</columns>
 					<rows>
 						<row>
-							<button label="Testing" oncommand="myThing()" width="$BWI"/> -->
-							<label value="" />
 							<button label="Export" oncommand="accept()" width="$BWI"/>
 							<label value="" />
 							<button label="Cancel" oncommand="fl.xmlui.cancel()" width="$BWI"/>
