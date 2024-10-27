@@ -1013,16 +1013,13 @@ function pushFrameSpritemap(timeline)
 	TEMP_TIMELINE.pasteFrames(smIndex);
 	frameQueue.push("ELEMENT_" + smIndex);	
 
-	if (resolution != 1)
+	var e = 0;
+	var elements = TEMP_LAYER.frames[smIndex].elements;
+	while (e < elements.length)
 	{
-		var e = 0;
-		var elements = TEMP_LAYER.frames[smIndex].elements;
-		while (e < elements.length)
-		{
-			var item = elements[e++];
-			item.scaleX *= resolution;
-			item.scaleY *= resolution;
-		}
+		var item = elements[e++];
+		item.width = Math.round(item.width * resolution);
+		item.height = Math.round(item.height * resolution);
 	}
 
 	var matrix = {a:resScale, b:0., c:0., d:resScale, tx: 0, ty: 0};
