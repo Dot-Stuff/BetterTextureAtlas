@@ -16,12 +16,12 @@ var version = fl.version.split(" ")[1].split(",");
 var ShpPad = 0;
 var BrdPad = 0;
 
-var inlineSym = false;
+var inlineSym = true;
 var includeSnd = true;
 
 var bakedFilters = false; // TODO
 var bakedTweens = true; // TODO: add non-baked tweens
-var bakeOneFR = false;
+var bakeOneFR = true;
 var bakeTexts = false;
 /////
 
@@ -387,7 +387,14 @@ function exportSpritemap(id, exportPath, smData, index)
 		sm.sheetWidth = smWidth + BrdPad;
 		sm.sheetHeight = smHeight + BrdPad;
 		
-		sm.exportSpriteSheet(smPath, smSettings, true);
+		if (sm.overflowed)
+		{
+			break;
+		}
+		else
+		{
+			sm.exportSpriteSheet(smPath, smSettings, true);
+		}
 	}
 
 	// Parse and change json to spritemap format
@@ -449,11 +456,8 @@ function generateAnimation(symbol)
 	}
 
 	jsonStr(key("SYMBOL_name", "SN"), symbol.name);
-
 	jsonHeader(key("TIMELINE", "TL"));
-
 	parseSymbol(symbol);
-	
 	push('},\n');
 
 	// Add Symbol Dictionary
@@ -989,8 +993,8 @@ function parseShape(timeline, layerIndex, frameIndex, elementIndices, checkMatri
 			s++;
 		}
 
-		var tx = parseFloat((minX - ((maxX - minX) / 2)).toFixed(3));
-		var ty = parseFloat((minY - ((maxY - minY) / 2)).toFixed(3));
+		var tx = Math.round((minX - ((maxX - minX) * 0.5)));
+		var ty = Math.round((minY - ((maxY - minY) * 0.5)));
 
 		matrix = {a: resScale, b: 0, c: 0, d: resScale, tx: tx, ty: ty}
 	}
@@ -1075,26 +1079,30 @@ function pushElementSpritemap(timeline, layerIndex, frameIndex, elementIndices)
 
 			// TODO: move this to the frameQueue and fix the resolution lines bug
 			// Gotta check because its both the same shape instance but also not?? Really weird shit
-			if (Math.round(frameElement.width) != lastWidth)
+			if (Math.round(frameElement.width * resolution) != lastWidth)
 			{
 				// Gotta do this because jsfl scripts cant keep track well of instances data and will randomly corrupt values
 				shapes.push({
-					x: frameElement.x, y: frameElement.y,
-					width: frameElement.width, height: frameElement.height,
+					x: frameElement.x,
+					y: frameElement.y,
+					width: frameElement.width,
+					height: frameElement.height,
 					matrix: frameElement.matrix
 				});
 
 				frameElement.matrix = matrixIdent(frameElement.matrix);
-				frameElement.width *= resolution;
-				frameElement.height *= resolution;
-				lastWidth = Math.round(frameElement.width);
+				var roundWidth = Math.round(frameElement.width * resolution);
+				
+				frameElement.width = roundWidth
+				frameElement.height = Math.round(frameElement.height * resolution);
+				lastWidth = roundWidth;
 			}
 		}
 		else // Remove other crap from the frame
 		{
 			frameElement.width = frameElement.height = 0;
-			frameElement.x = shape.x;
-			frameElement.y = shape.y;
+			frameElement.x = Math.round(shape.x);
+			frameElement.y = Math.round(shape.y);
 		}
 
 		e++;
