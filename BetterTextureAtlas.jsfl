@@ -16,7 +16,7 @@ var version = fl.version.split(" ")[1].split(",");
 var ShpPad = 0;
 var BrdPad = 0;
 
-var inlineSym = true;
+var inlineSym = false;
 var includeSnd = true;
 
 var bakedFilters = false; // TODO
@@ -969,8 +969,8 @@ function parseShape(timeline, layerIndex, frameIndex, elementIndices, checkMatri
 	{
 		var minX = shape.x;
 		var minY = shape.y;
-		var maxX = shape.x + shape.width;
-		var maxY = shape.y + shape.height;
+		var maxX = shape.width;
+		var maxY = shape.height;
 
 		var s = 1;
 		while (s < shapes.length)
@@ -978,13 +978,15 @@ function parseShape(timeline, layerIndex, frameIndex, elementIndices, checkMatri
 			var shape = shapes[s];
 			minX = Math.min(minX, shape.x);
         	minY = Math.min(minY, shape.y);
-        	maxX = Math.max(maxX, shape.x + shape.width);
-        	maxY = Math.max(maxY, shape.y + shape.height);
+        	maxX = Math.max(maxX, shape.width);
+        	maxY = Math.max(maxY, shape.height);
 			s++;
 		}
 
-		var tx = Math.round((minX - ((maxX - minX) * 0.5)));
-		var ty = Math.round((minY - ((maxY - minY) * 0.5)));
+		var tx = (minX - (rShape(maxX * 0.5)));
+		var ty = (minY - (rShape(maxY * 0.5)));
+		
+		// var tx = Math.round();
 
 		matrix = {a: resScale, b: 0, c: 0, d: resScale, tx: tx, ty: ty}
 	}
@@ -996,6 +998,32 @@ function parseShape(timeline, layerIndex, frameIndex, elementIndices, checkMatri
 	}
 
 	parseAtlasInstance(matrix, smIndex - 1);
+}
+
+function rShape(value)
+{
+	var v = value.toFixed(3);
+
+	if (Math.floor(v) == v)
+		return v;
+	
+	v *= 10;
+	
+	var tV = Math.floor(v);
+
+	v -= tV;
+	
+	var r = Math.round(v);
+	if (r == 0)
+		v = 0;
+	if (v == 1)
+		v = 0.5;
+
+	v *= 0.1;
+	v += tV * 0.1;
+
+	return v.toFixed(3);
+
 }
 
 function parseAtlasInstance(matrix, name)
