@@ -449,7 +449,6 @@ function generateAnimation(symbol)
 	jsonHeader(key("TIMELINE", "TL"));
 
 	parseSymbol(symbol);
-
 	
 	push('},\n');
 
@@ -528,26 +527,21 @@ function parseSymbol(symbol)
 
 	jsonArray(key("LAYERS", "L"));
 
-	/* TODO: rework this into bake shape layers
+	// TODO: rework this into bake shape layers
 	if (bakeOneFR && symbol != ogSym && timeline.frameCount == 1)
 	{
-		push('{\n');
+		push('{');
 		jsonStr(key("Layer_name", "LN"), "Layer 1");
 		jsonArray(key("Frames", "FR"));
-		push('{\n');
+		push('{');
 		jsonVar(key("index", "I"), 0);
 		jsonVar(key("duration", "DU"), 1);
-		jsonArray(key("Frames", "FR"));
-		push('{\n');
 		jsonArray(key("elements", "E"));
-		push('{\n');
-
+		push('{');
 		pushSymbolSpritemap(symbol);
-		
-		push('}]}]}]}]}');
-
+		push('}]}]}]}');
 		return;
-	}*/
+	}
 
 	var l = 0;
 	var ll = layers.length;
