@@ -245,6 +245,8 @@ function exportAtlas(exportPath, symbolNames)
 
 	ogSym = symbol;
 
+	//measure(function () {
+
 	// Write Animation.json
 	FLfile.write(path + "/Animation.json", generateAnimation(symbol));
 
@@ -284,6 +286,11 @@ function exportAtlas(exportPath, symbolNames)
 		i++;
 	}
 
+	if (editedQueue)
+		doc.exitEditMode();
+
+	//});
+
 	// Generate Spritemap
 	var sm = makeSpritemap();
 	sm.addSymbol(TEMP_ITEM);
@@ -307,9 +314,6 @@ function exportAtlas(exportPath, symbolNames)
 
 	if (tmpSymbol)
 		lib.deleteItem(symbol.name);
-
-	if (editedQueue)
-		doc.exitEditMode();
 
 	fl.trace("Exported to folder: " + exportPath);
 }
@@ -538,7 +542,7 @@ function parseSymbol(symbol)
 		jsonVar(key("duration", "DU"), 1);
 		jsonArray(key("elements", "E"));
 		push('{');
-		pushSymbolSpritemap(symbol);
+		pushFrameSpritemap(timeline);
 		push('}]}]}]}');
 		return;
 	}
@@ -588,13 +592,6 @@ function parseSymbol(symbol)
 
 	removeTrail(1);
 	push(']}');
-}
-
-function pushSymbolSpritemap(symbol)
-{
-	var matrix = {a:resScale, b:0., c:0., d:resScale, tx: 0, ty: 0};
-	var itemIndex = pushItemSpritemap(symbol);
-	return parseAtlasInstance(matrix, itemIndex);
 }
 
 function parseFrames(frames, layerIndex, timeline)
@@ -1013,6 +1010,30 @@ function parseAtlasInstance(matrix, name)
 	jsonVar(key("Matrix", "MX"), parseMatrix(matrix));
 	jsonStrEnd(key("name", "N"), name);
 	push('}');
+}
+
+function pushFrameSpritemap(timeline)
+{
+	timeline.setSelectedLayers(0, true);
+	timeline.copyFrames(0, 0);
+	TEMP_TIMELINE.pasteFrames(smIndex);
+	frameQueue.push("ELEMENT_" + smIndex);	
+
+	if (resolution != 1)
+	{
+		var e = 0;
+		var elements = TEMP_LAYER.frames[smIndex].elements;
+		while (e < elements.length)
+		{
+			var item = elements[e++];
+			item.scaleX *= resolution;
+			item.scaleY *= resolution;
+		}
+	}
+
+	var matrix = {a:resScale, b:0., c:0., d:resScale, tx: 0, ty: 0};
+	parseAtlasInstance(matrix, smIndex);
+	smIndex++;
 }
 
 function pushItemSpritemap(item)
