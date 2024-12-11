@@ -3,7 +3,8 @@ Copy Motion as XML.jsfl
 Export Motion XML.jsfl
 Import Motion XML.jsfl
 names.XML
-saveBTA.txt
-BTATheme.txt
+bta_src/saveBTA.txt
+bta_src/saveADDBTA.txt
+bta_src/BTATheme.txt
 testing/
 .vscode/

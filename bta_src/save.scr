@@ -27,23 +27,16 @@ function xmlData()
     return data;
 }
 
+
 function xmlAddData()
 {
-    var data = FLfile.read(fl.configURI + "Commands/bta_src/BTADialog.xml");
-    var saveData = FLfile.read(fl.configURI + "Commands/bta_src/saveBTA.txt").split("\n");
+    var data = FLfile.read(fl.configURI + "Commands/bta_src/BTAAdd.xml");
+    var saveData = FLfile.read(fl.configURI + "Commands/bta_src/saveADDBTA.txt").split("\n");
 
-    fl.trace(saveData);
-	var fileuri = (saveData[0] != "") ? saveData[0] + "\\" + symbols[0] : fl.configDirectory + "\\Commands\\" + symbols[0];
-
-
-	data = data.split("$CONFIGDIR").join(fl.configDirectory);
-	data = data.split("$FILEURI").join(fileuri);
-	data = data.split("$SHP").join(saveData[1]);
-	data = data.split("$BRD").join(saveData[2]);
-	data = data.split("$RES").join(saveData[3]);
-	data = data.split("$OPTDIM").join(saveData[4]);
-	data = data.split("$OPTAN").join(saveData[5]);
-	data = data.split("$FLAT").join(saveData[6]);
+	data = data.split("$INSYMB").join(saveData[0]);
+	data = data.split("$BATX").join(saveData[1]);
+	data = data.split("$INCS").join(saveData[2]);
+	data = data.split("$BOFS").join(saveData[3]);
 
 	var buttonWidth = 0;
 	if (parseInt(version[0]) >= 20)
@@ -52,6 +45,37 @@ function xmlAddData()
 	data = data.split("$BWI").join(buttonWidth);
 
     return data;
+}
+
+function xmlSaveStuff()
+{
+    var config = fl.configURI;
+
+	var rawXML = xmlAddData();
+
+	var xPan = null;
+
+	// Flash doesnt support direct panels from strings so we gotta create a temp xml
+	if (parseInt(version[0]) < 15 && parseInt(version[1]) < 1)
+	{
+		var tempP = config + "Commands/bta_src/_BTAD.xml";
+		FLfile.write(tempP, rawXML, null);
+		xPan = fl.xmlPanel(tempP);
+		FLfile.remove(tempP);
+	}
+	else
+	{
+		xPan = fl.xmlPanelFromString(rawXML);
+	}
+
+    var save = [];
+
+    save[0] = xPan.InSym;
+    save[1] = xPan.BATX;
+    save[2] = xPan.INCS;
+    save[3] = xPan.BOFS;
+
+    FLfile.write(fl.configURI + "Commands/bta_src/saveADDBTA.txt", save.join("\n"));
 }
 
 function theme()

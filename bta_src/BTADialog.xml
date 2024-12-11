@@ -31,7 +31,7 @@
 
 		function addParams()
 		{
-			var add = fl.xmlPanel(fl.configURI + 'Commands/bta_src/BTAAdd.xml');
+			fl.runScript(fl.configURI + "Commands/bta_src/save.scr", "xmlSaveStuff");
 		}
 
 
