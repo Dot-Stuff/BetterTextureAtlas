@@ -6,7 +6,7 @@ function xmlData()
     var saveData = FLfile.read(fl.configURI + "Commands/bta_src/saveBTA.txt").split("\n");
 
     fl.trace(saveData);
-	var fileuri = (saveData[0] != "") ? saveData[0] + "\\" + symbols[0] : fl.configDirectory + "\\Commands\\" + symbols[0];
+	var fileuri = (saveData[0] != "") ? saveData[0] + "\\" + symbols[0] : symbols[0];
 
 
 	data = data.split("$CONFIGDIR").join(fl.configDirectory);
@@ -90,9 +90,9 @@ function theme()
             stuff = fl.getThemeColor("themeAppBackgroundColor");
             switch(stuff)
             {
-                    case "#404040": stuff = "#333333"; break;
-                    case "#262626": stuff = "#1f1f1f"; break;
-                    case "#B9B9B9": stuff = "#f5f5f5"; break;
+                    case "#404040": stuff = (version[0] >= 24) ? "#323232" : "#333333"; break;
+                    case "#262626": stuff = (version[0] >= 24) ? "#1D1D1D" : "#1f1f1f"; break;
+                    case "#B9B9B9": stuff = (version[0] >= 24) ? "#F8F8F8" : "#f5f5f5"; break;
                     case "#F2F2F2": stuff = "#ffffff"; break;
             }
         }

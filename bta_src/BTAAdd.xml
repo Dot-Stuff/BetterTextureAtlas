@@ -17,9 +17,10 @@
         </row>
         <row>
             <checkbox label="Include Sounds" checked="$INCS" id="INCS"/>
+            <checkbox label="Bake Tweens" id="BTW" oncreate="fl.xmlui.setEnabled('BTW', false);"/>
         </row>
         <row>
-            <checkbox label="Bake One Frame Symbols" checked="$BOFS" id="BOFS"/>
+            <checkbox label="Bake One Frame Symbols" checked="$BOFS" id="BOFS" oncreate="fl.xmlui.setEnabled('BOFS', false);"/>
         </row>
     </rows>
 </grid>

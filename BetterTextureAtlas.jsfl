@@ -15,12 +15,12 @@ var platform = fl.version.split(" ")[0];
 var version = fl.version.split(" ")[1].split(",");
 var ShpPad = 0;
 var BrdPad = 0;
-
+///// ADDITIONAL BIZZ
 var inlineSym = false;
 var includeSnd = true;
 
 var bakedFilters = false; // TODO
-var bakedTweens = true; // TODO: add non-baked tweens
+var bakedTweens = false; // TODO: add non-baked tweens
 var bakeOneFR = false;
 var bakeTexts = false;
 /////
@@ -71,6 +71,17 @@ if (symbols.length > 0)
 		];
 
 		FLfile.write(fl.configURI + "Commands/bta_src/saveBTA.txt", saveConfig.join("\n"));
+	}
+	if (!FLfile.exists(fl.configURI + "Commands/bta_src/saveADDBTA.txt"))
+	{
+		var save = [];
+
+		save[0] = inlineSym;
+		save[1] = bakeTexts;
+		save[2] = includeSnd;
+		save[3] = bakeOneFR;
+
+		FLfile.write(fl.configURI + "Commands/bta_src/saveADDBTA.txt", save.join("\n"));
 	}
 
 	var config = fl.configURI;
@@ -125,6 +136,11 @@ if (symbols.length > 0)
 		optAn = xPan.OptAn;
 		flatten = xPan.FlatSke;
 		var fileuri = xPan.saveBox;
+		fl.trace(doc.path);
+		var docarr = doc.path.split("\\");
+		docarr.pop();
+		fl.trace(docarr);
+		fileuri = docarr.join("\\") + "\\" + fileuri;
 
 		optimizeDimensions = (optDimens == "true");
 		optimizeJson = (optAn == "true");
@@ -146,6 +162,13 @@ if (symbols.length > 0)
 		var savePath = saveArray.join("\\");
 
 		initJson();
+
+		
+		var dataAdd = FLfile.read(fl.configURI + "Commands/bta_src/saveADDBTA.txt");
+		inlineSym = dataAdd[0];
+		bakeTexts = dataAdd[1];
+		includeSnd = dataAdd[2];
+		bakeOneFR = save[3];
 
 		for (i = 0; i < familySymbol.length; i++)
 		{
@@ -345,6 +368,7 @@ function divideSpritemap(smData, symbol)
 
 function exportSpritemap(id, exportPath, smData, index)
 {
+	fl.trace(exportPath);
 	var smPath = exportPath + "/spritemap" + index;
 	var smSettings = {format:"png", bitDepth:32, backgroundColor:"#00000000"};
 	var sm = smData.sm;
