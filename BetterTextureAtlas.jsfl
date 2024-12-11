@@ -21,7 +21,7 @@ var includeSnd = true;
 
 var bakedFilters = false; // TODO
 var bakedTweens = true; // TODO: add non-baked tweens
-var bakeOneFR = true;
+var bakeOneFR = false;
 var bakeTexts = false;
 /////
 
@@ -39,6 +39,8 @@ if (doc.selection.length > 0)
 		var object = doc.selection[i];
 		if (object.elementType == "instance")
 			symbols.push(object.libraryItem.name);
+		if (doc.selection.length == 1)
+			instance = object;
 		i++;
 	}
 }
@@ -963,7 +965,9 @@ function parseShape(timeline, layerIndex, frameIndex, elementIndices, checkMatri
 {
 	var shapes = pushElementSpritemap(timeline, layerIndex, frameIndex, elementIndices);
 	var shape = shapes[0];
-	var matrix;
+	var mtx;
+	
+	
 
 	if (checkMatrix)
 	{
@@ -971,6 +975,7 @@ function parseShape(timeline, layerIndex, frameIndex, elementIndices, checkMatri
 		var minY = shape.y;
 		var maxX = shape.width;
 		var maxY = shape.height;
+		
 
 		var s = 1;
 		while (s < shapes.length)
@@ -982,22 +987,23 @@ function parseShape(timeline, layerIndex, frameIndex, elementIndices, checkMatri
         	maxY = Math.max(maxY, shape.height);
 			s++;
 		}
+		
 
-		var tx = (minX - (rShape(maxX * 0.5)));
-		var ty = (minY - (rShape(maxY * 0.5)));
+		var transformingX = (minX - (rShape(maxX * 0.5)));
+		var transformingY = (minY - (rShape(maxY * 0.5)));
 		
 		// var tx = Math.round();
 
-		matrix = {a: resScale, b: 0, c: 0, d: resScale, tx: tx, ty: ty}
+		mtx = {a: resScale, b: 0, c: 0, d: resScale, tx: transformingX, ty: transformingY}
 	}
 	else
 	{
-		matrix = cloneMatrix(shape.matrix);
-		matrix.a *= resScale;
-		matrix.d *= resScale;
+		mtx = cloneMatrix(shape.matrix);
+		mtx.a *= resScale;
+		mtx.d *= resScale;
 	}
 
-	parseAtlasInstance(matrix, smIndex - 1);
+	parseAtlasInstance(mtx, smIndex - 1);
 }
 
 function rShape(value)
