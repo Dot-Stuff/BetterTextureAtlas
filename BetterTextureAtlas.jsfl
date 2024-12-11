@@ -140,7 +140,8 @@ if (symbols.length > 0)
 		var docarr = doc.path.split("\\");
 		docarr.pop();
 		fl.trace(docarr);
-		fileuri = docarr.join("\\") + "\\" + fileuri;
+		if (fileuri.split("C:\\")[0] != "")
+			fileuri = docarr.join("\\") + "\\" + fileuri;
 
 		optimizeDimensions = (optDimens == "true");
 		optimizeJson = (optAn == "true");
