@@ -77,11 +77,12 @@ A popup window will show up, revealing different export settings and an export p
 
 	<files>
 		<file source="BetterTextureAtlas.jsfl" destination="$flash/Commands" />
-		<file source="save.scr" destination="$flash/Commands/bta_src" />
-		<file source="BTADialog.xml" destination="$flash/Commands/bta_src" />
-		<file source="BTAlogo.swf" destination="$flash/Commands/bta_src" />
-		<file source="BTAAdd.swf" destination="$flash/Commands/bta_src" />
-		<file source="BTAConfirm.swf" destination="$flash/Commands/bta_src" />
+		<file source="bta_src/save.scr" destination="$flash/Commands/bta_src" />
+		<file source="bta_src/BTAlogo.swf" destination="$flash/Commands/bta_src" />
+		<file source="bta_src/warningBTA.swf" destination="$flash/Commands/bta_src" />
+		<file source="bta_src/BTADialog.xml" destination="$flash/Commands/bta_src" />
+		<file source="bta_src/BTAAdd.xml" destination="$flash/Commands/bta_src" />
+		<file source="bta_src/BTAConfirm.xml" destination="$flash/Commands/bta_src" />
 	</files>
 
 </macromedia-extension>
