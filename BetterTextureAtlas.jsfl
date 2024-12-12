@@ -136,12 +136,14 @@ if (symbols.length > 0)
 		optAn = xPan.OptAn;
 		flatten = xPan.FlatSke;
 		var fileuri = xPan.saveBox;
-		fl.trace(doc.path);
-		var docarr = doc.path.split("\\");
-		docarr.pop();
-		fl.trace(docarr);
-		if (fileuri.split("C:\\")[0] != "")
-			fileuri = docarr.join("\\") + "\\" + fileuri;
+		if (doc.path != null)
+		{
+			var docarr = doc.path.split("\\");
+			docarr.pop();
+			fl.trace(docarr);
+			if (fileuri.split("C:\\")[0] != "")
+				fileuri = docarr.join("\\") + "\\" + fileuri;
+		}
 
 		optimizeDimensions = (optDimens == "true");
 		optimizeJson = (optAn == "true");
@@ -169,7 +171,7 @@ if (symbols.length > 0)
 		inlineSym = dataAdd[0];
 		bakeTexts = dataAdd[1];
 		includeSnd = dataAdd[2];
-		bakeOneFR = save[3];
+		bakeOneFR = dataAdd[3];
 
 		for (i = 0; i < familySymbol.length; i++)
 		{
