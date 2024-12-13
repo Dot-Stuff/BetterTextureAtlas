@@ -511,8 +511,25 @@ function generateAnimation(symbol)
 				initJson();
 				push("{");
 				push(parseSymbol(findItem(dictionary[dictIndex++]) ));
-
-				FLfile.write(path + "/LIBRARY/" + dictionary[dictIndex - 1] + ".json", closeJson());
+				
+				fl.trace(dictionary[dictIndex - 1]);
+				var pathDict = dictionary[dictIndex - 1].split("/");
+				var foldI = 0;
+				
+				
+				fl.trace(pathDict);
+				var folderStuff = "";
+				while (foldI < pathDict.length - 1)
+				{
+					if (folderStuff != "") folderStuff += "/";
+					folderStuff += pathDict[foldI];
+					fl.trace(FLfile.createFolder(path + "/LIBRARY/" + folderStuff));
+					
+					foldI++;
+				}
+				
+	
+				fl.trace(FLfile.write(path + "/LIBRARY/" + dictionary[dictIndex - 1] + ".json", closeJson()));
 			}
 		}
 	}
@@ -587,19 +604,29 @@ function parseSymbol(symbol)
 			{
 				case "mask":
 					jsonStr(key("Layer_type", "LT"), key("Clipper", "Clp"));
+				if (layer.parentLayer != undefined)
+						jsonStr(key("Parent_layer", "PL"), layer.parentLayer.name);
 				break;
 				case "masked":
 					jsonStr(key("Clipped_by", "Clpb"), layer.parentLayer.name);
+
 				break;
 				case "folder":
-					jsonStr(key("Layer_type", "LT"), key("Folder", "Fld"));
+					
 					if (layer.parentLayer != undefined)
-						jsonStr(key("Parent_layer", "PL"), layer.parentLayer.name);
+					{
+						jsonStr(key("Layer_type", "LT"), key("Folder", "Fld"));
+						jsonStrEnd(key("Parent_layer", "PL"), layer.parentLayer.name);
+					}
+					else
+						jsonStrEnd(key("Layer_type", "LT"), key("Folder", "Fld"));
 				break;
 				// not planning on adding these
 				case "guide":
 				case "guided":
 				case "normal":
+					if (layer.parentLayer != undefined)
+						jsonStr(key("Parent_layer", "PL"), layer.parentLayer.name);
 				break;
 			}
 
