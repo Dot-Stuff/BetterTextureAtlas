@@ -106,6 +106,7 @@ function accept()
 
     var data = FLfile.read(fl.configURI + 'Commands/bta_src/BTAConfirm.xml');
 
+	data = data.split("$CONFIGDIR").join(fl.configDirectory);
     data = data.split("$EXPATH").join(saveBox);
     
     var check = SaveData.openXMLFromString(data);
