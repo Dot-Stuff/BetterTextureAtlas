@@ -38,7 +38,7 @@ SaveData.openXMLFromString = function(rawXML)
 	
 	// Flash doesnt support direct panels from strings so we gotta create a temp xml
 	var xPan = null;
-	if (true || parseInt(version[0]) < 15 && parseInt(version[1]) < 1)
+	if (parseInt(version[0]) < 15 && parseInt(version[1]) < 1)
 	{
 		var count = 1;
 		
