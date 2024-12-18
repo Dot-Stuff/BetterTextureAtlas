@@ -4,7 +4,6 @@
 <script>
     function bizzy()
     {
-        <!-- fl.xmlui.set("pathy", "'DOING YOUR MOM D-D DOING YOUR MOM!!!'"); -->
     }
 </script>
 
@@ -19,9 +18,9 @@
             <flash src="warningBTA.swf" width="42" height="75"></flash>
             <label value="" />
             <vbox>
-                <label value="There's a Texture Atlas already with the same naming"/>
-                <label id="pathy" value=''/>
-                <label value= "Do you want to overwrite it?" />
+                <label value="There's a Texture Atlas already with the following path"/>
+                <label id="pathy" value='"$EXPATH"'/>
+                <label value= "Are you sure you want to overwrite it?" />
             </vbox>
         </row>
     </rows>

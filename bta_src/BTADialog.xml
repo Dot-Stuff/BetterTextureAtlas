@@ -2,130 +2,18 @@
 <dialog title="Generate a Texture Atlas">
 	
 	<flash src="$CONFIGDIRCommands\bta_src\BTAlogo.swf" width="610" height="72"></flash>
-	<!-- <separator/> -->
-
+	
 	<hbox>
 		<label value=" " />
 		<label value="Texture Atlas Export" id="stuff" control="radioGroup" />
 	</hbox>
 
 	<script>
+		eval(FLfile.read(fl.configURI+"Commands/bta_src/"+"xmlScripts/DialogXML"+".sjs"));
 
-		var save = [];
-		
-		if (FLfile.exists(fl.configURI + "Commands/bta_src/saveBTA.txt"))
-			save = FLfile.read(fl.configURI + "Commands/bta_src/saveBTA.txt").split("\n");
-
-		function myThing()
-		{
-			fl.trace(fl.xmlui.get("imgDims"));
-			var isVisible = fl.xmlui.getVisible("DFormat"); 
-			fl.trace(isVisible);
-			
-			fl.trace(fl.xmlui.get("algorithm"));
-			fl.xmlui.set("algorithm", "MaxRects");
-
-
-			fl.trace(save);
-		}
-
-		function addParams()
-		{
-			fl.runScript(fl.configURI + "Commands/bta_src/save.scr", "xmlSaveStuff");
-		}
-
-
-		function algorithmSet()
-		{
-			var value = "MaxRects";
-
-			if (save[7] != null)
-				value = save[7];
-
-			fl.xmlui.set("algorithm", value);
-
-			algorithmSel();
-		}
-
-		fl.runScript(fl.configURI + "Commands/bta_src/save.scr", "theme");
-
-		function imgFormatSet()
-		{
-			var value = "PNG 32 bits";
-
-			if (save[8] != null)
-				value = save[8];
-
-			fl.xmlui.set("imgFormat", value);
-		}
-
-
-		function algorithmSel()
-		{
-			var value = fl.xmlui.get("algorithm");
-
-			fl.xmlui.setEnabled("Rotate", value == "MaxRects");
-		}
-		function dFormatSel()
-		{
-			var value = fl.xmlui.get("DFormat");
-
-			
-			fl.xmlui.setEnabled("Rotate", value == "raster");
-			fl.xmlui.setEnabled("imgFormat", value == "raster");
-			fl.xmlui.setEnabled("imgDims", value == "raster");
-			fl.xmlui.setEnabled("ResSld", value == "raster");
-			fl.xmlui.setEnabled("ShpPad", value == "raster");
-			fl.xmlui.setEnabled("BrdPad", value == "raster");
-			fl.xmlui.setEnabled("OptDimens", value == "raster");
-			fl.xmlui.setEnabled("FlatSke", value == "raster");
-			fl.xmlui.setEnabled("algorithm", value == "raster");
-			fl.xmlui.setEnabled("cusWid", value == "raster");
-			fl.xmlui.setEnabled("cusHei", value == "raster");
-		}
-		function accept()
-		{
-			var saveBox = fl.xmlui.get("saveBox");
-
-			if (!FLfile.exists(FLfile.platformPathToURI(saveBox)))
-			{
-				saveAndClose();
-				return;
-			}
-			
-			var check = fl.xmlPanel(fl.configURI + 'Commands/bta_src/BTAConfirm.xml');
-
-			if (check.dismiss == "accept")
-				saveAndClose();
-		}
-
-		function saveAndClose()
-		{
-
-			var save = [];
-			var saveArray = fl.xmlui.get("saveBox").split("\\");
-			saveArray.pop();
-			var savePath = saveArray.join("\\");
-			save[0] = savePath;
-			save[1] = fl.xmlui.get("ShpPad");
-			save[2] = fl.xmlui.get("BrdPad");
-			save[3] = fl.xmlui.get("ResSld");
-			save[4] = fl.xmlui.get("OptDimens");
-			save[5] = fl.xmlui.get("OptAn");
-			save[6] = fl.xmlui.get("FlatSke");
-			save[7] = fl.xmlui.get("algorithm");
-			save[8] = fl.xmlui.get("imgFormat");
-
-			fl.trace(save.join("\n"));
-			fl.trace(fl.configURI + "Commands/bta_src/saveBTA.txt");
-
-			FLfile.write(fl.configURI + "Commands/bta_src/saveBTA.txt", save.join("\n"));
-			fl.xmlui.accept();
-		}
-		
 	</script>
 
-	<radiogroup id="radioGroup" groupbox="true" label="Texture Atlas Output">
+	<radiogroup id="radioGroup" groupbox="true">
 
 		<grid>
 
@@ -148,14 +36,6 @@
 								<menulist id="imgDims" oncreate="fl.xmlui.setEnabled('imgDims', false);">
 									<menupop>
 										<menuitem label="Automatic Size" value="auto"/>
-										<menuitem label="64x64" value="64"/>
-									<menuitem label="128x128" value="128"/>
-									<menuitem label="256x256" value="256"/>
-									<menuitem label="512x512" value="512"/>
-									<menuitem label="1024x1024" value="1024"/>
-									<menuitem label="128x128" value="128"/>
-									<menuitem label="256x256" value="256"/>
-									<menuitem label="512x512" value="512"/>
 									</menupop>
 								</menulist>
 								<vbox>
@@ -230,7 +110,7 @@
 							</row>
 							<row align="right">
 								<label value=""/>
-								<checkbox id="Rotate" checked="true" label="Rotate" />
+								<checkbox id="Rotate" checked="$ROT" label="Rotate" />
 							</row>
 							<row align="right">
 								<label value=""/>

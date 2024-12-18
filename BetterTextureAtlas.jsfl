@@ -1,7 +1,18 @@
-﻿///// CONFIGURATION
-fl.outputPanel.clear(); // debug purposes
-fl.showIdleMessage(false);
+﻿var included = {};
+fl.include = function(file) {
+	if (included[file]) { return; }
+		included[file] = true;
+	eval(FLfile.read(fl.configURI+"Commands/bta_src/"+file+".sjs"));
+}
 
+
+fl.include("SaveData");
+
+///// CONFIGURATION
+
+fl.outputPanel.clear(); // debug purposes
+
+fl.showIdleMessage(false);
 var symbols = [];
 var meshExport = false; // If to use a spritemap or mesh vertex data
 var BTA_version = "bta_1"; // easy to modify
@@ -11,189 +22,165 @@ var optimizeDimensions = true;
 var optimizeJson = true;
 var flattenSkewing = false;
 var resolution = 1.0;
-var platform = fl.version.split(" ")[0];
-var version = fl.version.split(" ")[1].split(",");
+var version = SaveData.prototype.version;
 var ShpPad = 0;
 var BrdPad = 0;
+var AllRot = true;
 ///// ADDITIONAL BIZZ
 var inlineSym = false;
 var includeSnd = true;
 
 var bakedFilters = false; // TODO
 var bakedTweens = false; // TODO: add non-baked tweens
-var bakeOneFR = false;
+var bakeOneFR = true;
 var bakeTexts = false;
 /////
-
 var doc = fl.getDocumentDOM();
 var lib = doc.library;
+var path = "";
 
 var instance = null;
 var resScale = 1.0;
 
-if (doc.selection.length > 0)
+function _main()
 {
-	var i = 0;
-	while (i < doc.selection.length)
+	
+	if (doc == null)
 	{
-		var object = doc.selection[i];
-		if (object.elementType == "instance")
-			symbols.push(object.libraryItem.name);
-		if (doc.selection.length == 1)
-			instance = object;
-		i++;
+		alert("you need to be in an document in order to export the atlas");
+		return;
 	}
-}
-else if (lib.getSelectedItems().length > 0)
-{
-	var items = lib.getSelectedItems();
-	while (items.length > 0)
-		symbols.push(items.shift().name);
-}
 
-if (symbols.length > 0)
-{
+	if (doc.selection.length > 0)
+	{
+		var i = 0;
+		while (i < doc.selection.length)
+		{
+			var object = doc.selection[i];
+			if (object.elementType == "instance")
+				symbols.push(object.libraryItem.name);
+			if (doc.selection.length == 1)
+				instance = object;
+			i++;
+		}
+	}
+	else if (lib.getSelectedItems().length > 0)
+	{
+		var items = lib.getSelectedItems();
+		while (items.length > 0)
+			symbols.push(items.shift().name);
+	}
+	
+	if (symbols.length <= 0)
+	{
+		alert("No symbol has been selected");
+		return;
+	}
+
 	var res = 1.0;
 	var optDimens = "true";
 	var optAn = "true";
 	var flatten = "false";
 
-	if (!FLfile.exists(fl.configURI + "Commands/bta_src/saveBTA.txt"))
-	{
-		var saveConfig = [
-			"", // pos
-			0, // ShpPad
-			0, // BrdPad
-			1, // res
-			true, // optDimens
-			true, // optAn
-			false // flatten
-		];
-
-		FLfile.write(fl.configURI + "Commands/bta_src/saveBTA.txt", saveConfig.join("\n"));
-	}
-	if (!FLfile.exists(fl.configURI + "Commands/bta_src/saveADDBTA.txt"))
-	{
-		var save = [];
-
-		save[0] = inlineSym;
-		save[1] = bakeTexts;
-		save[2] = includeSnd;
-		save[3] = bakeOneFR;
-
-		FLfile.write(fl.configURI + "Commands/bta_src/saveADDBTA.txt", save.join("\n"));
-	}
+	//fl.runScript(fl.configURI + "Commands/bta_src/save.scr", "setupSaves");
+	SaveData.setupSaves();
 
 	var config = fl.configURI;
 
 	var rawXML = fl.runScript(fl.configURI + "Commands/bta_src/save.scr", "xmlData");
 
-	var xPan = null;
-
-	// Flash doesnt support direct panels from strings so we gotta create a temp xml
-	if (parseInt(version[0]) < 15 && parseInt(version[1]) < 1)
-	{
-		var tempP = config + "Commands/bta_src/_BTAD.xml";
-		FLfile.write(tempP, rawXML, null);
-		xPan = fl.xmlPanel(tempP);
-		FLfile.remove(tempP);
-	}
-	else
-	{
-		xPan = fl.xmlPanelFromString(rawXML);
-	}
+	var xPan = SaveData.openXMLFromString(rawXML);
 
 	if (xPan == null)
 	{
 		alert("Failed loading XML Panel");
+		return;
 	}
-	else if (xPan.dismiss == "accept")
-	{
-		var familySymbol = [];
-		var frs = [];
-		var curFr = doc.getTimeline().currentFrame;
-		var n = "";
-
-		while (true)
-		{
-			n = doc.getTimeline().name;
-			doc.exitEditMode();
-
-			if (n == doc.timelines[0].name)
-				break;
-
-			if (doc.selection[0] != undefined)
-			{
-				familySymbol.unshift(doc.selection[0]);
-				frs.unshift(doc.getTimeline().currentFrame);
-			}
-		}
-
-		ShpPad = parseInt(xPan.ShpPad);
-		BrdPad = parseInt(xPan.BrdPad);
-		res = xPan.ResSld;
-		optDimens = xPan.OptDimens;
-		optAn = xPan.OptAn;
-		flatten = xPan.FlatSke;
-		var fileuri = xPan.saveBox;
-		if (doc.path != null)
-		{
-			var docarr = doc.path.split("\\");
-			docarr.pop();
-			fl.trace(docarr);
-			if (fileuri.split("C:\\")[0] != "")
-				fileuri = docarr.join("\\") + "\\" + fileuri;
-		}
-
-		optimizeDimensions = (optDimens == "true");
-		optimizeJson = (optAn == "true");
-		flattenSkewing = (flatten == "true");
-		resolution = parseFloat(res);
-		resScale =  1 / resolution;
-
-		// Reduce if statements
-		key = optimizeJson ? function (a, b) {return b} : function (a, b) {return a};
-
-		// First ask for the export folder
-		var path = formatPath(fileuri);
-
-		FLfile.createFolder(path);
-		exportAtlas(path, symbols);
-
-		var saveArray = fileuri.split("\\");
-		saveArray.pop();
-		var savePath = saveArray.join("\\");
-
-		initJson();
-
-		
-		var dataAdd = FLfile.read(fl.configURI + "Commands/bta_src/saveADDBTA.txt");
-		inlineSym = dataAdd[0];
-		bakeTexts = dataAdd[1];
-		includeSnd = dataAdd[2];
-		bakeOneFR = dataAdd[3];
-
-		for (i = 0; i < familySymbol.length; i++)
-		{
-			doc.getTimeline().currentFrame = frs[i];
-			familySymbol[i].selected = true;
-			doc.enterEditMode("inPlace");
-		}
-
-		doc.getTimeline().currentFrame = curFr;
-	}
-	else
+	
+	if (xPan.dismiss == "cancel")
 	{
 		fl.trace("Operation cancelled");
+		return;
 	}
+
+	var familySymbol = [];
+	var frs = [];
+	var curFr = doc.getTimeline().currentFrame;
+	var n = "";
+
+	while (true)
+	{
+		n = doc.getTimeline().name;
+		doc.exitEditMode();
+
+		if (n == doc.timelines[0].name)
+			break;
+
+		if (doc.selection[0] != undefined)
+		{
+			familySymbol.unshift(doc.selection[0]);
+			frs.unshift(doc.getTimeline().currentFrame);
+		}
+	}
+
+	ShpPad = parseInt(xPan.ShpPad);
+	BrdPad = parseInt(xPan.BrdPad);
+	res = xPan.ResSld;
+	optDimens = xPan.OptDimens;
+	optAn = xPan.OptAn;
+	flatten = xPan.FlatSke;
+	AllRot = xPan.Rotate;
+
+	var dataAdd = FLfile.read(fl.configURI + "Commands/bta_src/saveADDBTA.txt");
+	inlineSym = dataAdd[0];
+	bakeTexts = dataAdd[1];
+	includeSnd = dataAdd[2];
+	bakeOneFR = dataAdd[3];
+	
+	var fileuri = xPan.saveBox;
+	if (doc.path != null)
+	{
+		var docarr = doc.path.split("\\");
+		docarr.pop();
+		if (fileuri.split("C:\\")[0] != "")
+			fileuri = docarr.join("\\") + "\\" + fileuri;
+	}
+
+	optimizeDimensions = (optDimens == "true");
+	optimizeJson = (optAn == "true");
+	flattenSkewing = (flatten == "true");
+	resolution = parseFloat(res);
+	resScale =  1 / resolution;
+
+	// Reduce if statements
+	key = optimizeJson ? function (a, b) {return b} : function (a, b) {return a};
+
+	// First ask for the export folder
+	path = formatPath(fileuri);
+
+	FLfile.createFolder(path);
+	exportAtlas(path, symbols);
+
+	var saveArray = fileuri.split("\\");
+	saveArray.pop();
+	var savePath = saveArray.join("\\");
+
+	initJson();
+
+	for (i = 0; i < familySymbol.length; i++)
+	{
+		doc.getTimeline().currentFrame = frs[i];
+		familySymbol[i].selected = true;
+		doc.enterEditMode("inPlace");
+	}
+
+	doc.getTimeline().currentFrame = curFr;
 
 	fl.trace("DONE");
 	fl.showIdleMessage(true);
 }
-else {
-	alert("No symbol has been selected");
-}
 
+_main();
 var SPRITEMAP_ID;
 var TEMP_SPRITEMAP;
 var TEMP_ITEM;
@@ -371,7 +358,6 @@ function divideSpritemap(smData, symbol)
 
 function exportSpritemap(id, exportPath, smData, index)
 {
-	fl.trace(exportPath);
 	var smPath = exportPath + "/spritemap" + index;
 	var smSettings = {format:"png", bitDepth:32, backgroundColor:"#00000000"};
 	var sm = smData.sm;
@@ -452,7 +438,7 @@ function makeSpritemap() {
 	sm.autoSize = true;
 	sm.borderPadding = BrdPad;
 	sm.shapePadding = ShpPad;
-	sm.allowRotate = true;
+	sm.allowRotate = AllRot;
 	sm.allowTrimming = true;
 	sm.stackDuplicate = true;
 	sm.layoutFormat = "JSON-Array";
@@ -512,24 +498,22 @@ function generateAnimation(symbol)
 				push("{");
 				push(parseSymbol(findItem(dictionary[dictIndex++]) ));
 				
-				fl.trace(dictionary[dictIndex - 1]);
 				var pathDict = dictionary[dictIndex - 1].split("/");
 				var foldI = 0;
 				
 				
-				fl.trace(pathDict);
 				var folderStuff = "";
 				while (foldI < pathDict.length - 1)
 				{
 					if (folderStuff != "") folderStuff += "/";
 					folderStuff += pathDict[foldI];
-					fl.trace(FLfile.createFolder(path + "/LIBRARY/" + folderStuff));
+					FLfile.createFolder(path + "/LIBRARY/" + folderStuff);
 					
 					foldI++;
 				}
 				
 	
-				fl.trace(FLfile.write(path + "/LIBRARY/" + dictionary[dictIndex - 1] + ".json", closeJson()));
+				FLfile.write(path + "/LIBRARY/" + dictionary[dictIndex - 1] + ".json", closeJson());
 			}
 		}
 	}
@@ -582,7 +566,7 @@ function parseSymbol(symbol)
 		jsonVar(key("duration", "DU"), 1);
 		jsonArray(key("elements", "E"));
 		push('{');
-		pushFrameSpritemap(timeline);
+		pushItemSpritemap(symbol);
 		push('}]}]}]}');
 		return;
 	}
@@ -862,6 +846,9 @@ function parseElements(elements, frameIndex, layerIndex, timeline)
 			case "instance":
 				switch (element.instanceType) {
 					case "symbol":
+					if (bakedFilters && (element.filters != undefined && element.filters.length > 0))
+						parseShape(timeline, layerIndex, frameIndex, [e], true);
+					else
 						parseSymbolInstance(element);
 					break;
 					case "bitmap":
@@ -1168,7 +1155,7 @@ function pushElementSpritemap(timeline, layerIndex, frameIndex, elementIndices)
 				frameElement.matrix = matrixIdent(frameElement.matrix);
 				var roundWidth = Math.round(frameElement.width * resolution);
 				
-				frameElement.width = roundWidth
+				frameElement.width = roundWidth;
 				frameElement.height = Math.round(frameElement.height * resolution);
 				lastWidth = roundWidth;
 			}
@@ -1570,3 +1557,4 @@ function xmlNode(xml)
     
     return obj;
 }
+
