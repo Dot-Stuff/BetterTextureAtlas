@@ -42,6 +42,10 @@ var path = "";
 var instance = null;
 var resScale = 1.0;
 
+
+var profileXML=fl.getDocumentDOM().exportPublishProfileString(); 
+onlyVisibleLayers = profileXML.split("<InvisibleLayer>")[1].charAt(0) == "0";
+
 function _main()
 {
 	
