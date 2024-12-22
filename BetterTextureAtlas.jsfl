@@ -183,6 +183,7 @@ function _main()
 
 _main();
 var SPRITEMAP_ID;
+var TEMP_MERGE;
 var TEMP_SPRITEMAP;
 var TEMP_ITEM;
 var TEMP_TIMELINE;
@@ -196,6 +197,7 @@ var ogSym;
 
 function exportAtlas(exportPath, symbolNames)
 {
+	var MERGE_ID = "__BTA_TEMP_MERGE_";
 	SPRITEMAP_ID = "__BTA_TEMP_SPRITEMAP_";
 	TEMP_SPRITEMAP = SPRITEMAP_ID + "0";
 	frameQueue = [];
@@ -243,8 +245,18 @@ function exportAtlas(exportPath, symbolNames)
 		}
 	}
 
+	if (lib.itemExists(TEMP_SPRITEMAP))
+	{
+		trace("WARNING: removing temp spritemap item");
+		lib.deleteItem(TEMP_SPRITEMAP);
+	}
+
+	lib.addNewItem("graphic", MERGE_ID);
+	TEMP_MERGE = findItem(MERGE_ID);
+
 	lib.addNewItem("graphic", TEMP_SPRITEMAP);
 	TEMP_ITEM = findItem(TEMP_SPRITEMAP);
+	
 	TEMP_TIMELINE = TEMP_ITEM.timeline;
 	TEMP_LAYER = TEMP_TIMELINE.layers[0];
 	TEMP_TIMELINE.removeFrames(0,0);
@@ -320,6 +332,8 @@ function exportAtlas(exportPath, symbolNames)
 
 	if (tmpSymbol)
 		lib.deleteItem(symbol.name);
+
+	lib.deleteItem(MERGE_ID);
 
 	trace("Exported to folder: " + exportPath);
 }
@@ -564,8 +578,7 @@ function parseSymbol(symbol)
 	}
 
 	var l = 0;
-	var ll = layers.length;
-	while (l < ll)
+	while (l < layers.length)
 	{
 		var layer = layers[l];
 		if (layer.visible || !onlyVisibleLayers)
@@ -638,15 +651,10 @@ function parseFrames(frames, layerIndex, timeline)
 	jsonArray(key("Frames", "FR"));
 
 	var f = 0;
-	var fr = frames.length;
-	while (f < fr)
+	while (f < frames.length)
 	{
 		var frame = frames[f];
-		var pushFrame = (f == frame.startFrame);
-
-		if (frame.tweenType != "none")
-		{
-		}
+		var pushFrame = (f === frame.startFrame);
 
 		if (pushFrame)
 		{
@@ -1063,21 +1071,45 @@ function parseAtlasInstance(matrix, name)
 
 function pushFrameSpritemap(timeline, frameIndex)
 {
-	timeline.setSelectedLayers(0, true);
-	timeline.copyFrames(frameIndex, frameIndex);
-	TEMP_TIMELINE.pasteFrames(smIndex);
+	var layersLength = timeline.layers.length;
+	if (layersLength === 1)
+	{
+		timeline.copyFrames(frameIndex, frameIndex);
+		TEMP_TIMELINE.pasteFrames(smIndex);
+	}
+	else
+	{
+		var i = 0;
+		var l = TEMP_MERGE.timeline.layers.length;
+		while (i < l)
+		{
+			TEMP_MERGE.timeline.deleteLayer(0);
+			i++;
+		}
+
+		timeline.copyLayers(0, layersLength - 1);
+		TEMP_MERGE.timeline.pasteLayers(0);
+		TEMP_MERGE.timeline.mergeLayers();
+
+		var layer = TEMP_MERGE.timeline.layers[0];
+		layer.locked = false;
+
+		TEMP_MERGE.timeline.copyFrames(0, 0);
+		TEMP_TIMELINE.pasteFrames(smIndex);
+	}
+
 	frameQueue.push("ELEMENT_" + smIndex);	
 
 	var e = 0;
 	var elements = TEMP_LAYER.frames[smIndex].elements;
 	while (e < elements.length)
 	{
-		var item = elements[e++];
-		item.width = Math.round(item.width * resolution);
-		item.height = Math.round(item.height * resolution);
+		var element = elements[e++];
+		element.scaleX *= resolution;
+		element.scaleY *= resolution;
 	}
 
-	var matrix = {a:resScale, b:0., c:0., d:resScale, tx: 0, ty: 0};
+	var matrix = {a: resScale, b: 0.0, c: 0.0, d: resScale, tx: 0, ty: 0};
 	parseAtlasInstance(matrix, smIndex);
 	smIndex++;
 }
