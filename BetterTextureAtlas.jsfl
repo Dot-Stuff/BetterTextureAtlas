@@ -5,7 +5,6 @@ fl.include = function(file) {
 	eval(FLfile.read(fl.configURI+"Commands/bta_src/"+file+".sjs"));
 }
 
-
 fl.include("SaveData");
 
 ///// CONFIGURATION
@@ -89,8 +88,6 @@ function _main()
 	//fl.runScript(fl.configURI + "Commands/bta_src/save.scr", "setupSaves");
 	SaveData.setupSaves();
 
-	var config = fl.configURI;
-
 	var rawXML = fl.runScript(fl.configURI + "Commands/bta_src/save.scr", "xmlData");
 
 	var xPan = SaveData.openXMLFromString(rawXML);
@@ -103,7 +100,7 @@ function _main()
 	
 	if (xPan.dismiss == "cancel")
 	{
-		fl.trace("Operation cancelled");
+		trace("Operation cancelled");
 		return;
 	}
 
@@ -135,11 +132,11 @@ function _main()
 	flatten = xPan.FlatSke;
 	AllRot = xPan.Rotate;
 
-	var dataAdd = FLfile.read(fl.configURI + "Commands/bta_src/saveADDBTA.txt");
-	inlineSym = dataAdd[0];
-	bakeTexts = dataAdd[1];
-	includeSnd = dataAdd[2];
-	bakeOneFR = dataAdd[3];
+	var dataAdd = FLfile.read(fl.configURI + "Commands/bta_src/saveADDBTA.txt").split("\n");
+	inlineSym = dataAdd[0] == "true";
+	bakeTexts = dataAdd[1] == "true";
+	includeSnd = dataAdd[2] == "true";
+	bakeOneFR = dataAdd[3] == "true";
 	
 	var fileuri = xPan.saveBox;
 	if (doc.path != null)
@@ -180,7 +177,7 @@ function _main()
 
 	doc.getTimeline().currentFrame = curFr;
 
-	fl.trace("DONE");
+	trace("DONE");
 	fl.showIdleMessage(true);
 }
 
@@ -324,7 +321,7 @@ function exportAtlas(exportPath, symbolNames)
 	if (tmpSymbol)
 		lib.deleteItem(symbol.name);
 
-	fl.trace("Exported to folder: " + exportPath);
+	trace("Exported to folder: " + exportPath);
 }
 
 var spritemaps;
@@ -560,18 +557,9 @@ function parseSymbol(symbol)
 	jsonArray(key("LAYERS", "L"));
 
 	// TODO: rework this into bake shape layers
-	if (bakeOneFR && symbol != ogSym && timeline.frameCount == 1)
+	if (bakeOneFR && timeline.frameCount == 1)
 	{
-		push('{');
-		jsonStr(key("Layer_name", "LN"), "Layer 1");
-		jsonArray(key("Frames", "FR"));
-		push('{');
-		jsonVar(key("index", "I"), 0);
-		jsonVar(key("duration", "DU"), 1);
-		jsonArray(key("elements", "E"));
-		push('{');
-		pushItemSpritemap(symbol);
-		push('}]}]}]}');
+		parseOneFrame(symbol);
 		return;
 	}
 
@@ -630,6 +618,23 @@ function parseSymbol(symbol)
 
 	removeTrail(1);
 	push(']}');
+}
+
+function parseOneFrame(symbol) {
+	push('{');
+	jsonStr(key("Layer_name", "LN"), "Layer 1");
+	jsonArray(key("Frames", "FR"));
+	push('{');
+	jsonVar(key("index", "I"), 0);
+	jsonVar(key("duration", "DU"), 1);
+	jsonArray(key("elements", "E"));
+	push('{');
+	
+	// TODO: fix this shit
+	//var index = pushItemSpritemap(symbol);
+	//parseShape(TEMP_TIMELINE, 0, index, [0], true);
+	
+	push('}]}]}]}');
 }
 
 function parseFrames(frames, layerIndex, timeline)
@@ -815,10 +820,9 @@ function parseElements(elements, frameIndex, layerIndex, timeline)
 	jsonArray(key("elements", "E"));
 
 	var e = 0;
-	var el = elements.length;
 	var shapeQueue = [];
 
-	while (e < el)
+	while (e < elements.length)
 	{
 		var element = elements[e];
 		var elementType = element.elementType;
@@ -870,8 +874,7 @@ function parseElements(elements, frameIndex, layerIndex, timeline)
 				{
 					case "static": // TODO: add missing text types
 					case "dynamic": 
-					case "input": 
-						fl.trace(element.useDeviceFonts);
+					case "input":
 						if (!element.useDeviceFonts || bakeTexts)
 							parseShape(timeline, layerIndex, frameIndex, [e], false);
 						else
@@ -1009,72 +1012,49 @@ function parseBitmapInstance(bitmap)
 function parseShape(timeline, layerIndex, frameIndex, elementIndices, checkMatrix)
 {
 	var shapes = pushElementSpritemap(timeline, layerIndex, frameIndex, elementIndices);
-	var shape = shapes[0];
 	var mtx;
-	
-	
 
 	if (checkMatrix)
 	{
-		var minX = shape.x;
-		var minY = shape.y;
-		var maxX = shape.width;
-		var maxY = shape.height;
-		
+		var minX, minY = Number.POSITIVE_INFINITY;
+		var maxX, maxY = Number.NEGATIVE_INFINITY;
 
-		var s = 1;
+		var s = 0;
 		while (s < shapes.length)
 		{
-			var shape = shapes[s];
-			minX = Math.min(minX, shape.x);
-        	minY = Math.min(minY, shape.y);
-        	maxX = Math.max(maxX, shape.width);
-        	maxY = Math.max(maxY, shape.height);
-			s++;
+			var shape = shapes[s++];
+			var minVertX, minVertY = Number.POSITIVE_INFINITY;
+			var maxVertX, maxVertY = Number.NEGATIVE_INFINITY;
+
+			var v = 0; // Get shape dimensions based on vertices because animate kinda sucks
+			while (v < shape.vertices.length)
+			{
+				var vert = shape.vertices[v++];				
+				minVertX = min(minVertX, vert.x);
+				minVertY = min(minVertY, vert.y);
+				maxVertX = max(maxVertX, vert.x);
+				maxVertY = max(maxVertY, vert.y);
+			}
+
+			minX = min(minX, shape.x);
+			minY = min(minY, shape.y);
+			maxX = max(maxX, maxVertX - minVertX);
+			maxY = max(maxY, maxVertY - minVertY);
 		}
 		
-
-		var transformingX = (minX - (rShape(maxX * 0.5)));
-		var transformingY = (minY - (rShape(maxY * 0.5)));
-		
-		// var tx = Math.round();
+		var transformingX = rValue(minX - (maxX * 0.5));
+		var transformingY = rValue(minY - (maxY * 0.5));
 
 		mtx = {a: resScale, b: 0, c: 0, d: resScale, tx: transformingX, ty: transformingY}
 	}
 	else
 	{
-		mtx = cloneMatrix(shape.matrix);
+		mtx = cloneMatrix(shapes[0].matrix);
 		mtx.a *= resScale;
 		mtx.d *= resScale;
 	}
 
 	parseAtlasInstance(mtx, smIndex - 1);
-}
-
-function rShape(value)
-{
-	var v = value.toFixed(3);
-
-	if (Math.floor(v) == v)
-		return v;
-	
-	v *= 10;
-	
-	var tV = Math.floor(v);
-
-	v -= tV;
-	
-	var r = Math.round(v);
-	if (r == 0)
-		v = 0;
-	if (v == 1)
-		v = 0.5;
-
-	v *= 0.1;
-	v += tV * 0.1;
-
-	return v.toFixed(3);
-
 }
 
 function parseAtlasInstance(matrix, name)
@@ -1151,8 +1131,7 @@ function pushElementSpritemap(timeline, layerIndex, frameIndex, elementIndices)
 				shapes.push({
 					x: frameElement.x,
 					y: frameElement.y,
-					width: frameElement.width,
-					height: frameElement.height,
+					vertices: frameElement.vertices,
 					matrix: frameElement.matrix
 				});
 
@@ -1463,7 +1442,7 @@ function findItem(name) {
 	if (lib.itemExists(name))
 		return lib.items[lib.findItemIndex(name)];
 
-	fl.trace("Item not found: " + name);
+	trace("Item not found: " + name);
 	return null;
 }
 
@@ -1479,18 +1458,35 @@ function measure(func)
 {
 	var last = Date.now();
 	func();
-	fl.trace("" + (Date.now() - last) + "ms");
+	trace("" + (Date.now() - last) + "ms");
 }
 
 function traceFields(value)
 {
 	for (var field in value)
-		fl.trace(field + ": " + value[field]);
+		trace(field + ": " + value[field]);
+}
+
+function trace(msg) {
+	fl.trace(String(msg));
 }
 
 function isArray(value)
 {
 	return value.push != undefined;
+}
+
+function rValue(value) {
+	return parseFloat(value.toFixed(3));
+}
+
+// I have no idea why jsfl corrupts Math.min and Math.max, sooooo yeah
+function min(a, b) {
+	return (a < b) ? a : b;
+}
+
+function max(a, b) {
+	return (a > b) ? a : b;
 }
 
 var lastJson = undefined;
