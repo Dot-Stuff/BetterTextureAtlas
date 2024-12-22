@@ -559,7 +559,7 @@ function parseSymbol(symbol)
 	// TODO: rework this into bake shape layers
 	if (bakeOneFR && timeline.frameCount == 1)
 	{
-		parseOneFrame(symbol);
+		bakeOneFrame(symbol);
 		return;
 	}
 
@@ -620,7 +620,7 @@ function parseSymbol(symbol)
 	push(']}');
 }
 
-function parseOneFrame(symbol) {
+function bakeOneFrame(symbol) {
 	push('{');
 	jsonStr(key("Layer_name", "LN"), "Layer 1");
 	jsonArray(key("Frames", "FR"));
@@ -629,11 +629,7 @@ function parseOneFrame(symbol) {
 	jsonVar(key("duration", "DU"), 1);
 	jsonArray(key("elements", "E"));
 	push('{');
-	
-	// TODO: fix this shit
-	//var index = pushItemSpritemap(symbol);
-	//parseShape(TEMP_TIMELINE, 0, index, [0], true);
-	
+	pushFrameSpritemap(symbol.timeline, 0);
 	push('}]}]}]}');
 }
 
@@ -1065,10 +1061,10 @@ function parseAtlasInstance(matrix, name)
 	push('}');
 }
 
-function pushFrameSpritemap(timeline)
+function pushFrameSpritemap(timeline, frameIndex)
 {
 	timeline.setSelectedLayers(0, true);
-	timeline.copyFrames(0, 0);
+	timeline.copyFrames(frameIndex, frameIndex);
 	TEMP_TIMELINE.pasteFrames(smIndex);
 	frameQueue.push("ELEMENT_" + smIndex);	
 
