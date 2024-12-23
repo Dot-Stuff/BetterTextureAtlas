@@ -588,7 +588,7 @@ function parseSymbol(symbol)
 	jsonArray(key("LAYERS", "L"));
 
 	// TODO: rework this into bake shape layers
-	if (bakeOneFR && timeline.frameCount == 1)
+	if (bakeOneFR && timeline.frameCount == 1 && timeline.layers.length > 1)
 	{
 		bakeOneFrame(symbol);
 		return;
