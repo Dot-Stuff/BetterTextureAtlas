@@ -1057,10 +1057,10 @@ function parseShape(timeline, layerIndex, frameIndex, elementIndices, checkMatri
 				maxVertY = max(maxVertY, vert.y);
 			}
 
-			minX = min(minX, shape.x);
-			minY = min(minY, shape.y);
-			maxX = max(maxX, maxVertX - minVertX);
-			maxY = max(maxY, maxVertY - minVertY);
+			minX = min(minX, shape.x + (minVertX / 2));
+			minY = min(minY, shape.y + (minVertY / 2));
+			maxX = max(maxX, maxVertX);
+			maxY = max(maxY, maxVertY);
 		}
 		
 		var transformingX = rValue(minX - (maxX * 0.5));
@@ -1191,6 +1191,8 @@ function pushElementSpritemap(timeline, layerIndex, frameIndex, elementIndices)
 				shapes.push({
 					x: frameElement.x,
 					y: frameElement.y,
+					//width: frameElement.width,
+					//height: frameElement.height,
 					vertices: frameElement.vertices,
 					matrix: frameElement.matrix
 				});
