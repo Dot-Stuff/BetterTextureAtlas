@@ -245,17 +245,8 @@ function exportAtlas(exportPath, symbolNames)
 		}
 	}
 
-	if (lib.itemExists(TEMP_SPRITEMAP))
-	{
-		trace("WARNING: removing temp spritemap item");
-		lib.deleteItem(TEMP_SPRITEMAP);
-	}
-
-	lib.addNewItem("graphic", MERGE_ID);
-	TEMP_MERGE = findItem(MERGE_ID);
-
-	lib.addNewItem("graphic", TEMP_SPRITEMAP);
-	TEMP_ITEM = findItem(TEMP_SPRITEMAP);
+	TEMP_ITEM = initBtaItem(TEMP_SPRITEMAP)
+	TEMP_MERGE = initBtaItem(MERGE_ID)
 	
 	TEMP_TIMELINE = TEMP_ITEM.timeline;
 	TEMP_LAYER = TEMP_TIMELINE.layers[0];
@@ -272,33 +263,47 @@ function exportAtlas(exportPath, symbolNames)
 	var editedQueue = false;
 	var pos = {x:0, y:0};
 
+	var initEdit = function () {
+		if (editedQueue) return;
+		editedQueue = true;
+		lib.editItem(TEMP_SPRITEMAP);
+	}
+
 	var i = 0;
 	while (i < frameQueue.length)
 	{
 		var queuedFrame = frameQueue[i].split("_");
 		var type = queuedFrame.shift();
-		var id = queuedFrame.join("");
 
-		if (type == "ITEM") // Push the item frame
+		switch (type)
 		{
-			if (!editedQueue)
-			{
-				editedQueue = true;
-				lib.editItem(TEMP_SPRITEMAP);
-			}
+			case "ITEM":
+				var id = queuedFrame.join("");
 
-			TEMP_TIMELINE.currentFrame = i;
-			lib.addItemToDocument(pos, id);
+				initEdit();
+				TEMP_TIMELINE.currentFrame = i;
+				lib.addItemToDocument(pos, id);
 			
-			// TODO: only do resolution < 1 if its a bitmap item
-			if (resolution < 1) {
+				// TODO: only do resolution < 1 if its a bitmap item
+				if (resolution < 1) {
+					var item = TEMP_LAYER.frames[i].elements[0];
+					item.scaleX = item.scaleY = resolution;
+				}
+			break;
+			case "MERGE":
+				var index = parseInt(queuedFrame[0]);
+				var mergeIndex = parseInt(queuedFrame[1]);
+
+				initEdit();
+				TEMP_TIMELINE.currentFrame = index;
+				lib.addItemToDocument(pos, MERGE_ID);
+
 				var item = TEMP_LAYER.frames[i].elements[0];
 				item.scaleX = item.scaleY = resolution;
-			}
-		}
-		else // TODO: do some lines to fills crap here for changing resolutions
-		{
-
+				item.firstFrame = mergeIndex;
+			break;
+			case "ELEMENT": // TODO: do some lines to fills crap here for changing resolutions
+			break;
 		}
 
 		i++;
@@ -336,6 +341,18 @@ function exportAtlas(exportPath, symbolNames)
 	lib.deleteItem(MERGE_ID);
 
 	trace("Exported to folder: " + exportPath);
+}
+
+function initBtaItem(ID)
+{
+	if (lib.itemExists(ID))
+	{
+		trace("WARNING: removing " + ID + " item");
+		lib.deleteItem(ID);
+	}
+
+	lib.addNewItem("graphic", ID);
+	return findItem(ID);
 }
 
 var spritemaps;
@@ -1076,42 +1093,57 @@ function pushFrameSpritemap(timeline, frameIndex)
 	{
 		timeline.copyFrames(frameIndex, frameIndex);
 		TEMP_TIMELINE.pasteFrames(smIndex);
+		scaleElements(TEMP_LAYER.frames[smIndex]);
+		frameQueue.push("ELEMENT_" + smIndex);
 	}
 	else
 	{
+		// This would be a lot easier with mergeLayers()
+		// But we cant use that because its an Animate 2020 function
+		// Sooooo yeah, bullshit incoming
+		var mergeTimeline = TEMP_MERGE.timeline;
+		timeline.copyLayers(0, layersLength - 1);
+		mergeTimeline.pasteLayers(0);
+
+		var newLength = mergeTimeline.layers.length;
+		var newIndex = mergeTimeline.frameCount - 1;
+
 		var i = 0;
-		var l = TEMP_MERGE.timeline.layers.length;
-		while (i < l)
+		while (i < newLength)
 		{
-			TEMP_MERGE.timeline.deleteLayer(0);
+			// Insert keyframes on the old layers
+			mergeTimeline.layers[i].locked = false;
+			mergeTimeline.setSelectedLayers(i, true);
+			mergeTimeline.insertBlankKeyframe(newIndex);
+
+			// Offset the new copied layers
+			if (i < layersLength) {
+				mergeTimeline.insertBlankKeyframe(0);
+				mergeTimeline.cutFrames(0, 0);
+				mergeTimeline.pasteFrames(newIndex);
+			}
+			
 			i++;
 		}
 
-		timeline.copyLayers(0, layersLength - 1);
-		TEMP_MERGE.timeline.pasteLayers(0);
-		TEMP_MERGE.timeline.mergeLayers();
-
-		var layer = TEMP_MERGE.timeline.layers[0];
-		layer.locked = false;
-
-		TEMP_MERGE.timeline.copyFrames(0, 0);
-		TEMP_TIMELINE.pasteFrames(smIndex);
+		TEMP_TIMELINE.insertBlankKeyframe(smIndex);
+		frameQueue.push("MERGE_" + smIndex + "_" + newIndex);	
 	}
 
-	frameQueue.push("ELEMENT_" + smIndex);	
+	var matrix = {a: resScale, b: 0.0, c: 0.0, d: resScale, tx: 0, ty: 0};
+	parseAtlasInstance(matrix, smIndex);
+	smIndex++;
+}
 
+function scaleElements(frame) {
 	var e = 0;
-	var elements = TEMP_LAYER.frames[smIndex].elements;
+	var elements = frame.elements;
 	while (e < elements.length)
 	{
 		var element = elements[e++];
 		element.scaleX *= resolution;
 		element.scaleY *= resolution;
 	}
-
-	var matrix = {a: resScale, b: 0.0, c: 0.0, d: resScale, tx: 0, ty: 0};
-	parseAtlasInstance(matrix, smIndex);
-	smIndex++;
 }
 
 function pushItemSpritemap(item)
@@ -1545,8 +1577,7 @@ function removeTrail(trail)
 
 function xmlToObject(__xml)
 {
-    var rawXML = String(__xml);
-    var xmlData = new XML(rawXML);
+    var xmlData = new XML(String(__xml));
     return xmlNode(xmlData);
 }
 
