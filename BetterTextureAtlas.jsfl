@@ -94,7 +94,7 @@ function _main()
 
 	if (xPan == null)
 	{
-		alert("Failed loading XML Panel");
+		alert("ERROR: Failed loading XML Panel");
 		return;
 	}
 	
@@ -176,6 +176,9 @@ function _main()
 	}
 
 	doc.getTimeline().currentFrame = curFr;
+
+	if (resizedContain)
+		trace("WARNING: some shapes were resized to fit within the 8192 size limit");
 
 	trace("DONE");
 	fl.showIdleMessage(true);
@@ -260,14 +263,8 @@ function exportAtlas(exportPath, symbolNames)
 	FLfile.write(path + "/Animation.json", generateAnimation(symbol));
 
 	// Add items and fix resolutions
-	var editedQueue = false;
 	var pos = {x:0, y:0};
-
-	var initEdit = function () {
-		if (editedQueue) return;
-		editedQueue = true;
-		lib.editItem(TEMP_SPRITEMAP);
-	}
+	lib.editItem(TEMP_SPRITEMAP);
 
 	var i = 0;
 	while (i < frameQueue.length)
@@ -279,8 +276,6 @@ function exportAtlas(exportPath, symbolNames)
 		{
 			case "ITEM":
 				var id = queuedFrame.join("");
-
-				initEdit();
 				TEMP_TIMELINE.currentFrame = i;
 				lib.addItemToDocument(pos, id);
 			
@@ -294,7 +289,6 @@ function exportAtlas(exportPath, symbolNames)
 				var index = parseInt(queuedFrame[0]);
 				var mergeIndex = parseInt(queuedFrame[1]);
 
-				initEdit();
 				TEMP_TIMELINE.currentFrame = index;
 				lib.addItemToDocument(pos, MERGE_ID);
 
@@ -303,14 +297,46 @@ function exportAtlas(exportPath, symbolNames)
 				item.firstFrame = mergeIndex;
 			break;
 			case "ELEMENT": // TODO: do some lines to fills crap here for changing resolutions
+				var frameIndex = parseInt(queuedFrame[0]);
+				var frame = TEMP_TIMELINE.layers[0].frames[frameIndex];
+
+				var elemIndices = queuedFrame[1].replace("[","").replace("]","").split(",");
+				var selection = new Array();
+
+				var e = 0;
+				var elements = frame.elements;
+				while (e < elements.length)
+				{
+					var element = elements[e];
+					var exportElem = elemIndices.indexOf(String(e)) !== -1;
+
+					if (exportElem)
+					{
+						element.width *= resolution;
+						element.height *= resolution;
+					}
+					else
+					{
+						selection[selection.length] = element;
+					}
+
+					e++;
+				}
+
+				if (selection.length > 0) {
+					TEMP_TIMELINE.currentFrame = frameIndex;
+					doc.selection = selection;
+					doc.deleteSelection();
+				}
+
 			break;
 		}
 
 		i++;
 	}
 
-	if (editedQueue)
-		doc.exitEditMode();
+	doc.selectNone();
+	doc.exitEditMode();
 
 	//});
 
@@ -362,6 +388,12 @@ function divideSpritemap(smData, symbol)
 	var parent = smData.sm;
 	var framesLength = symbol.timeline.layers[0].frames.length;
 	var cutFrames = Math.floor(framesLength * 0.5);
+
+	if (framesLength === 1)
+	{
+		alert("ERROR: a shape couldnt fit inside the spritemap");
+		return;
+	}
 
 	var nextSmID = SPRITEMAP_ID + spritemaps.length;
 	lib.addNewItem("graphic", nextSmID);
@@ -1032,9 +1064,9 @@ function parseBitmapInstance(bitmap)
 
 function parseShape(timeline, layerIndex, frameIndex, elementIndices, checkMatrix)
 {
-	var shapes = pushElementSpritemap(timeline, layerIndex, frameIndex, elementIndices);
+	var shapes = pushElementSpritemap(timeline, layerIndex, frameIndex, elementIndices);	
 	var mtx;
-
+	
 	if (checkMatrix)
 	{
 		var minX, minY = Number.POSITIVE_INFINITY;
@@ -1044,6 +1076,7 @@ function parseShape(timeline, layerIndex, frameIndex, elementIndices, checkMatri
 		while (s < shapes.length)
 		{
 			var shape = shapes[s++];
+
 			var minVertX, minVertY = Number.POSITIVE_INFINITY;
 			var maxVertX, maxVertY = Number.NEGATIVE_INFINITY;
 
@@ -1065,17 +1098,30 @@ function parseShape(timeline, layerIndex, frameIndex, elementIndices, checkMatri
 		
 		var transformingX = rValue(minX - (maxX * 0.5));
 		var transformingY = rValue(minY - (maxY * 0.5));
-
+		
 		mtx = {a: resScale, b: 0, c: 0, d: resScale, tx: transformingX, ty: transformingY}
 	}
 	else
 	{
-		mtx = cloneMatrix(shapes[0].matrix);
-		mtx.a *= resScale;
-		mtx.d *= resScale;
+		var shape = shapes[0];
+		mtx = cloneMatrix(shape.matrix);
 	}
 
 	parseAtlasInstance(mtx, smIndex - 1);
+}
+
+var resizedContain = false;
+
+// TODO: add this crap
+function getContainScale(width, height)
+{
+	var maxSize = max(width, height);
+	if (maxSize > 8192)
+	{
+		resizedContain = true;
+		return (8192 / maxSize) / 1.01; // pixel rounding crap
+	}
+	return 1.0;
 }
 
 function parseAtlasInstance(matrix, name)
@@ -1093,8 +1139,7 @@ function pushFrameSpritemap(timeline, frameIndex)
 	{
 		timeline.copyFrames(frameIndex, frameIndex);
 		TEMP_TIMELINE.pasteFrames(smIndex);
-		scaleElements(TEMP_LAYER.frames[smIndex]);
-		frameQueue.push("ELEMENT_" + smIndex);
+		pushElement([]);
 	}
 	else
 	{
@@ -1135,17 +1180,6 @@ function pushFrameSpritemap(timeline, frameIndex)
 	smIndex++;
 }
 
-function scaleElements(frame) {
-	var e = 0;
-	var elements = frame.elements;
-	while (e < elements.length)
-	{
-		var element = elements[e++];
-		element.scaleX *= resolution;
-		element.scaleY *= resolution;
-	}
-}
-
 function pushItemSpritemap(item)
 {
 	var name = "ITEM_" + item.name;
@@ -1168,12 +1202,11 @@ function pushElementSpritemap(timeline, layerIndex, frameIndex, elementIndices)
 	TEMP_TIMELINE.pasteFrames(smIndex);
 
 	var frameElements = TEMP_LAYER.frames[smIndex].elements;
-	var shape = frameElements[elementIndices[0]];
 	var shapes = [];
 
 	var e = 0;
 	var ei = 0;
-	var lastWidth = -1;
+	var lastWidth, lastHeight = Number.NEGATIVE_INFINITY;
 
 	while (e < frameElements.length)
 	{
@@ -1182,43 +1215,38 @@ function pushElementSpritemap(timeline, layerIndex, frameIndex, elementIndices)
 		if (elementIndices[ei] == e) // Add the actual parts of the array
 		{
 			ei++;
-
-			// TODO: move this to the frameQueue and fix the resolution lines bug
-			// Gotta check because its both the same shape instance but also not?? Really weird shit
-			if (Math.round(frameElement.width * resolution) != lastWidth)
+			
+			var elemWidth = Math.round(frameElement.width);
+			var elemHeight = Math.round(frameElement.height);
+			
+			// Checking because its both the same shape instance but also not?? Really weird shit
+			if (elemWidth != lastWidth && elemHeight != lastHeight)
 			{
 				// Gotta do this because jsfl scripts cant keep track well of instances data and will randomly corrupt values
 				shapes.push({
 					x: frameElement.x,
 					y: frameElement.y,
-					//width: frameElement.width,
-					//height: frameElement.height,
 					vertices: frameElement.vertices,
 					matrix: frameElement.matrix
 				});
 
-				frameElement.matrix = matrixIdent(frameElement.matrix);
-				var roundWidth = Math.round(frameElement.width * resolution);
-				
-				frameElement.width = roundWidth;
-				frameElement.height = Math.round(frameElement.height * resolution);
-				lastWidth = roundWidth;
+				lastWidth = elemWidth;
+				lastHeight = elemHeight;
 			}
-		}
-		else // Remove other crap from the frame
-		{
-			frameElement.width = frameElement.height = 0;
-			frameElement.x = Math.round(shape.x);
-			frameElement.y = Math.round(shape.y);
 		}
 
 		e++;
 	}
 
-	frameQueue.push("ELEMENT_" + smIndex);
+	pushElement(elementIndices);
 	smIndex++;
 
 	return shapes;
+}
+
+function pushElement(elemIndices)
+{
+	frameQueue.push("ELEMENT_" + smIndex + "_" + String(elemIndices));
 }
 
 function parseSymbolInstance(instance)
