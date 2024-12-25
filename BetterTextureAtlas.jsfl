@@ -203,10 +203,12 @@ function exportAtlas(exportPath, symbolNames)
 	var MERGE_ID = "__BTA_TEMP_MERGE_";
 	SPRITEMAP_ID = "__BTA_TEMP_SPRITEMAP_";
 	TEMP_SPRITEMAP = SPRITEMAP_ID + "0";
+
 	frameQueue = [];
-	smIndex = 0;
+	cachedMatrices = [];
 
 	dictionary = [];
+	smIndex = 0;
 
 	var tmpSymbol = false;
 	var symbol;
@@ -247,10 +249,10 @@ function exportAtlas(exportPath, symbolNames)
 				symbol.timeline.insertBlankKeyframe(startIndex);
 		}
 	}
-
-	TEMP_ITEM = initBtaItem(TEMP_SPRITEMAP)
-	TEMP_MERGE = initBtaItem(MERGE_ID)
 	
+	TEMP_MERGE = initBtaItem(MERGE_ID);
+	TEMP_ITEM = initBtaItem(TEMP_SPRITEMAP);
+
 	TEMP_TIMELINE = TEMP_ITEM.timeline;
 	TEMP_LAYER = TEMP_TIMELINE.layers[0];
 	TEMP_TIMELINE.removeFrames(0,0);
@@ -266,11 +268,17 @@ function exportAtlas(exportPath, symbolNames)
 	var pos = {x:0, y:0};
 	lib.editItem(TEMP_SPRITEMAP);
 
+	var reverseScale = function (element, mat) {
+		element.scaleX *= (1 / mat.a);
+		element.scaleY *= (1 / mat.d);
+	}
+
 	var i = 0;
 	while (i < frameQueue.length)
 	{
 		var queuedFrame = frameQueue[i].split("_");
 		var type = queuedFrame.shift();
+		var matrix = cachedMatrices[i];
 
 		switch (type)
 		{
@@ -278,29 +286,25 @@ function exportAtlas(exportPath, symbolNames)
 				var id = queuedFrame.join("");
 				TEMP_TIMELINE.currentFrame = i;
 				lib.addItemToDocument(pos, id);
-			
-				// TODO: only do resolution < 1 if its a bitmap item
-				if (resolution < 1) {
-					var item = TEMP_LAYER.frames[i].elements[0];
-					item.scaleX = item.scaleY = resolution;
-				}
+
+				var item = TEMP_LAYER.frames[i].elements[0];
+				reverseScale(item, matrix);
 			break;
 			case "MERGE":
-				var index = parseInt(queuedFrame[0]);
-				var mergeIndex = parseInt(queuedFrame[1]);
-
-				TEMP_TIMELINE.currentFrame = index;
+				TEMP_TIMELINE.currentFrame = i;
 				lib.addItemToDocument(pos, MERGE_ID);
 
 				var item = TEMP_LAYER.frames[i].elements[0];
-				item.scaleX = item.scaleY = resolution;
+				reverseScale(item, matrix);
+				
+				var mergeIndex = parseInt(queuedFrame[0]);
 				item.firstFrame = mergeIndex;
 			break;
 			case "ELEMENT": // TODO: do some lines to fills crap here for changing resolutions
-				var frameIndex = parseInt(queuedFrame[0]);
-				var frame = TEMP_TIMELINE.layers[0].frames[frameIndex];
+				var matrix = cachedMatrices[i];
+				var frame = TEMP_LAYER.frames[i];
 
-				var elemIndices = queuedFrame[1].replace("[","").replace("]","").split(",");
+				var elemIndices = queuedFrame[0].replace("[","").replace("]","").split(",");
 				var selection = new Array();
 
 				var e = 0;
@@ -312,8 +316,7 @@ function exportAtlas(exportPath, symbolNames)
 
 					if (exportElem)
 					{
-						element.width *= resolution;
-						element.height *= resolution;
+						reverseScale(element, matrix);
 					}
 					else
 					{
@@ -324,7 +327,7 @@ function exportAtlas(exportPath, symbolNames)
 				}
 
 				if (selection.length > 0) {
-					TEMP_TIMELINE.currentFrame = frameIndex;
+					TEMP_TIMELINE.currentFrame = i;
 					doc.selection = selection;
 					doc.deleteSelection();
 				}
@@ -541,6 +544,9 @@ function generateAnimation(symbol)
 			while (dictIndex < dictionary.length)
 			{
 				var symbol = findItem(dictionary[dictIndex++]);
+				if (symbol.name == ogSym.name)
+					continue;
+				
 				push('{\n');
 				jsonStr(key("SYMBOL_name", "SN"), symbol.name);
 				jsonHeader(key("TIMELINE", "TL"));
@@ -620,7 +626,7 @@ function parseSymbol(symbol)
 	jsonArray(key("LAYERS", "L"));
 
 	// TODO: rework this into bake shape layers
-	if (bakeOneFR && timeline.frameCount == 1 && timeline.layers.length > 1)
+	if (bakeOneFR && (timeline.frameCount == 1) && (timeline.layers.length > 1))
 	{
 		bakeOneFrame(symbol);
 		return;
@@ -1048,15 +1054,18 @@ function parseTextInstance(text)
 	push("}\n");
 }
 
+var cachedMatrices;
+
 function parseBitmapInstance(bitmap)
 {
-	var m = bitmap.matrix;
-	var matrix = {a:m.a, b:m.b, c:m.c, d:m.d, tx:m.tx, ty:m.ty};
+	var matrix = cloneMatrix(bitmap.matrix);
+	var scale = getMatrixScale(0,0); // TODO
 
-	if (resolution < 1) {
-		matrix.a *= resScale;
-		matrix.d *= resScale;
-	}
+	if (resolution > 1)
+		scale /= resolution;
+
+	matrix.a *= scale;
+	matrix.d *= scale;
 
 	var itemIndex = pushItemSpritemap(bitmap.libraryItem);
 	parseAtlasInstance(matrix, itemIndex);
@@ -1098,8 +1107,9 @@ function parseShape(timeline, layerIndex, frameIndex, elementIndices, checkMatri
 		
 		var transformingX = rValue(minX - (maxX * 0.5));
 		var transformingY = rValue(minY - (maxY * 0.5));
-		
-		mtx = {a: resScale, b: 0, c: 0, d: resScale, tx: transformingX, ty: transformingY}
+
+		var scale = getMatrixScale(maxX, maxY);
+		mtx = {a: scale, b: 0, c: 0, d: scale, tx: transformingX, ty: transformingY}
 	}
 	else
 	{
@@ -1112,23 +1122,26 @@ function parseShape(timeline, layerIndex, frameIndex, elementIndices, checkMatri
 
 var resizedContain = false;
 
-// TODO: add this crap
-function getContainScale(width, height)
+function getMatrixScale(width, height)
 {
-	var maxSize = max(width, height);
+	var maxSize = max(width * resolution, height * resolution);
+	var mxScale = resScale;
+	
 	if (maxSize > 8192)
 	{
 		resizedContain = true;
-		return (8192 / maxSize) / 1.01; // pixel rounding crap
+		mxScale = 1.0 / (((8192 / maxSize) / 1.01) * resolution); // pixel rounding crap
 	}
-	return 1.0;
+	
+	return rValue(mxScale);
 }
 
-function parseAtlasInstance(matrix, name)
+function parseAtlasInstance(matrix, index)
 {
+	cachedMatrices[index] = matrix;
 	jsonHeader(key("ATLAS_SPRITE_instance", "ASI"));
 	jsonVar(key("Matrix", "MX"), parseMatrix(matrix));
-	jsonStrEnd(key("name", "N"), name);
+	jsonStrEnd(key("name", "N"), index);
 	push('}');
 }
 
@@ -1172,10 +1185,11 @@ function pushFrameSpritemap(timeline, frameIndex)
 		}
 
 		TEMP_TIMELINE.insertBlankKeyframe(smIndex);
-		frameQueue.push("MERGE_" + smIndex + "_" + newIndex);	
+		frameQueue.push("MERGE_" + newIndex);	
 	}
 
-	var matrix = {a: resScale, b: 0.0, c: 0.0, d: resScale, tx: 0, ty: 0};
+	var scale = getMatrixScale(0,0); // TODO
+	var matrix = {a: scale, b: 0.0, c: 0.0, d: scale, tx: 0, ty: 0};
 	parseAtlasInstance(matrix, smIndex);
 	smIndex++;
 }
@@ -1246,7 +1260,7 @@ function pushElementSpritemap(timeline, layerIndex, frameIndex, elementIndices)
 
 function pushElement(elemIndices)
 {
-	frameQueue.push("ELEMENT_" + smIndex + "_" + String(elemIndices));
+	frameQueue.push("ELEMENT_" + String(elemIndices));
 }
 
 function parseSymbolInstance(instance)
@@ -1443,13 +1457,6 @@ function parseSymbolInstance(instance)
 	push('}');
 }
 
-function matrixIdent(mat)
-{
-	mat.a = mat.d = 1;
-	mat.b = mat.c = mat.tx = mat.ty = 0;
-	return mat;
-}
-
 function cloneMatrix(mat)
 {
 	return {a: mat.a, b: mat.b, c: mat.c, d: mat.d, tx: mat.tx, ty: mat.ty}
@@ -1567,7 +1574,7 @@ function isArray(value)
 }
 
 function rValue(value) {
-	return parseFloat(value.toFixed(3));
+	return parseFloat(value.toFixed(4));
 }
 
 // I have no idea why jsfl corrupts Math.min and Math.max, sooooo yeah
