@@ -1105,8 +1105,8 @@ function parseShape(timeline, layerIndex, frameIndex, elementIndices, checkMatri
 			maxY = max(maxY, maxVertY);
 		}
 		
-		var transformingX = rValue(minX - (maxX * 0.5));
-		var transformingY = rValue(minY - (maxY * 0.5));
+		var transformingX = (minX - (maxX * 0.5));
+		var transformingY = (minY - (maxY * 0.5));
 
 		var scale = getMatrixScale(maxX, maxY);
 		mtx = {a: scale, b: 0, c: 0, d: scale, tx: transformingX, ty: transformingY}
@@ -1133,7 +1133,7 @@ function getMatrixScale(width, height)
 		mxScale = 1.0 / (((8192 / maxSize) / 1.01) * resolution); // pixel rounding crap
 	}
 	
-	return rValue(mxScale);
+	return mxScale;
 }
 
 function parseAtlasInstance(matrix, index)
@@ -1464,12 +1464,12 @@ function cloneMatrix(mat)
 
 function parseMatrix(m) {
 	return "[" +
-	m.a + "," +
-	m.b + "," +
-	m.c + "," +
-	m.d + "," +
-	m.tx + "," +
-	m.ty +
+	rValue(m.a) + "," +
+	rValue(m.b) + "," +
+	rValue(m.c) + "," +
+	rValue(m.d) + "," +
+	rValue(m.tx) + "," +
+	rValue(m.ty) +
 	"]";
 }
 
@@ -1574,7 +1574,7 @@ function isArray(value)
 }
 
 function rValue(value) {
-	return parseFloat(value.toFixed(4));
+	return parseFloat(value.toFixed(3));
 }
 
 // I have no idea why jsfl corrupts Math.min and Math.max, sooooo yeah
