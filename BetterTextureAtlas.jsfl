@@ -30,7 +30,7 @@ var inlineSym = false;
 var includeSnd = true;
 
 var bakedFilters = false; // TODO
-var bakedTweens = false; // TODO: add non-baked tweens
+var bakedTweens = false; // TODO
 var bakeOneFR = true;
 var bakeTexts = false;
 /////
@@ -137,6 +137,8 @@ function _main()
 	bakeTexts = dataAdd[1] == "true";
 	includeSnd = dataAdd[2] == "true";
 	bakeOneFR = dataAdd[3] == "true";
+	bakedFilters = dataAdd[4] == "true";
+	bakedTweens = dataAdd[5] == "true";
 	
 	var fileuri = xPan.saveBox;
 	if (doc.path != null)
@@ -913,10 +915,20 @@ function parseElements(elements, frameIndex, layerIndex, timeline)
 			case "instance":
 				switch (element.instanceType) {
 					case "symbol":
-					if (bakedFilters && (element.filters != undefined && element.filters.length > 0))
-						parseShape(timeline, layerIndex, frameIndex, [e], true);
+					
+					var bakeInstance = (bakedFilters && (element.filters != undefined && element.filters.length > 0));
+					if (bakeInstance)
+					{
+						// TODO:
+						// Fix the matrix
+						// Push all frames of the baked element, not only the first one
+						// Convert baked element to a seperate symbol item (so it can get blends, color modes, etc applied)
+						pushElementSpritemap(timeline, layerIndex, frameIndex, e, element.matrix);
+					}
 					else
+					{
 						parseSymbolInstance(element);
+					}
 					break;
 					case "bitmap":
 						parseBitmapInstance(element);
@@ -1073,7 +1085,7 @@ function parseBitmapInstance(bitmap)
 
 function parseShape(timeline, layerIndex, frameIndex, elementIndices, checkMatrix)
 {
-	var shapes = pushElementSpritemap(timeline, layerIndex, frameIndex, elementIndices);	
+	var shapes = pushShapeSpritemap(timeline, layerIndex, frameIndex, elementIndices);	
 	var mtx;
 	
 	if (checkMatrix)
@@ -1145,17 +1157,38 @@ function parseAtlasInstance(matrix, index)
 	push('}');
 }
 
+function pushElementSpritemap(timeline, layerIndex, frameIndex, elementIndex)
+{
+	var lockedLayer = timeline.layers[layerIndex].locked;
+	timeline.setSelectedLayers(layerIndex, true);
+
+	timeline.copyFrames(frameIndex, frameIndex);
+	TEMP_TIMELINE.pasteFrames(smIndex);
+	pushElement([elementIndex]);
+
+	timeline.layers[layerIndex].locked = lockedLayer;
+	var elem = timeline.layers[layerIndex].frames[frameIndex].elements[elementIndex];
+
+	var scale = getMatrixScale(0,0); // TODO
+	var matrix = cloneMatrix(elem.matrix);
+	matrix.a *= scale;
+	matrix.d *= scale;
+
+	parseAtlasInstance(matrix, smIndex);
+	smIndex++;
+}
+
 function pushFrameSpritemap(timeline, frameIndex)
 {
 	var layersLength = timeline.layers.length;
-	if (layersLength === 1)
+	/*if (layersLength === 1)
 	{
 		timeline.copyFrames(frameIndex, frameIndex);
 		TEMP_TIMELINE.pasteFrames(smIndex);
-		pushElement([]);
+		pushElement([0]);
 	}
 	else
-	{
+	{*/
 		// This would be a lot easier with mergeLayers()
 		// But we cant use that because its an Animate 2020 function
 		// Sooooo yeah, bullshit incoming
@@ -1186,7 +1219,7 @@ function pushFrameSpritemap(timeline, frameIndex)
 
 		TEMP_TIMELINE.insertBlankKeyframe(smIndex);
 		frameQueue.push("MERGE_" + newIndex);	
-	}
+	//}
 
 	var scale = getMatrixScale(0,0); // TODO
 	var matrix = {a: scale, b: 0.0, c: 0.0, d: scale, tx: 0, ty: 0};
@@ -1209,7 +1242,7 @@ function pushItemSpritemap(item)
 	return index;
 }
 
-function pushElementSpritemap(timeline, layerIndex, frameIndex, elementIndices)
+function pushShapeSpritemap(timeline, layerIndex, frameIndex, elementIndices)
 {
 	timeline.setSelectedLayers(layerIndex, true);
 	timeline.copyFrames(frameIndex, frameIndex);
@@ -1351,104 +1384,97 @@ function parseSymbolInstance(instance)
 		var hasFilters = (filters != undefined && filters.length > 0)
 
 		// Add Filters
-		if (hasFilters)
+		if (hasFilters && !bakedFilters)
 		{
-			if (!bakedFilters)
+			jsonArray(key("filters", "F"));
+			var n = key("name", "N");
+
+			var i = 0;
+			while (i < filters.length)
 			{
-				jsonArray(key("filters", "F"));
-				var n = key("name", "N");
+				var filter = filters[i];
 
-				var i = 0;
-				while (i < filters.length)
-				{
-					var filter = filters[i];
+				push('{\n');
 
-					push('{\n');
-
-					switch (filter.name) {
-						case "adjustColorFilter":
-							jsonStr(n, key("adjustColorFilter", "ACF"));
-							jsonVar(key("brightness", "BRT"), filter.brightness);
-							jsonVar(key("hue", "H"), filter.hue);
-							jsonVar(key("contrast", "CT"), filter.contrast);
-							jsonVarEnd(key("saturation", "SAT"), filter.saturation);
-						break;
-						case "bevelFilter":
-							jsonStr(n, key("bevelFilter", "BF"));
-							jsonVar(key("blurX", "BLX"), filter.blurX);
-							jsonVar(key("blurY", "BLY"), filter.blurY);
-							jsonVar(key("distance", "D"), filter.distance);
-							jsonVar(key("knockout", "KK"), filter.knockout);
-							jsonStr(key("type", "T"), filter.type);
-							jsonVar(key("strength", "STR"), filter.strength);
-							jsonVar(key("angle", "A"), filter.angle);
-							jsonStr(key("shadowColor", "SC"), filter.shadowColor);
-							jsonStr(key("highlightColor", "HC"), filter.highlightColor);
-							jsonVarEnd(key("quality", "Q"), parseQuality(filter.quality));
-						break;
-						case "blurFilter":
-							jsonStr(n, key("blurFilter", "BLF"));
-							jsonVar(key("blurX", "BLX"), filter.blurX);
-							jsonVar(key("blurY", "BLY"), filter.blurY);
-							jsonVarEnd(key("quality", "Q"), parseQuality(filter.quality));
-						break;
-						case "dropShadowFilter":
-							jsonStr(n, key("dropShadowFilter", "DSF"));
-							jsonVar(key("blurX", "BLX"), filter.blurX);
-							jsonVar(key("blurY", "BLY"), filter.blurY);
-							jsonVar(key("distance", "D"), filter.distance);
-							jsonVar(key("knockout", "KK"), filter.knockout);
-							jsonVar(key("inner", "IN"), filter.inner);
-							jsonVar(key("hideObject", "HO"), filter.hideObject);
-							jsonVar(key("strength", "STR"), filter.strength);
-							jsonVar(key("angle", "A"), filter.angle);
-							jsonStr(key("color", "C"), filter.color);
-							jsonVarEnd(key("quality", "Q"), parseQuality(filter.quality));
-						break;
-						case "glowFilter":
-							jsonStr(n, key("glowFilter", "GF"));
-							jsonVar(key("blurX", "BLX"), filter.blurX);
-							jsonVar(key("blurY", "BLY"), filter.blurY);
-							jsonVar(key("inner", "IN"), filter.inner);
-							jsonVar(key("knockout", "KK"), filter.knockout);
-							jsonVar(key("strength", "STR"), filter.strength);
-							jsonStr(key("color", "C"), filter.color);
-							jsonVarEnd(key("quality", "Q"), parseQuality(filter.quality));
-						break;
-						case "gradientBevelFilter":
-							jsonStr(n, key("gradientBevelFilter", "GBF"));
-							jsonVar(key("blurX", "BLX"), filter.blurX);
-							jsonVar(key("blurY", "BLY"), filter.blurY);
-							jsonVar(key("distance", "D"), filter.distance);
-							jsonVar(key("knockout", "KK"), filter.knockout);
-							jsonStr(key("type", "T"), filter.type);
-							jsonVar(key("strength", "STR"), filter.strength);
-							jsonVar(key("angle", "A"), filter.angle);
-							jsonVar(key("colorArray", "CA"), parseArray(filter.colorArray));
-							jsonVarEnd(key("quality", "Q"), parseQuality(filter.quality));
-						break;
-						case "gradientGlowFilter":
-							jsonStr(n, key("gradientGlowFilter", "GGF"));
-							jsonVar(key("blurX", "BLX"), filter.blurX);
-							jsonVar(key("blurY", "BLY"), filter.blurY);
-							jsonVar(key("inner", "IN"), filter.inner);
-							jsonVar(key("knockout", "KK"), filter.knockout);
-							jsonVar(key("strength", "STR"), filter.strength);
-							jsonVar(key("colorArray", "CA"), parseArray(filter.colorArray));
-							jsonVarEnd(key("quality", "Q"), parseQuality(filter.quality));
-						break;
-					}
-
-					push((i < filters.length - 1) ? '},' : '}\n');
-					i++;
+				switch (filter.name) {
+					case "adjustColorFilter":
+						jsonStr(n, key("adjustColorFilter", "ACF"));
+						jsonVar(key("brightness", "BRT"), filter.brightness);
+						jsonVar(key("hue", "H"), filter.hue);
+						jsonVar(key("contrast", "CT"), filter.contrast);
+						jsonVarEnd(key("saturation", "SAT"), filter.saturation);
+					break;
+					case "bevelFilter":
+						jsonStr(n, key("bevelFilter", "BF"));
+						jsonVar(key("blurX", "BLX"), filter.blurX);
+						jsonVar(key("blurY", "BLY"), filter.blurY);
+						jsonVar(key("distance", "D"), filter.distance);
+						jsonVar(key("knockout", "KK"), filter.knockout);
+						jsonStr(key("type", "T"), filter.type);
+						jsonVar(key("strength", "STR"), filter.strength);
+						jsonVar(key("angle", "A"), filter.angle);
+						jsonStr(key("shadowColor", "SC"), filter.shadowColor);
+						jsonStr(key("highlightColor", "HC"), filter.highlightColor);
+						jsonVarEnd(key("quality", "Q"), parseQuality(filter.quality));
+					break;
+					case "blurFilter":
+						jsonStr(n, key("blurFilter", "BLF"));
+						jsonVar(key("blurX", "BLX"), filter.blurX);
+						jsonVar(key("blurY", "BLY"), filter.blurY);
+						jsonVarEnd(key("quality", "Q"), parseQuality(filter.quality));
+					break;
+					case "dropShadowFilter":
+						jsonStr(n, key("dropShadowFilter", "DSF"));
+						jsonVar(key("blurX", "BLX"), filter.blurX);
+						jsonVar(key("blurY", "BLY"), filter.blurY);
+						jsonVar(key("distance", "D"), filter.distance);
+						jsonVar(key("knockout", "KK"), filter.knockout);
+						jsonVar(key("inner", "IN"), filter.inner);
+						jsonVar(key("hideObject", "HO"), filter.hideObject);
+						jsonVar(key("strength", "STR"), filter.strength);
+						jsonVar(key("angle", "A"), filter.angle);
+						jsonStr(key("color", "C"), filter.color);
+						jsonVarEnd(key("quality", "Q"), parseQuality(filter.quality));
+					break;
+					case "glowFilter":
+						jsonStr(n, key("glowFilter", "GF"));
+						jsonVar(key("blurX", "BLX"), filter.blurX);
+						jsonVar(key("blurY", "BLY"), filter.blurY);
+						jsonVar(key("inner", "IN"), filter.inner);
+						jsonVar(key("knockout", "KK"), filter.knockout);
+						jsonVar(key("strength", "STR"), filter.strength);
+						jsonStr(key("color", "C"), filter.color);
+						jsonVarEnd(key("quality", "Q"), parseQuality(filter.quality));
+					break;
+					case "gradientBevelFilter":
+						jsonStr(n, key("gradientBevelFilter", "GBF"));
+						jsonVar(key("blurX", "BLX"), filter.blurX);
+						jsonVar(key("blurY", "BLY"), filter.blurY);
+						jsonVar(key("distance", "D"), filter.distance);
+						jsonVar(key("knockout", "KK"), filter.knockout);
+						jsonStr(key("type", "T"), filter.type);
+						jsonVar(key("strength", "STR"), filter.strength);
+						jsonVar(key("angle", "A"), filter.angle);
+						jsonVar(key("colorArray", "CA"), parseArray(filter.colorArray));
+						jsonVarEnd(key("quality", "Q"), parseQuality(filter.quality));
+					break;
+					case "gradientGlowFilter":
+						jsonStr(n, key("gradientGlowFilter", "GGF"));
+						jsonVar(key("blurX", "BLX"), filter.blurX);
+						jsonVar(key("blurY", "BLY"), filter.blurY);
+						jsonVar(key("inner", "IN"), filter.inner);
+						jsonVar(key("knockout", "KK"), filter.knockout);
+						jsonVar(key("strength", "STR"), filter.strength);
+						jsonVar(key("colorArray", "CA"), parseArray(filter.colorArray));
+						jsonVarEnd(key("quality", "Q"), parseQuality(filter.quality));
+					break;
 				}
 
-				push(']\n');
+				push((i < filters.length - 1) ? '},' : '}\n');
+				i++;
 			}
-			else
-			{
 
-			}
+			push(']\n');
 		}
 		else removeTrail(2);
 	}

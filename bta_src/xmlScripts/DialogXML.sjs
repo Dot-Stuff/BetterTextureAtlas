@@ -41,6 +41,8 @@ function addParams()
     save[1] = xPan.BATX;
     save[2] = xPan.INCS;
     save[3] = xPan.BOFS;
+    save[4] = xPan.BF;
+    save[5] = xPan.BTW;
 
     FLfile.write(fl.configURI + "Commands/bta_src/saveADDBTA.txt", save.join("\n"));
 }

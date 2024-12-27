@@ -38,6 +38,8 @@ function xmlAddData()
 	data = data.split("$BATX").join(saveData[1]);
 	data = data.split("$INCS").join(saveData[2]);
 	data = data.split("$BOFS").join(saveData[3]);
+	data = data.split("$BF").join(saveData[4]);
+	data = data.split("$BTW").join(saveData[5]);
 
 	var buttonWidth = 0;
 	if (parseInt(version[0]) >= 20)
@@ -129,6 +131,8 @@ function setupSaves()
 		save[1] = bakeTexts;
 		save[2] = includeSnd;
 		save[3] = bakeOneFR;
+		save[4] = bakedFilters;
+		save[5] = bakedTweens;
 
 		FLfile.write(fl.configURI + "Commands/bta_src/saveADDBTA.txt", save.join("\n"));
 	}
