@@ -164,12 +164,6 @@ function _main()
 	FLfile.createFolder(path);
 	exportAtlas(path, symbols);
 
-	var saveArray = fileuri.split("\\");
-	saveArray.pop();
-	var savePath = saveArray.join("\\");
-
-	initJson();
-
 	for (i = 0; i < familySymbol.length; i++)
 	{
 		doc.getTimeline().currentFrame = frs[i];
@@ -197,6 +191,7 @@ var smIndex;
 
 var frameQueue;
 var dictionary;
+var bakedDictionary;
 
 var ogSym;
 
@@ -210,6 +205,7 @@ function exportAtlas(exportPath, symbolNames)
 	cachedMatrices = [];
 
 	dictionary = [];
+	bakedDictionary = [];
 	smIndex = 0;
 
 	var tmpSymbol = false;
@@ -555,6 +551,13 @@ function generateAnimation(symbol)
 				parseSymbol(symbol);
 				push('},');
 			}
+			
+			dictIndex = 0;
+			while (dictIndex < bakedDictionary.length)
+			{
+				push(bakedDictionary[dictIndex++]);
+				push(',');
+			}
 
 			removeTrail(1);
 			push(']},\n');
@@ -583,7 +586,6 @@ function generateAnimation(symbol)
 					
 					foldI++;
 				}
-				
 	
 				FLfile.write(path + "/LIBRARY/" + dictionary[dictIndex - 1] + ".json", closeJson());
 			}
@@ -630,7 +632,9 @@ function parseSymbol(symbol)
 	// TODO: rework this into bake shape layers
 	if (bakeOneFR && (timeline.frameCount == 1) && (timeline.layers.length > 1))
 	{
-		bakeOneFrame(symbol);
+		makeBasicLayer(function () {
+			pushFrameSpritemap(timeline, 0);
+		});
 		return;
 	}
 
@@ -690,7 +694,7 @@ function parseSymbol(symbol)
 	push(']}');
 }
 
-function bakeOneFrame(symbol) {
+function makeBasicLayer(elementCallback) {
 	push('{');
 	jsonStr(key("Layer_name", "LN"), "Layer 1");
 	jsonArray(key("Frames", "FR"));
@@ -699,7 +703,8 @@ function bakeOneFrame(symbol) {
 	jsonVar(key("duration", "DU"), 1);
 	jsonArray(key("elements", "E"));
 	push('{');
-	pushFrameSpritemap(symbol.timeline, 0);
+	if (elementCallback != null)
+		elementCallback();
 	push('}]}]}]}');
 }
 
@@ -741,15 +746,7 @@ function parseFrames(frames, layerIndex, timeline)
 					}
 
 					removeTrail(2);
-
 					push("],\n");
-					// var oldJSON = curJson;
-					// initJson();
-					
-					// push("{\n");
-
-
-					// FLfile.write(path + "/LIBRARY/eases.json", );
 				}
 				else
 				{
@@ -919,10 +916,6 @@ function parseElements(elements, frameIndex, layerIndex, timeline)
 					var bakeInstance = (bakedFilters && (element.filters != undefined && element.filters.length > 0));
 					if (bakeInstance)
 					{
-						// TODO:
-						// Fix the matrix
-						// Push all frames of the baked element, not only the first one
-						// Convert baked element to a seperate symbol item (so it can get blends, color modes, etc applied)
 						pushElementSpritemap(timeline, layerIndex, frameIndex, e, element.matrix);
 					}
 					else
@@ -1096,32 +1089,18 @@ function parseShape(timeline, layerIndex, frameIndex, elementIndices, checkMatri
 		var s = 0;
 		while (s < shapes.length)
 		{
-			var shape = shapes[s++];
-
-			var minVertX, minVertY = Number.POSITIVE_INFINITY;
-			var maxVertX, maxVertY = Number.NEGATIVE_INFINITY;
-
-			var v = 0; // Get shape dimensions based on vertices because animate kinda sucks
-			while (v < shape.vertices.length)
-			{
-				var vert = shape.vertices[v++];				
-				minVertX = min(minVertX, vert.x);
-				minVertY = min(minVertY, vert.y);
-				maxVertX = max(maxVertX, vert.x);
-				maxVertY = max(maxVertY, vert.y);
-			}
-
-			minX = min(minX, shape.x + (minVertX / 2));
-			minY = min(minY, shape.y + (minVertY / 2));
-			maxX = max(maxX, maxVertX);
-			maxY = max(maxY, maxVertY);
+			var rect = getShapeRect(shapes[s++]);
+			minX = min(minX, rect.x);
+			minY = min(minY, rect.y);
+			maxX = max(maxX, rect.width);
+			maxY = max(maxY, rect.height);
 		}
 		
 		var transformingX = (minX - (maxX * 0.5));
 		var transformingY = (minY - (maxY * 0.5));
 
 		var scale = getMatrixScale(maxX, maxY);
-		mtx = {a: scale, b: 0, c: 0, d: scale, tx: transformingX, ty: transformingY}
+		mtx = makeMatrix(scale, 0, 0, scale, transformingX, transformingY);
 	}
 	else
 	{
@@ -1130,6 +1109,29 @@ function parseShape(timeline, layerIndex, frameIndex, elementIndices, checkMatri
 	}
 
 	parseAtlasInstance(mtx, smIndex - 1);
+}
+
+function getShapeRect(shape)
+{
+	var minVertX, minVertY = Number.POSITIVE_INFINITY;
+	var maxVertX, maxVertY = Number.NEGATIVE_INFINITY;
+
+	var v = 0; // Get shape dimensions based on vertices because animate kinda sucks
+	while (v < shape.vertices.length)
+	{
+		var vert = shape.vertices[v++];				
+		minVertX = min(minVertX, vert.x);
+		minVertY = min(minVertY, vert.y);
+		maxVertX = max(maxVertX, vert.x);
+		maxVertY = max(maxVertY, vert.y);
+	}
+
+	return {
+		x: shape.x + (minVertX / 2),
+		y: shape.y + (minVertY / 2),
+		width: maxVertX,
+		height: maxVertY
+	}
 }
 
 var resizedContain = false;
@@ -1169,60 +1171,72 @@ function pushElementSpritemap(timeline, layerIndex, frameIndex, elementIndex)
 	timeline.layers[layerIndex].locked = lockedLayer;
 	var elem = timeline.layers[layerIndex].frames[frameIndex].elements[elementIndex];
 
-	var scale = getMatrixScale(0,0); // TODO
-	var matrix = cloneMatrix(elem.matrix);
-	matrix.a *= scale;
-	matrix.d *= scale;
+	initJson();
+	push('{\n');
+	
+	var itemName = "_bta_asi_" + smIndex;
 
-	parseAtlasInstance(matrix, smIndex);
-	smIndex++;
+	jsonStr(key("SYMBOL_name", "SN"), itemName);
+	jsonHeader(key("TIMELINE", "TL"));
+	jsonArray(key("LAYERS", "L"));
+
+	var itemLayers = elem.libraryItem.timeline.layers;
+
+	// TODO: calculate this matrix based on all the elements of the baked item
+	var rect = getShapeRect(itemLayers[0].frames[0].elements[0]);
+
+	// TODO: super broken temp matrix calculation, fix the math of this shit later
+	var atlasMatrix = makeMatrix(1, 0, 0, 1,
+		rect.x - (rect.width / 2) - elem.width / 8,
+		rect.y - (rect.height / 2) - elem.height / 4
+	);
+
+	makeBasicLayer(function () {
+		parseAtlasInstance(atlasMatrix, smIndex);
+		smIndex++;
+	});
+
+	push('}');
+
+	bakedDictionary.push(closeJson());
+	parseSymbolInstance(elem, itemName);
 }
 
 function pushFrameSpritemap(timeline, frameIndex)
 {
 	var layersLength = timeline.layers.length;
-	/*if (layersLength === 1)
+	var mergeTimeline = TEMP_MERGE.timeline;
+	
+	timeline.copyLayers(0, layersLength - 1);
+	mergeTimeline.pasteLayers(0);
+
+	var newLength = mergeTimeline.layers.length;
+	var newIndex = mergeTimeline.frameCount - 1;
+
+	var i = 0;
+	while (i < newLength)
 	{
-		timeline.copyFrames(frameIndex, frameIndex);
-		TEMP_TIMELINE.pasteFrames(smIndex);
-		pushElement([0]);
-	}
-	else
-	{*/
-		// This would be a lot easier with mergeLayers()
-		// But we cant use that because its an Animate 2020 function
-		// Sooooo yeah, bullshit incoming
-		var mergeTimeline = TEMP_MERGE.timeline;
-		timeline.copyLayers(0, layersLength - 1);
-		mergeTimeline.pasteLayers(0);
+		// Insert keyframes on the old layers
+		mergeTimeline.layers[i].locked = false;
+		mergeTimeline.setSelectedLayers(i, true);
+		mergeTimeline.insertBlankKeyframe(newIndex);
 
-		var newLength = mergeTimeline.layers.length;
-		var newIndex = mergeTimeline.frameCount - 1;
-
-		var i = 0;
-		while (i < newLength)
-		{
-			// Insert keyframes on the old layers
-			mergeTimeline.layers[i].locked = false;
-			mergeTimeline.setSelectedLayers(i, true);
-			mergeTimeline.insertBlankKeyframe(newIndex);
-
-			// Offset the new copied layers
-			if (i < layersLength) {
-				mergeTimeline.insertBlankKeyframe(0);
-				mergeTimeline.cutFrames(0, 0);
-				mergeTimeline.pasteFrames(newIndex);
-			}
-			
-			i++;
+		// Offset the new copied layers
+		if (i < layersLength) {
+			mergeTimeline.insertBlankKeyframe(0);
+			mergeTimeline.cutFrames(0, 0);
+			mergeTimeline.pasteFrames(newIndex);
 		}
+			
+		i++;
+	}
 
-		TEMP_TIMELINE.insertBlankKeyframe(smIndex);
-		frameQueue.push("MERGE_" + newIndex);	
-	//}
+	TEMP_TIMELINE.insertBlankKeyframe(smIndex);
+	frameQueue.push("MERGE_" + newIndex);	
 
-	var scale = getMatrixScale(0,0); // TODO
-	var matrix = {a: scale, b: 0.0, c: 0.0, d: scale, tx: 0, ty: 0};
+	var scale = getMatrixScale(0, 0); // TODO
+	var matrix = makeMatrix(scale, 0, 0, scale, 0, 0);
+	
 	parseAtlasInstance(matrix, smIndex);
 	smIndex++;
 }
@@ -1296,16 +1310,22 @@ function pushElement(elemIndices)
 	frameQueue.push("ELEMENT_" + String(elemIndices));
 }
 
-function parseSymbolInstance(instance)
+function parseSymbolInstance(instance, itemName)
 {
 	jsonHeader(key("SYMBOL_Instance", "SI"));
-	var item = instance.libraryItem;
 
-	if (item != undefined) {
-		jsonStr(key("SYMBOL_name", "SN"), item.name);
-		if (dictionary.indexOf(item.name) == -1)
-			dictionary.push(item.name);
+	if (itemName == undefined)
+	{
+		item = instance.libraryItem;
+		if (item != undefined) {
+			itemName = item.name;
+			if (dictionary.indexOf(itemName) == -1)
+				dictionary.push(itemName);
+		}
 	}
+
+	if (itemName != undefined)
+		jsonStr(key("SYMBOL_name", "SN"), itemName);
 
 	if (instance.firstFrame != undefined)
 		jsonVar(key("firstFrame", "FF"), instance.firstFrame);
@@ -1483,40 +1503,29 @@ function parseSymbolInstance(instance)
 	push('}');
 }
 
+function makeMatrix(a, b, c, d, tx, ty)
+{
+	return {a: a, b: b, c: c, d: d, tx: tx, ty: ty}
+}
+
 function cloneMatrix(mat)
 {
-	return {a: mat.a, b: mat.b, c: mat.c, d: mat.d, tx: mat.tx, ty: mat.ty}
+	return makeMatrix(mat.a, mat.b, mat.c, mat.d, mat.tx, mat.ty);
 }
 
 function parseMatrix(m) {
 	return "[" +
-	rValue(m.a) + "," +
-	rValue(m.b) + "," +
-	rValue(m.c) + "," +
-	rValue(m.d) + "," +
-	rValue(m.tx) + "," +
-	rValue(m.ty) +
+	rValue(m.a) + "," + rValue(m.b) + "," + rValue(m.c) + "," +
+	rValue(m.d) + "," + rValue(m.tx) + "," + rValue(m.ty) +
 	"]";
 }
 
 function parseMatrix3D(m) {
 	return "[" +
-	m.m00 + "," +
-	m.m01 + "," +
-	m.m02 + "," +
-	m.m03 + "," +
-	m.m10 + "," +
-	m.m11 + "," +
-	m.m12 + "," +
-	m.m13 + "," +
-	m.m20 + "," +
-	m.m21 + "," +
-	m.m22 + "," +
-	m.m23 + "," +
-	m.m30 + "," +
-	m.m31 + "," +
-	m.m32 + "," +
-	m.m33 +
+	m.m00 + "," + m.m01 + "," + m.m02 + "," + m.m03 + "," +
+	m.m10 + "," + m.m11 + "," + m.m12 + "," + m.m13 + "," +
+	m.m20 + "," + m.m21 + "," + m.m22 + "," + m.m23 + "," +
+	m.m30 + "," + m.m31 + "," + m.m32 + "," + m.m33 +
 	"]";
 }
 
