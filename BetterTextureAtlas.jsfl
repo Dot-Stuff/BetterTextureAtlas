@@ -314,7 +314,14 @@ function exportAtlas(exportPath, symbolNames)
 
 					if (exportElem)
 					{
+						element.rotation = 0;
+						element.scaleX = 1;
+						element.scaleY = 1;
+
 						reverseScale(element, matrix);
+
+						if (element.colorMode != undefined)
+							element.colorMode = "none";
 					}
 					else
 					{
@@ -531,7 +538,7 @@ function generateAnimation(symbol)
 	push('},\n');
 
 	// Add Symbol Dictionary
-	if (dictionary.length > 0)
+	if (dictionary.length > 0 || bakedDictionary.length > 0)
 	{
 		if (inlineSym)
 		{
@@ -1111,6 +1118,59 @@ function parseShape(timeline, layerIndex, frameIndex, elementIndices, checkMatri
 	parseAtlasInstance(mtx, smIndex - 1);
 }
 
+function getFilteredRect(symbolInstance)
+{
+	var timeline = symbolInstance.libraryItem.timeline;
+	var frameIndex = symbolInstance.firstFrame != undefined ? symbolInstance.firstFrame : 0;
+
+	var minX, minY = Number.POSITIVE_INFINITY;
+	var maxX, maxY = Number.NEGATIVE_INFINITY;
+
+	var l = 0;
+	while (l < timeline.layers.length)
+	{
+		var layer = timeline.layers[l++];
+		var e = 0;
+		while (e < layer.frames[frameIndex].elements.length)
+		{
+			var element = layer.frames[frameIndex].elements[e++];
+			minX = min(minX, element.x);
+			minY = min(minY, element.y);
+			maxX = max(maxX, element.width);
+			maxY = max(maxY, element.height);
+		}
+	}
+
+	var f = 0;
+	while (f < symbolInstance.filters.length)
+	{
+		var filter = symbolInstance.filters[f++];
+		switch (filter.name)
+		{
+			case "blurFilter":
+				
+				var blurMult = 1;
+				switch (filter.quality) {
+					case "low": blurMult = 0.5; break;
+					case "medium": blurMult = 0.75; break;
+				}
+				
+				minX -= filter.blurX * blurMult;
+				minY -= filter.blurY * blurMult;
+				maxX += filter.blurX * blurMult;
+				maxY += filter.blurY * blurMult;
+			break;
+		}
+	}
+
+	return {
+		x: minX,
+		y: minY,
+		width: maxX,
+		height: maxY
+	}
+}
+
 function getShapeRect(shape)
 {
 	var minVertX, minVertY = Number.POSITIVE_INFINITY;
@@ -1169,26 +1229,21 @@ function pushElementSpritemap(timeline, layerIndex, frameIndex, elementIndex)
 	pushElement([elementIndex]);
 
 	timeline.layers[layerIndex].locked = lockedLayer;
-	var elem = timeline.layers[layerIndex].frames[frameIndex].elements[elementIndex];
+	var baseElement = timeline.layers[layerIndex].frames[frameIndex].elements[elementIndex];
+	var elem = TEMP_TIMELINE.layers[0].frames[smIndex].elements[elementIndex];
 
 	initJson();
 	push('{\n');
 	
 	var itemName = "_bta_asi_" + smIndex;
-
 	jsonStr(key("SYMBOL_name", "SN"), itemName);
 	jsonHeader(key("TIMELINE", "TL"));
 	jsonArray(key("LAYERS", "L"));
-
-	var itemLayers = elem.libraryItem.timeline.layers;
-
-	// TODO: calculate this matrix based on all the elements of the baked item
-	var rect = getShapeRect(itemLayers[0].frames[0].elements[0]);
-
-	// TODO: super broken temp matrix calculation, fix the math of this shit later
+	
+	var rect = getFilteredRect(elem);
 	var atlasMatrix = makeMatrix(1, 0, 0, 1,
-		rect.x - (rect.width / 2) - elem.width / 8,
-		rect.y - (rect.height / 2) - elem.height / 4
+		(rect.x) - (rect.width * 0.5),
+		(rect.y) - (rect.height * 0.5)
 	);
 
 	makeBasicLayer(function () {
@@ -1199,7 +1254,7 @@ function pushElementSpritemap(timeline, layerIndex, frameIndex, elementIndex)
 	push('}');
 
 	bakedDictionary.push(closeJson());
-	parseSymbolInstance(elem, itemName);
+	parseSymbolInstance(baseElement, itemName);
 }
 
 function pushFrameSpritemap(timeline, frameIndex)
