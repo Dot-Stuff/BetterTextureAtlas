@@ -317,11 +317,7 @@ function exportAtlas(exportPath, symbolNames)
 						element.rotation = 0;
 						element.scaleX = 1;
 						element.scaleY = 1;
-
 						reverseScale(element, matrix);
-
-						if (element.colorMode != undefined)
-							element.colorMode = "none";
 					}
 					else
 					{
@@ -333,6 +329,7 @@ function exportAtlas(exportPath, symbolNames)
 
 				if (selection.length > 0) {
 					TEMP_TIMELINE.currentFrame = i;
+					doc.selectNone();
 					doc.selection = selection;
 					doc.deleteSelection();
 				}
@@ -864,7 +861,7 @@ function parseMotionObject(motionData)
 				jsonVar(key("anchor", "ANC"), "[" + keyframe.anchor + "]");
 				jsonVar(key("next", "NXT"), "[" + keyframe.next + "]");
 				jsonVar(key("previous", "PRV"), "[" + keyframe.previous + "]");
-				jsonVarEnd(key("index", "I"), keyframe.timevalue * 0.001);
+				jsonNumEnd(key("index", "I"), keyframe.timevalue * 0.001);
 				push("},");
 			}
 
@@ -1096,9 +1093,10 @@ function parseShape(timeline, layerIndex, frameIndex, elementIndices, checkMatri
 		var s = 0;
 		while (s < shapes.length)
 		{
-			var rect = getShapeRect(shapes[s++]);
-			minX = min(minX, rect.x);
-			minY = min(minY, rect.y);
+			var shape = shapes[s++];
+			var rect = getShapeRect(shape.vertices);
+			minX = min(minX, shape.x + rect.x);
+			minY = min(minY, shape.y + rect.y);
 			maxX = max(maxX, rect.width);
 			maxY = max(maxY, rect.height);
 		}
@@ -1129,11 +1127,11 @@ function getFilteredRect(symbolInstance)
 	var l = 0;
 	while (l < timeline.layers.length)
 	{
-		var layer = timeline.layers[l++];
+		var frameElements = timeline.layers[l++].frames[frameIndex].elements;
 		var e = 0;
-		while (e < layer.frames[frameIndex].elements.length)
+		while (e < frameElements.length)
 		{
-			var element = layer.frames[frameIndex].elements[e++];
+			var element = frameElements[e++];
 			minX = min(minX, element.x);
 			minY = min(minY, element.y);
 			maxX = max(maxX, element.width);
@@ -1148,13 +1146,7 @@ function getFilteredRect(symbolInstance)
 		switch (filter.name)
 		{
 			case "blurFilter":
-				
-				var blurMult = 1;
-				switch (filter.quality) {
-					case "low": blurMult = 0.5; break;
-					case "medium": blurMult = 0.75; break;
-				}
-				
+				var blurMult = getQualityScale(filter.quality);
 				minX -= filter.blurX * blurMult;
 				minY -= filter.blurY * blurMult;
 				maxX += filter.blurX * blurMult;
@@ -1171,15 +1163,17 @@ function getFilteredRect(symbolInstance)
 	}
 }
 
-function getShapeRect(shape)
+function getShapeRect(vertices)
 {
-	var minVertX, minVertY = Number.POSITIVE_INFINITY;
-	var maxVertX, maxVertY = Number.NEGATIVE_INFINITY;
+	var minVertX = Number.POSITIVE_INFINITY;
+	var minVertY = Number.POSITIVE_INFINITY;
+	var maxVertX = Number.NEGATIVE_INFINITY;
+	var maxVertY = Number.NEGATIVE_INFINITY;
 
 	var v = 0; // Get shape dimensions based on vertices because animate kinda sucks
-	while (v < shape.vertices.length)
+	while (v < vertices.length)
 	{
-		var vert = shape.vertices[v++];				
+		var vert = vertices[v++];				
 		minVertX = min(minVertX, vert.x);
 		minVertY = min(minVertY, vert.y);
 		maxVertX = max(maxVertX, vert.x);
@@ -1187,8 +1181,8 @@ function getShapeRect(shape)
 	}
 
 	return {
-		x: shape.x + (minVertX / 2),
-		y: shape.y + (minVertY / 2),
+		x: minVertX / 2,
+		y: minVertY / 2,
 		width: maxVertX,
 		height: maxVertY
 	}
@@ -1223,12 +1217,11 @@ function pushElementSpritemap(timeline, layerIndex, frameIndex, elementIndex)
 {
 	var lockedLayer = timeline.layers[layerIndex].locked;
 	timeline.setSelectedLayers(layerIndex, true);
-
 	timeline.copyFrames(frameIndex, frameIndex);
 	TEMP_TIMELINE.pasteFrames(smIndex);
 	pushElement([elementIndex]);
-
 	timeline.layers[layerIndex].locked = lockedLayer;
+
 	var baseElement = timeline.layers[layerIndex].frames[frameIndex].elements[elementIndex];
 	var elem = TEMP_TIMELINE.layers[0].frames[smIndex].elements[elementIndex];
 
@@ -1239,11 +1232,11 @@ function pushElementSpritemap(timeline, layerIndex, frameIndex, elementIndex)
 	jsonStr(key("SYMBOL_name", "SN"), itemName);
 	jsonHeader(key("TIMELINE", "TL"));
 	jsonArray(key("LAYERS", "L"));
-	
+
 	var rect = getFilteredRect(elem);
 	var atlasMatrix = makeMatrix(1, 0, 0, 1,
-		(rect.x) - (rect.width * 0.5),
-		(rect.y) - (rect.height * 0.5)
+		rect.x - (rect.width * 0.5),
+		rect.y - (rect.height * 0.5)
 	);
 
 	makeBasicLayer(function () {
@@ -1367,6 +1360,7 @@ function pushElement(elemIndices)
 
 function parseSymbolInstance(instance, itemName)
 {
+	var bakedInstance = itemName != undefined;
 	jsonHeader(key("SYMBOL_Instance", "SI"));
 
 	if (itemName == undefined)
@@ -1400,7 +1394,8 @@ function parseSymbolInstance(instance, itemName)
 		',"y":' + instance.transformY + "}"
 	);
 
-	if (instance.colorMode != "none") {
+	if (instance.colorMode != "none" && !bakedInstance)
+	{
 		jsonHeader(key("color", "C"));
 		var modeKey = key("mode", "M");
 
@@ -1412,18 +1407,18 @@ function parseSymbolInstance(instance, itemName)
 			case "tint":
 				jsonStr(modeKey, key("Tint", "T"));
 				jsonStr(key("tintColor", "TC"), instance.tintColor);
-				jsonVarEnd(key("tintMultiplier", "TM"), instance.tintPercent * 0.01);
+				jsonNumEnd(key("tintMultiplier", "TM"), instance.tintPercent * 0.01);
 			break;
 			case "alpha":
 				jsonStr(modeKey, key("Alpha", "CA"));
-				jsonVarEnd(key("alphaMultiplier", "AM"), instance.colorAlphaPercent * 0.01);
+				jsonNumEnd(key("alphaMultiplier", "AM"), instance.colorAlphaPercent * 0.01);
 			break;
 			case "advanced":
 				jsonStr(modeKey, key("Advanced", "AD"));
-				jsonVar(key("RedMultiplier", "RM"), instance.colorRedPercent * 0.01);
-				jsonVar(key("greenMultiplier", "GM"), instance.colorGreenPercent * 0.01);
-				jsonVar(key("blueMultiplier", "BM"), instance.colorBluePercent * 0.01);
-				jsonVar(key("alphaMultiplier", "AM"), instance.colorAlphaPercent * 0.01);
+				jsonNum(key("RedMultiplier", "RM"), instance.colorRedPercent * 0.01);
+				jsonNum(key("greenMultiplier", "GM"), instance.colorGreenPercent * 0.01);
+				jsonNum(key("blueMultiplier", "BM"), instance.colorBluePercent * 0.01);
+				jsonNum(key("alphaMultiplier", "AM"), instance.colorAlphaPercent * 0.01);
 				jsonVar(key("redOffset", "RO"), instance.colorRedAmount);
 				jsonVar(key("greenOffset", "GO"), instance.colorGreenAmount);
 				jsonVar(key("blueOffset", "BO"), instance.colorBlueAmount);
@@ -1588,6 +1583,13 @@ function parseArray(array) {
 	return '["' + array.join('","') +'"]';
 }
 
+function getQualityScale(quality)
+{
+	if (quality == "low") return 0.5;
+	if (quality == "medium") return 0.75;
+	return 1;
+}
+
 function parseQuality(quality) {
 	if (quality == "low") return 1;
 	if (quality == "medium") return 2;
@@ -1634,12 +1636,16 @@ function findItem(name) {
 }
 
 function key(normal, optimized) 	{ return optimizeJson ? optimized : normal; }
-function jsonVarEnd(name, value)	{ push('"' + name +'":' + value + '\n'); }
-function jsonVar(name, value)		{ push('"' + name +'":' + value + ',\n'); }
+function jsonVarEnd(name, value)	{ push('"' + name + '":' + value + '\n'); }
+function jsonVar(name, value)		{ push('"' + name + '":' + value + ',\n'); }
 function jsonStrEnd(name, value)	{ push('"' + name + '":"' + value + '"\n'); }
 function jsonStr(name, value)		{ push('"' + name + '":"' + value + '",\n'); }
 function jsonArray(name)			{ push('"' + name + '":[\n'); }
 function jsonHeader(name)			{ push('"' + name + '":{\n'); }
+
+function jsonNumEnd(name, value) { jsonVarEnd(name, rValue(value)); }
+function jsonNum(name, value) { jsonVar(name, rValue(value)); }
+function rValue(value) { return parseFloat(value.toFixed(3)); }
 
 function measure(func)
 {
@@ -1661,10 +1667,6 @@ function trace(msg) {
 function isArray(value)
 {
 	return value.push != undefined;
-}
-
-function rValue(value) {
-	return parseFloat(value.toFixed(3));
 }
 
 // I have no idea why jsfl corrupts Math.min and Math.max, sooooo yeah
@@ -1713,19 +1715,19 @@ function xmlNode(xml)
     var obj = {};
 
 	var at = 0;
-	while (at < xml.attributes().length())
+	var attributes = xml.attributes();
+	while (at < atrib.length())
     {
-        var attribute = xml.attributes()[at];
+        var attribute = attributes[at++];
         obj[attribute.name()] = attribute.toString();
-        at++;
     }
 
 	var j = 0;
-    while (j < xml.children().length())
+	var children = xml.children();
+    while (j < children.length())
 	{
-        var child = xml.children()[j];
+        var child = children[j++];
         var childName = child.name();
-        j++;
 
 		if (obj[childName] == undefined) // Basic value
 		{
