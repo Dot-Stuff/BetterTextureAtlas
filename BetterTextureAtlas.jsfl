@@ -1087,8 +1087,10 @@ function parseShape(timeline, layerIndex, frameIndex, elementIndices, checkMatri
 	
 	if (checkMatrix)
 	{
-		var minX, minY = Number.POSITIVE_INFINITY;
-		var maxX, maxY = Number.NEGATIVE_INFINITY;
+		var minX = Number.POSITIVE_INFINITY;
+		var minY = Number.POSITIVE_INFINITY;
+		var maxX = Number.NEGATIVE_INFINITY;
+		var maxY = Number.NEGATIVE_INFINITY;
 
 		var s = 0;
 		while (s < shapes.length)
@@ -1222,9 +1224,6 @@ function pushElementSpritemap(timeline, layerIndex, frameIndex, elementIndex)
 	pushElement([elementIndex]);
 	timeline.layers[layerIndex].locked = lockedLayer;
 
-	var baseElement = timeline.layers[layerIndex].frames[frameIndex].elements[elementIndex];
-	var elem = TEMP_TIMELINE.layers[0].frames[smIndex].elements[elementIndex];
-
 	initJson();
 	push('{\n');
 	
@@ -1233,8 +1232,14 @@ function pushElementSpritemap(timeline, layerIndex, frameIndex, elementIndex)
 	jsonHeader(key("TIMELINE", "TL"));
 	jsonArray(key("LAYERS", "L"));
 
+	var elem = TEMP_TIMELINE.layers[0].frames[smIndex].elements[elementIndex];
 	var rect = getFilteredRect(elem);
-	var atlasMatrix = makeMatrix(1, 0, 0, 1,
+
+	var matScale = getMatrixScale(rect.width, rect.height);
+	var matScaleX = (elem.scaleX < 1) ? (1 / elem.scaleX) * matScale : matScale;
+	var matScaleY = (elem.scaleY < 1) ? (1 / elem.scaleY) * matScale : matScale;
+
+	var atlasMatrix = makeMatrix(matScaleX, 0, 0, matScaleY,
 		rect.x - (rect.width * 0.5),
 		rect.y - (rect.height * 0.5)
 	);
@@ -1247,7 +1252,7 @@ function pushElementSpritemap(timeline, layerIndex, frameIndex, elementIndex)
 	push('}');
 
 	bakedDictionary.push(closeJson());
-	parseSymbolInstance(baseElement, itemName);
+	parseSymbolInstance(elem, itemName);
 }
 
 function pushFrameSpritemap(timeline, frameIndex)
