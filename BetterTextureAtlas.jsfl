@@ -267,8 +267,8 @@ function exportAtlas(exportPath, symbolNames)
 	lib.editItem(TEMP_SPRITEMAP);
 
 	var reverseScale = function (element, mat) {
-		element.scaleX *= (1 / mat.a);
-		element.scaleY *= (1 / mat.d);
+		element.scaleX /= mat.a;
+		element.scaleY /= mat.d;
 	}
 
 	var i = 0;
@@ -318,6 +318,29 @@ function exportAtlas(exportPath, symbolNames)
 						element.scaleX = 1;
 						element.scaleY = 1;
 						reverseScale(element, matrix);
+
+						var filters = element.filters;
+						if (filters != undefined && filters.length > 0 && (matrix.a > 1.01 || matrix.d > 1.01))
+						{
+							TEMP_TIMELINE.currentFrame = i;
+							doc.selectNone();
+							doc.selection = [element];
+
+							var f = 0;
+							while (f < filters.length)
+							{
+								var filter = filters[f++];
+								switch (filter.name)
+								{
+									case "blurFilter":
+										filter.blurX /= matrix.a;
+										filter.blurY /= matrix.d;
+									break;
+								}
+							}
+
+							doc.setFilters(filters);
+						}
 					}
 					else
 					{
