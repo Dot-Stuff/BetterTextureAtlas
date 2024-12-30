@@ -326,10 +326,7 @@ function exportAtlas(exportPath, symbolNames)
 							doc.selectNone();
 							doc.selection = [element];
 
-							var f = 0;
-							while (f < filters.length)
-							{
-								var filter = filters[f++];
+							forEachFilter(filters, function (filter) {
 								switch (filter.name)
 								{
 									case "blurFilter":
@@ -337,7 +334,7 @@ function exportAtlas(exportPath, symbolNames)
 										filter.blurY /= matrix.d;
 									break;
 								}
-							}
+							});
 
 							doc.setFilters(filters);
 						}
@@ -1146,8 +1143,10 @@ function getFilteredRect(symbolInstance)
 	var timeline = symbolInstance.libraryItem.timeline;
 	var frameIndex = symbolInstance.firstFrame != undefined ? symbolInstance.firstFrame : 0;
 
-	var minX, minY = Number.POSITIVE_INFINITY;
-	var maxX, maxY = Number.NEGATIVE_INFINITY;
+	var minX = Number.POSITIVE_INFINITY
+	var minY = Number.POSITIVE_INFINITY;
+	var maxX = Number.NEGATIVE_INFINITY;
+	var maxY = Number.NEGATIVE_INFINITY;
 
 	var l = 0;
 	while (l < timeline.layers.length)
@@ -1164,10 +1163,7 @@ function getFilteredRect(symbolInstance)
 		}
 	}
 
-	var f = 0;
-	while (f < symbolInstance.filters.length)
-	{
-		var filter = symbolInstance.filters[f++];
+	forEachFilter(symbolInstance.filters, function (filter) {
 		switch (filter.name)
 		{
 			case "blurFilter":
@@ -1178,7 +1174,7 @@ function getFilteredRect(symbolInstance)
 				maxY += filter.blurY * blurMult;
 			break;
 		}
-	}
+	});
 
 	return {
 		x: minX,
@@ -1262,6 +1258,26 @@ function pushElementSpritemap(timeline, layerIndex, frameIndex, elementIndex)
 	var matScaleX = (elem.scaleX < 1) ? (1 / elem.scaleX) * matScale : matScale;
 	var matScaleY = (elem.scaleY < 1) ? (1 / elem.scaleY) * matScale : matScale;
 
+	var scaleXMult = 1;
+	var scaleYMult = 1;
+
+	// Scaling down blurry symbols so antialiasing can do the dirty work later
+	forEachFilter(elem.filters, function (filter) {
+		switch (filter.name) {
+			case "blurFilter":
+				var qualityMult = 0.5;
+				if (filter.quality == "medium") qualityMult = 0.75;
+				if (filter.quality == "low") qualityMult = 1;
+
+				scaleXMult *= ((filter.blurX) / (16 * qualityMult));
+				scaleYMult *= ((filter.blurY) / (16 * qualityMult));
+			break;
+		}
+	});
+
+	matScaleX *= max(scaleXMult, 1);
+	matScaleY *= max(scaleYMult, 1);
+
 	var atlasMatrix = makeMatrix(matScaleX, 0, 0, matScaleY,
 		rect.x - (rect.width * 0.5),
 		rect.y - (rect.height * 0.5)
@@ -1276,6 +1292,14 @@ function pushElementSpritemap(timeline, layerIndex, frameIndex, elementIndex)
 
 	bakedDictionary.push(closeJson());
 	parseSymbolInstance(elem, itemName);
+}
+
+function forEachFilter(filters, callback)
+{
+	var f = 0;
+	while (f < filters.length) {
+		callback(filters[f++]);
+	}
 }
 
 function pushFrameSpritemap(timeline, frameIndex)
