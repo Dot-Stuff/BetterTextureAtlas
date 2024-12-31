@@ -315,8 +315,11 @@ function exportAtlas(exportPath, symbolNames)
 					if (exportElem)
 					{
 						element.rotation = 0;
-						element.scaleX = 1;
-						element.scaleY = 1;
+						element.scaleX = element.scaleY = 1;
+						
+						if (!flattenSkewing)
+							element.skewX = element.skewY = 0;
+
 						reverseScale(element, matrix);
 
 						var filters = element.filters;
@@ -936,8 +939,11 @@ function parseElements(elements, frameIndex, layerIndex, timeline)
 			case "instance":
 				switch (element.instanceType) {
 					case "symbol":
+
+					var bakeInstanceFilters = (bakedFilters && (element.filters != undefined && element.filters.length > 0));
+					var bakeInstanceSkew = (flattenSkewing && (element.skewX != 0 || element.skewY != 0));
+					var bakeInstance = (bakeInstanceFilters || bakeInstanceSkew);
 					
-					var bakeInstance = (bakedFilters && (element.filters != undefined && element.filters.length > 0));
 					if (bakeInstance)
 					{
 						pushElementSpritemap(timeline, layerIndex, frameIndex, e, element.matrix);
@@ -946,6 +952,7 @@ function parseElements(elements, frameIndex, layerIndex, timeline)
 					{
 						parseSymbolInstance(element);
 					}
+
 					break;
 					case "bitmap":
 						parseBitmapInstance(element);
@@ -1138,10 +1145,10 @@ function parseShape(timeline, layerIndex, frameIndex, elementIndices, checkMatri
 	parseAtlasInstance(mtx, smIndex - 1);
 }
 
-function getFilteredRect(symbolInstance)
+function getInstanceRect(symbolInstance)
 {
 	var timeline = symbolInstance.libraryItem.timeline;
-	var frameIndex = symbolInstance.firstFrame != undefined ? symbolInstance.firstFrame : 0;
+	var frameIndex = (symbolInstance.firstFrame != undefined) ? symbolInstance.firstFrame : 0;
 
 	var minX = Number.POSITIVE_INFINITY
 	var minY = Number.POSITIVE_INFINITY;
@@ -1252,31 +1259,35 @@ function pushElementSpritemap(timeline, layerIndex, frameIndex, elementIndex)
 	jsonArray(key("LAYERS", "L"));
 
 	var elem = TEMP_TIMELINE.layers[0].frames[smIndex].elements[elementIndex];
-	var rect = getFilteredRect(elem);
+	var rect = getInstanceRect(elem);
 
 	var matScale = getMatrixScale(rect.width, rect.height);
 	var matScaleX = (elem.scaleX < 1) ? (1 / elem.scaleX) * matScale : matScale;
 	var matScaleY = (elem.scaleY < 1) ? (1 / elem.scaleY) * matScale : matScale;
 
-	var scaleXMult = 1;
-	var scaleYMult = 1;
-
-	// Scaling down blurry symbols so antialiasing can do the dirty work later
-	forEachFilter(elem.filters, function (filter) {
-		switch (filter.name) {
-			case "blurFilter":
-				var qualityMult = 0.5;
-				if (filter.quality == "medium") qualityMult = 0.75;
-				if (filter.quality == "low") qualityMult = 1;
-
-				scaleXMult *= ((filter.blurX) / (16 * qualityMult));
-				scaleYMult *= ((filter.blurY) / (16 * qualityMult));
-			break;
-		}
-	});
-
-	matScaleX *= max(scaleXMult, 1);
-	matScaleY *= max(scaleYMult, 1);
+	if (bakedFilters)
+	{
+		var scaleXMult = 1;
+		var scaleYMult = 1;
+	
+		// Scaling down blurry symbols so antialiasing can do the dirty work later
+		forEachFilter(elem.filters, function (filter) {
+			switch (filter.name) {
+				case "blurFilter":
+					// Values outta my ass but its what ive found mixes best with size / ingame quality
+					var qualityMult = 0.45;
+					if (filter.quality == "medium") qualityMult = 0.6;
+					if (filter.quality == "low") qualityMult = 0.9;
+	
+					scaleXMult *= (filter.blurX / (16 * qualityMult));
+					scaleYMult *= (filter.blurY / (16 * qualityMult));
+				break;
+			}
+		});
+	
+		matScaleX *= max(scaleXMult, 1);
+		matScaleY *= max(scaleYMult, 1);
+	}
 
 	var atlasMatrix = makeMatrix(matScaleX, 0, 0, matScaleY,
 		rect.x - (rect.width * 0.5),
@@ -1296,6 +1307,9 @@ function pushElementSpritemap(timeline, layerIndex, frameIndex, elementIndex)
 
 function forEachFilter(filters, callback)
 {
+	if (filters == undefined || filters.length <= 0)
+		return;
+
 	var f = 0;
 	while (f < filters.length) {
 		callback(filters[f++]);
@@ -1412,7 +1426,7 @@ function pushElement(elemIndices)
 
 function parseSymbolInstance(instance, itemName)
 {
-	var bakedInstance = itemName != undefined;
+	var bakedInstance = (itemName != undefined);
 	jsonHeader(key("SYMBOL_Instance", "SI"));
 
 	if (itemName == undefined)
@@ -1446,7 +1460,7 @@ function parseSymbolInstance(instance, itemName)
 		',"y":' + instance.transformY + "}"
 	);
 
-	if (instance.colorMode != "none" && !bakedInstance)
+	if (instance.colorMode != "none" && !(bakedInstance && bakedFilters))
 	{
 		jsonHeader(key("color", "C"));
 		var modeKey = key("mode", "M");
@@ -1515,7 +1529,6 @@ function parseSymbolInstance(instance, itemName)
 			while (i < filters.length)
 			{
 				var filter = filters[i];
-
 				push('{\n');
 
 				switch (filter.name) {
@@ -1637,8 +1650,8 @@ function parseArray(array) {
 
 function getQualityScale(quality)
 {
-	if (quality == "low") return 0.5;
-	if (quality == "medium") return 0.75;
+	if (quality == "low") return 0.333;
+	if (quality == "medium") return 0.5;
 	return 1;
 }
 
