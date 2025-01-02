@@ -181,6 +181,8 @@ function _main()
 }
 
 _main();
+
+var MERGE_ID;
 var SPRITEMAP_ID;
 var TEMP_MERGE;
 var TEMP_SPRITEMAP;
@@ -195,18 +197,24 @@ var bakedDictionary;
 
 var ogSym;
 
-function exportAtlas(exportPath, symbolNames)
+function initVars()
 {
-	var MERGE_ID = "__BTA_TEMP_MERGE_";
+	MERGE_ID = "__BTA_TEMP_MERGE_";
 	SPRITEMAP_ID = "__BTA_TEMP_SPRITEMAP_";
 	TEMP_SPRITEMAP = SPRITEMAP_ID + "0";
 
 	frameQueue = [];
 	cachedMatrices = [];
+	instanceSizes = [];
 
 	dictionary = [];
 	bakedDictionary = [];
 	smIndex = 0;
+}
+
+function exportAtlas(exportPath, symbolNames)
+{
+	initVars();
 
 	var tmpSymbol = false;
 	var symbol;
@@ -569,11 +577,12 @@ function generateAnimation(symbol)
 			while (dictIndex < dictionary.length)
 			{
 				var symbol = findItem(dictionary[dictIndex++]);
-				if (symbol.name == ogSym.name)
+				curSymbol = symbol.name;
+				if (curSymbol == ogSym.name)
 					continue;
 				
 				push('{\n');
-				jsonStr(key("SYMBOL_name", "SN"), symbol.name);
+				jsonStr(key("SYMBOL_name", "SN"), curSymbol);
 				jsonHeader(key("TIMELINE", "TL"));
 				parseSymbol(symbol);
 				push('},');
@@ -596,15 +605,19 @@ function generateAnimation(symbol)
 			var dictIndex = 0;
 			while (dictIndex < dictionary.length)
 			{
+				var symbol = findItem(dictionary[dictIndex++]);
+				curSymbol = symbol.name;
+				if (curSymbol == ogSym.name)
+					continue;
+				
 				initJson();
 				push("{");
-				push(parseSymbol(findItem(dictionary[dictIndex++]) ));
+				push(parseSymbol(symbol));
 				
-				var pathDict = dictionary[dictIndex - 1].split("/");
+				var pathDict = curSymbol.split("/");
+				var folderStuff = "";
 				var foldI = 0;
 				
-				
-				var folderStuff = "";
 				while (foldI < pathDict.length - 1)
 				{
 					if (folderStuff != "") folderStuff += "/";
@@ -614,7 +627,7 @@ function generateAnimation(symbol)
 					foldI++;
 				}
 	
-				FLfile.write(path + "/LIBRARY/" + dictionary[dictIndex - 1] + ".json", closeJson());
+				FLfile.write(path + "/LIBRARY/" + curSymbol + ".json", closeJson());
 			}
 		}
 	}
@@ -1109,8 +1122,9 @@ function parseBitmapInstance(bitmap)
 
 function parseShape(timeline, layerIndex, frameIndex, elementIndices, checkMatrix)
 {
-	var shapes = pushShapeSpritemap(timeline, layerIndex, frameIndex, elementIndices);	
-	var mtx;
+	var shapes = pushShapeSpritemap(timeline, layerIndex, frameIndex, elementIndices);
+	var atlasIndex = (smIndex - 1);
+	var mtx = undefined;
 	
 	if (checkMatrix)
 	{
@@ -1123,26 +1137,37 @@ function parseShape(timeline, layerIndex, frameIndex, elementIndices, checkMatri
 		while (s < shapes.length)
 		{
 			var shape = shapes[s++];
-			var rect = getShapeRect(shape.vertices);
+			var rect = getVerticesRect(shape.vertices);
 			minX = min(minX, shape.x + rect.x);
 			minY = min(minY, shape.y + rect.y);
 			maxX = max(maxX, rect.width);
 			maxY = max(maxY, rect.height);
 		}
-		
+
 		var transformingX = (minX - (maxX * 0.5));
 		var transformingY = (minY - (maxY * 0.5));
-
 		var scale = getMatrixScale(maxX, maxY);
+		
 		mtx = makeMatrix(scale, 0, 0, scale, transformingX, transformingY);
 	}
 	else
 	{
-		var shape = shapes[0];
+		var shape = timeline.layers[layerIndex].frames[frameIndex].elements[elementIndices[0]];
+		var scale = getMatrixScale(shape.width, shape.height);
+		
 		mtx = cloneMatrix(shape.matrix);
+		mtx.a *= scale;
+		mtx.d *= scale;
 	}
 
-	parseAtlasInstance(mtx, smIndex - 1);
+	var maxScale = instanceSizes[curSymbol];
+	if (maxScale != undefined)
+	{
+		mtx.a /= maxScale[0];	
+		mtx.d /= maxScale[1];
+	}
+
+	parseAtlasInstance(mtx, atlasIndex);
 }
 
 function getInstanceRect(symbolInstance)
@@ -1191,7 +1216,7 @@ function getInstanceRect(symbolInstance)
 	}
 }
 
-function getShapeRect(vertices)
+function getVerticesRect(vertices)
 {
 	var minVertX = Number.POSITIVE_INFINITY;
 	var minVertY = Number.POSITIVE_INFINITY;
@@ -1401,8 +1426,7 @@ function pushShapeSpritemap(timeline, layerIndex, frameIndex, elementIndices)
 				shapes.push({
 					x: frameElement.x,
 					y: frameElement.y,
-					vertices: frameElement.vertices,
-					matrix: frameElement.matrix
+					vertices: frameElement.vertices
 				});
 
 				lastWidth = elemWidth;
@@ -1424,6 +1448,23 @@ function pushElement(elemIndices)
 	frameQueue.push("ELEMENT_" + String(elemIndices));
 }
 
+var instanceSizes;
+var curSymbol;
+
+function pushInstanceSize(name, scaleX, scaleY)
+{
+	if (instanceSizes[name] == null)
+	{
+		var list = [scaleX, scaleY];
+		instanceSizes[name] = list;
+		return;
+	}
+
+	var list = instanceSizes[name];
+	list[0] = max(list[0], scaleX);
+	list[1] = max(list[1], scaleX);
+}
+
 function parseSymbolInstance(instance, itemName)
 {
 	var bakedInstance = (itemName != undefined);
@@ -1439,8 +1480,10 @@ function parseSymbolInstance(instance, itemName)
 		}
 	}
 
-	if (itemName != undefined)
+	if (itemName != undefined) {
 		jsonStr(key("SYMBOL_name", "SN"), itemName);
+		pushInstanceSize(itemName, instance.scaleX, instance.scaleY);
+	}	
 
 	if (instance.firstFrame != undefined)
 		jsonVar(key("firstFrame", "FF"), instance.firstFrame);
