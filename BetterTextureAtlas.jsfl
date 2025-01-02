@@ -1125,25 +1125,25 @@ function parseShape(timeline, layerIndex, frameIndex, elementIndices, checkMatri
 	
 	if (checkMatrix)
 	{
-		var minX = Number.POSITIVE_INFINITY;
-		var minY = Number.POSITIVE_INFINITY;
-		var maxX = Number.NEGATIVE_INFINITY;
-		var maxY = Number.NEGATIVE_INFINITY;
+		var shapeX = Number.POSITIVE_INFINITY;
+		var shapeY = Number.POSITIVE_INFINITY;
+		var shapeWidth = Number.NEGATIVE_INFINITY;
+		var shapeHeight = Number.NEGATIVE_INFINITY;
 
 		var s = 0;
 		while (s < shapes.length)
 		{
 			var shape = shapes[s++];
 			var rect = getVerticesRect(shape.vertices);
-			minX = min(minX, shape.x + rect.x);
-			minY = min(minY, shape.y + rect.y);
-			maxX = max(maxX, rect.width);
-			maxY = max(maxY, rect.height);
+			shapeX = min(shapeX, shape.x + (rect.x * 0.5));
+			shapeY = min(shapeY, shape.y + (rect.y * 0.5));
+			shapeWidth = max(shapeWidth, rect.width);
+			shapeHeight = max(shapeHeight, rect.height);
 		}
 
-		var transformingX = (minX - (maxX * 0.5));
-		var transformingY = (minY - (maxY * 0.5));
-		var scale = getMatrixScale(maxX, maxY);
+		var transformingX = (shapeX - (shapeWidth * 0.5));
+		var transformingY = (shapeY - (shapeHeight * 0.5));
+		var scale = getMatrixScale(shapeWidth, shapeHeight);
 		
 		mtx = makeMatrix(scale, 0, 0, scale, transformingX, transformingY);
 	}
@@ -1225,8 +1225,8 @@ function getVerticesRect(vertices)
 	}
 
 	return {
-		x: minVertX / 2,
-		y: minVertY / 2,
+		x: minVertX,
+		y: minVertY,
 		width: maxVertX,
 		height: maxVertY
 	}
@@ -1375,28 +1375,29 @@ function pushFrameSpritemap(timeline, frameIndex)
 			if (elem.elementType == "shape")
 			{
 				var rect = getVerticesRect(elem.vertices);
-				minX = min(minX, elem.x + rect.x);
-				minY = min(minY, elem.y + rect.y);
-				maxX = max(maxX, elem.x + rect.width);
-				maxY = max(maxY, elem.y + rect.height);
-			}
-			else
-			{
-				minX = min(minX, elem.x);
-				minY = min(minY, elem.y);
-				maxX = max(maxX, elem.width);
-				maxY = max(maxY, elem.height);
+
+				// This is not perfectly accurate YET, but its close enough and im tired.
+				var elemMinX = (elem.x / 2) + (rect.x / 2);
+				var elemMinY = (elem.y / 2) + (rect.y / 2);
+				var elemMaxX = (rect.x / 2) - (elem.x / 2) + rect.width;
+				var elemMaxY = (rect.y / 2) - (elem.y / 2) + rect.height;
+
+				minX = min(minX, elemMinX);
+				minY = min(minY, elemMinY);
+				maxX = max(maxX, elemMaxX);
+				maxY = max(maxY, elemMaxY);
 			}
 		}
 	}
 
-	var mergeWidth = maxX - minX;
-	var mergeHeight = maxY - minY;
+	var mergeWidth = (maxX - minX);
+	var mergeHeight = (maxY - minY);
 
 	TEMP_TIMELINE.insertBlankKeyframe(smIndex);
 	frameQueue.push("MERGE_" + newIndex);
 
-	var scale = getMatrixScale(mergeWidth, mergeHeight);
+	var scale = getMatrixScale(mergeWidth * 2, mergeHeight * 2);
+	
 	var matrix = makeMatrix(scale, 0, 0, scale,
 		minX - (mergeWidth * 0.5),
 		minY - (mergeHeight * 0.5)
