@@ -682,7 +682,7 @@ function parseSymbol(symbol)
 	while (l < layers.length)
 	{
 		var layer = layers[l];
-		if (layer.visible || !onlyVisibleLayers)
+		if ((layer.visible || !onlyVisibleLayers) && layer.frameCount > 0)
 		{
 			var lockedLayer = layer.locked;
 			layer.locked = false;
@@ -802,16 +802,13 @@ function parseFrames(frames, layerIndex, timeline)
 					jsonVar(key("scale", "SL"), frame.motionTweenScale);
 					jsonVar(key("snap", "SP"), frame.motionTweenSnap);
 					jsonVarEnd(key("sync", "SC"), frame.motionTweenSync);
-
 					break;
 					case "motion object":
 					jsonStr(key("type", "T"), key("motion_OBJECT", "MTO"));
 					parseMotionObject(xmlToObject(frame.getMotionObjectXML()));
-					
 					break;
 					case "shape":
-					jsonStr(key("type", "T"), key("shape", "SHP"));
-
+					jsonStrEnd(key("type", "T"), key("shape", "SHP"));
 					break;
 				}	
 
@@ -1160,13 +1157,7 @@ function parseShape(timeline, layerIndex, frameIndex, elementIndices, checkMatri
 		mtx.d *= scale;
 	}
 
-	var maxScale = instanceSizes[curSymbol];
-	if (maxScale != undefined)
-	{
-		mtx.a /= maxScale[0];	
-		mtx.d /= maxScale[1];
-	}
-
+	resizeInstanceMatrix(curSymbol, mtx);
 	parseAtlasInstance(mtx, atlasIndex);
 }
 
@@ -1283,7 +1274,7 @@ function pushElementSpritemap(timeline, layerIndex, frameIndex, elementIndex)
 	jsonHeader(key("TIMELINE", "TL"));
 	jsonArray(key("LAYERS", "L"));
 
-	var elem = TEMP_TIMELINE.layers[0].frames[smIndex].elements[elementIndex];
+	var elem = TEMP_LAYER.frames[smIndex].elements[elementIndex];
 	var rect = getInstanceRect(elem);
 
 	var matScale = getMatrixScale(rect.width, rect.height);
@@ -1299,13 +1290,11 @@ function pushElementSpritemap(timeline, layerIndex, frameIndex, elementIndex)
 		forEachFilter(elem.filters, function (filter) {
 			switch (filter.name) {
 				case "blurFilter":
-					// Values outta my ass but its what ive found mixes best with size / ingame quality
-					var qualityMult = 0.45;
-					if (filter.quality == "medium") qualityMult = 0.6;
-					if (filter.quality == "low") qualityMult = 0.9;
-	
-					scaleXMult *= (filter.blurX / (16 * qualityMult));
-					scaleYMult *= (filter.blurY / (16 * qualityMult));
+					var qualityScale = 0.5;
+					if (filter.quality == "medium") qualityScale = 0.75;
+					if (filter.quality == "low") 	qualityScale = 1;
+					scaleXMult *= (filter.blurX / (16 * qualityScale));
+					scaleYMult *= (filter.blurY / (16 * qualityScale));
 				break;
 			}
 		});
@@ -1369,13 +1358,51 @@ function pushFrameSpritemap(timeline, frameIndex)
 			
 		i++;
 	}
+	
+	var minX = Number.POSITIVE_INFINITY;
+	var minY = Number.POSITIVE_INFINITY;
+	var maxX = Number.NEGATIVE_INFINITY;
+	var maxY = Number.NEGATIVE_INFINITY;
+
+	var l = 0;
+	while (l < mergeTimeline.layers.length)
+	{
+		var e = 0;
+		var elements = mergeTimeline.layers[l++].frames[newIndex].elements;
+		while (e < elements.length)
+		{
+			var elem = elements[e++];
+			if (elem.elementType == "shape")
+			{
+				var rect = getVerticesRect(elem.vertices);
+				minX = min(minX, elem.x + rect.x);
+				minY = min(minY, elem.y + rect.y);
+				maxX = max(maxX, elem.x + rect.width);
+				maxY = max(maxY, elem.y + rect.height);
+			}
+			else
+			{
+				minX = min(minX, elem.x);
+				minY = min(minY, elem.y);
+				maxX = max(maxX, elem.width);
+				maxY = max(maxY, elem.height);
+			}
+		}
+	}
+
+	var mergeWidth = maxX - minX;
+	var mergeHeight = maxY - minY;
 
 	TEMP_TIMELINE.insertBlankKeyframe(smIndex);
-	frameQueue.push("MERGE_" + newIndex);	
+	frameQueue.push("MERGE_" + newIndex);
 
-	var scale = getMatrixScale(0, 0); // TODO
-	var matrix = makeMatrix(scale, 0, 0, scale, 0, 0);
+	var scale = getMatrixScale(mergeWidth, mergeHeight);
+	var matrix = makeMatrix(scale, 0, 0, scale,
+		minX - (mergeWidth * 0.5),
+		minY - (mergeHeight * 0.5)
+	);
 	
+	resizeInstanceMatrix(curSymbol, matrix);
 	parseAtlasInstance(matrix, smIndex);
 	smIndex++;
 }
@@ -1451,6 +1478,17 @@ function pushElement(elemIndices)
 var instanceSizes;
 var curSymbol;
 
+function resizeInstanceMatrix(name, matrix)
+{
+	var maxScale = instanceSizes[name];
+	if (maxScale == null)
+		return;
+	
+	matrix.a /= maxScale[0];	
+	matrix.d /= maxScale[1];
+}
+
+// TODO: make this inheritance based so its a full calculation of all the max sizes of the instance
 function pushInstanceSize(name, scaleX, scaleY)
 {
 	if (instanceSizes[name] == null)
@@ -1482,8 +1520,10 @@ function parseSymbolInstance(instance, itemName)
 
 	if (itemName != undefined) {
 		jsonStr(key("SYMBOL_name", "SN"), itemName);
-		pushInstanceSize(itemName, instance.scaleX, instance.scaleY);
-	}	
+
+		if (!bakedInstance)
+			pushInstanceSize(itemName, instance.scaleX, instance.scaleY);
+	}
 
 	if (instance.firstFrame != undefined)
 		jsonVar(key("firstFrame", "FF"), instance.firstFrame);
@@ -1694,7 +1734,7 @@ function parseArray(array) {
 function getQualityScale(quality)
 {
 	if (quality == "low") return 0.333;
-	if (quality == "medium") return 0.5;
+	if (quality == "medium") return 0.75;
 	return 1;
 }
 
