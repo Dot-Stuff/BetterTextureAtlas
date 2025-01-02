@@ -1104,16 +1104,17 @@ var cachedMatrices;
 
 function parseBitmapInstance(bitmap)
 {
+	var item = bitmap.libraryItem;
 	var matrix = cloneMatrix(bitmap.matrix);
-	var scale = getMatrixScale(0,0); // TODO
+	var scale = getMatrixScale(item.hPixels, item.vPixels);
 
-	if (resolution > 1)
-		scale /= resolution;
+	if (scale > 1)
+	{
+		matrix.a *= scale;
+		matrix.d *= scale;
+	}
 
-	matrix.a *= scale;
-	matrix.d *= scale;
-
-	var itemIndex = pushItemSpritemap(bitmap.libraryItem);
+	var itemIndex = pushItemSpritemap(item);
 	parseAtlasInstance(matrix, itemIndex);
 }
 
@@ -1358,37 +1359,14 @@ function pushFrameSpritemap(timeline, frameIndex)
 			
 		i++;
 	}
-	
-	var minX = Number.POSITIVE_INFINITY;
-	var minY = Number.POSITIVE_INFINITY;
-	var maxX = Number.NEGATIVE_INFINITY;
-	var maxY = Number.NEGATIVE_INFINITY;
 
-	var l = 0;
-	while (l < mergeTimeline.layers.length)
-	{
-		var e = 0;
-		var elements = mergeTimeline.layers[l++].frames[newIndex].elements;
-		while (e < elements.length)
-		{
-			var elem = elements[e++];
-			if (elem.elementType == "shape")
-			{
-				var rect = getVerticesRect(elem.vertices);
-
-				// This is not perfectly accurate YET, but its close enough and im tired.
-				var elemMinX = (elem.x / 2) + (rect.x / 2);
-				var elemMinY = (elem.y / 2) + (rect.y / 2);
-				var elemMaxX = (rect.x / 2) - (elem.x / 2) + rect.width;
-				var elemMaxY = (rect.y / 2) - (elem.y / 2) + rect.height;
-
-				minX = min(minX, elemMinX);
-				minY = min(minY, elemMinY);
-				maxX = max(maxX, elemMaxX);
-				maxY = max(maxY, elemMaxY);
-			}
-		}
-	}
+	// TODO: getBounds is Adobe Animate exclusive, figure out later a fix for old flash versions
+	// I just wanna get this shit done already
+	var bounds = mergeTimeline.getBounds(newIndex + 1);
+	var minX = bounds.left;
+	var minY = bounds.top;
+	var maxX = bounds.right;
+	var maxY = bounds.bottom;
 
 	var mergeWidth = (maxX - minX);
 	var mergeHeight = (maxY - minY);
@@ -1396,12 +1374,8 @@ function pushFrameSpritemap(timeline, frameIndex)
 	TEMP_TIMELINE.insertBlankKeyframe(smIndex);
 	frameQueue.push("MERGE_" + newIndex);
 
-	var scale = getMatrixScale(mergeWidth * 2, mergeHeight * 2);
-	
-	var matrix = makeMatrix(scale, 0, 0, scale,
-		minX - (mergeWidth * 0.5),
-		minY - (mergeHeight * 0.5)
-	);
+	var scale = getMatrixScale(mergeWidth, mergeHeight);
+	var matrix = makeMatrix(scale, 0, 0, scale, minX, minY);
 	
 	resizeInstanceMatrix(curSymbol, matrix);
 	parseAtlasInstance(matrix, smIndex);
