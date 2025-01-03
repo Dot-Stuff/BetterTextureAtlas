@@ -341,6 +341,9 @@ function exportAtlas(exportPath, symbolNames)
 						if (!flattenSkewing)
 							element.skewX = element.skewY = 0;
 
+						if (element.colorMode != undefined)
+							element.colorMode = "none";
+
 						reverseScale(element, matrix);
 
 						var filters = element.filters;
@@ -1590,7 +1593,7 @@ function parseSymbolInstance(instance, itemName)
 		',"y":' + instance.transformY + "}"
 	);
 
-	if (instance.colorMode != "none" && !(bakedInstance && bakedFilters))
+	if (instance.colorMode != "none")// && !(bakedInstance && bakedFilters))
 	{
 		jsonHeader(key("color", "C"));
 		var modeKey = key("mode", "M");
@@ -1646,7 +1649,7 @@ function parseSymbolInstance(instance, itemName)
 		if (instance.blendMode != null && instance.blendMode != "normal")
 			jsonStr(key("blend", "B"), instance.blendMode);
 
-		var filters = (instance.filters != null) ? instance.filters.concat(extraFilters) : null;
+		var filters = instance.filters;
 		var hasFilters = (filters != null && filters.length > 0)
 
 		// Add Filters
