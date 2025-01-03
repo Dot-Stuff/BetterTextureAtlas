@@ -1392,32 +1392,42 @@ function forEachFilter(filters, callback)
 }
 
 function pushFrameSpritemap(timeline, frameIndex)
-{
-	var layersLength = timeline.layers.length;
-	var mergeTimeline = TEMP_MERGE.timeline;
-	
-	timeline.copyLayers(0, layersLength - 1);
-	mergeTimeline.pasteLayers(0);
+{	
+	var l = 0;
+	var usedLayers = new Array();
+	while (l < timeline.layerCount)
+	{
+		if (timeline.layers[l].frames[frameIndex].elements.length > 0)
+		{
+			usedLayers.push(l);
+		}
+		l++;
+	}
 
-	var newLength = mergeTimeline.layers.length;
+	if (usedLayers.length <= 0)
+		return;
+	
+	var mergeTimeline = TEMP_MERGE.timeline;
+
+	// Add any extra neccesary layers
+	while (mergeTimeline.layerCount < usedLayers.length)
+	{
+		mergeTimeline.addNewLayer();
+	}
+
 	var newIndex = mergeTimeline.frameCount - 1;
 
-	var i = 0;
-	while (i < newLength)
+	l = 0;
+	while (l < usedLayers.length)
 	{
-		// Insert keyframes on the old layers
-		mergeTimeline.layers[i].locked = false;
-		mergeTimeline.setSelectedLayers(i, true);
-		mergeTimeline.insertBlankKeyframe(newIndex);
+		var layerIndex = usedLayers[l++];
 
-		// Offset the new copied layers
-		if (i < layersLength) {
-			mergeTimeline.insertBlankKeyframe(0);
-			mergeTimeline.cutFrames(0, 0);
-			mergeTimeline.pasteFrames(newIndex);
-		}
-
-		i++;
+		timeline.setSelectedLayers(layerIndex, true);
+		timeline.copyFrames(frameIndex, frameIndex);
+		
+		mergeTimeline.setSelectedLayers(l - 1, true)
+		mergeTimeline.pasteFrames(newIndex);
+		mergeTimeline.insertBlankKeyframe(newIndex + 1);
 	}
 
 	// TODO: getBounds is Adobe Animate exclusive, figure out later a fix for old flash versions
