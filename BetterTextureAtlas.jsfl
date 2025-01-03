@@ -984,7 +984,7 @@ function parseElements(elements, frameIndex, layerIndex, timeline)
 					
 					if (bakeInstance)
 					{
-						pushElementSpritemap(timeline, layerIndex, frameIndex, e, frameFilters);
+						pushElementSpritemap(timeline, layerIndex, frameIndex, [e], frameFilters);
 					}
 					else
 					{
@@ -1009,9 +1009,13 @@ function parseElements(elements, frameIndex, layerIndex, timeline)
 					case "dynamic": 
 					case "input":
 						if (!element.useDeviceFonts || bakeTexts)
-							parseShape(timeline, layerIndex, frameIndex, [e], false);
+						{
+							pushElementSpritemap(timeline, layerIndex, frameIndex, [e], frameFilters);
+						}
 						else
+						{
 							parseTextInstance(element);
+						}
 					break;
 				}
 			break;
@@ -1047,51 +1051,36 @@ function parseTextInstance(text)
 	jsonHeader(key("textFIELD_Instance", "TFI"));
 	jsonStr(key("text", "TXT"), text.getTextString());
 	jsonStr(key("type", "T"), text.textType);
+	
 	if (text.textType != "static")
 		jsonStr(key("Instance_name", "IN"), text.name);
 
-	var orientation = "";
-
+	var orientation = null;
 	switch (text.orientation)
 	{
-		case "horizontal":
-		orientation = key("horizontal", "HR");
-		break;
-		case "vertical left to right":
-			orientation = key("vertical right to left", "VLTR");
-		break;
-		case "vertical right to left":
-
-		orientation = key("vertical right to left", "VRTL");
-		break;
+		case "horizontal":				orientation = key("horizontal", "HR");					break;
+		case "vertical left to right":	orientation = key("vertical right to left", "VLTR");	break;
+		case "vertical right to left":	orientation = key("vertical right to left", "VRTL");	break;
 	}
 
-	jsonStr(key("orientation", "ORT"), orientation);
+	if (orientation != null)
+		jsonStr(key("orientation", "ORT"), orientation);
 
-	var linetype = "";
-
+	var linetype = null;
 	if (text.textType != "static")
 	{
 		switch (text.lineType)
 		{
-			case "single line":
-				linetype = key("single line", "SL");
-			break;
-			case "multiline":
-				linetype = key("multiline", "ML");
-			break;
-			case "multiline no wrap":
-
-				linetype = key("multiline no wrap", "MLN");
-			break;
-			case "password":
-
-				linetype = key("password", "PSW");
-			break;
+			case "single line": 		linetype = key("single line", "SL"); 				break;
+			case "multiline": 			linetype = key("multiline", "ML");			 		break;
+			case "multiline no wrap": 	linetype = key("multiline no wrap", "MLN"); 		break;
+			case "password": 			linetype = key("password", "PSW"); 					break;
 		}
 	}
 
-	jsonStr(key("lineType", "LT"), linetype);	
+	if (lineType != null)
+		jsonStr(key("lineType", "LT"), linetype);	
+	
 	jsonArray(key("attributes", "ATR"));
 	
 	var t = 0;
@@ -1206,33 +1195,37 @@ function getInstanceRect(instance, frameFilters)
 	var maxX = Number.NEGATIVE_INFINITY;
 	var maxY = Number.NEGATIVE_INFINITY;
 
-	if (instance.vertices != null) // shape instance
+	switch (instance.elementType)
 	{
-		var shapeRect = getVerticesRect(instance.vertices);
-		minX = instance.x + (shapeRect.x * 0.5);
-		minY = instance.y + (shapeRect.y * 0.5);
-		maxX = shapeRect.width;
-		maxY = shapeRect.height;
-	}
-	else // symbol instance
-	{
-		var timeline = instance.libraryItem.timeline;
-		var frameIndex = (instance.firstFrame != undefined) ? instance.firstFrame : 0;
-	
-		var l = 0;
-		while (l < timeline.layers.length)
-		{
-			var frameElements = timeline.layers[l++].frames[frameIndex].elements;
-			var e = 0;
-			while (e < frameElements.length)
+		case "shape":
+			var shapeRect = getVerticesRect(instance.vertices);
+			minX = instance.x + (shapeRect.x * 0.5);
+			minY = instance.y + (shapeRect.y * 0.5);
+			maxX = shapeRect.width;
+			maxY = shapeRect.height;
+		break;
+		case "instance":
+			var timeline = instance.libraryItem.timeline;
+			var frameIndex = (instance.firstFrame != undefined) ? instance.firstFrame : 0;
+		
+			var l = 0;
+			while (l < timeline.layers.length)
 			{
-				var element = frameElements[e++];
-				minX = min(minX, element.x);
-				minY = min(minY, element.y);
-				maxX = max(maxX, element.width);
-				maxY = max(maxY, element.height);
+				var frameElements = timeline.layers[l++].frames[frameIndex].elements;
+				var e = 0;
+				while (e < frameElements.length)
+				{
+					var element = frameElements[e++];
+					minX = min(minX, element.x);
+					minY = min(minY, element.y);
+					maxX = max(maxX, element.width);
+					maxY = max(maxY, element.height);
+				}
 			}
-		}
+		break;
+		case "text":
+			minX = minY = maxX = maxY = 0;
+		break;
 	}
 
 	var instanceFilters = new Array();
@@ -1317,7 +1310,7 @@ function parseAtlasInstance(matrix, index)
 	push('}');
 }
 
-function pushElementSpritemap(timeline, layerIndex, frameIndex, elementIndices, frameFilters)
+function pushElementsFromFrame(timeline, layerIndex, frameIndex, elementIndices)
 {
 	var lockedLayer = timeline.layers[layerIndex].locked;
 	timeline.setSelectedLayers(layerIndex, true);
@@ -1325,6 +1318,11 @@ function pushElementSpritemap(timeline, layerIndex, frameIndex, elementIndices, 
 	TEMP_TIMELINE.pasteFrames(smIndex);
 	pushElement(elementIndices);
 	timeline.layers[layerIndex].locked = lockedLayer;
+}
+
+function pushElementSpritemap(timeline, layerIndex, frameIndex, elementIndices, frameFilters)
+{
+	pushElementsFromFrame(timeline, layerIndex, frameIndex, elementIndices);
 
 	initJson();
 	push('{\n');
