@@ -196,6 +196,7 @@ var dictionary;
 var bakedDictionary;
 
 var ogSym;
+var flversion;
 
 function initVars()
 {
@@ -210,6 +211,8 @@ function initVars()
 	dictionary = [];
 	bakedDictionary = [];
 	smIndex = 0;
+
+	flversion = parseInt(fl.version.split(" ")[1].split(",")[0]);
 }
 
 function exportAtlas(exportPath, symbolNames)
@@ -285,19 +288,20 @@ function exportAtlas(exportPath, symbolNames)
 		var queuedFrame = frameQueue[i].split("_");
 		var type = queuedFrame.shift();
 		var matrix = cachedMatrices[i];
+		
+		TEMP_TIMELINE.currentFrame = i;
+		doc.selectNone();
 
 		switch (type)
 		{
 			case "ITEM":
 				var id = queuedFrame.join("");
-				TEMP_TIMELINE.currentFrame = i;
 				lib.addItemToDocument(pos, id);
 
 				var item = TEMP_LAYER.frames[i].elements[0];
 				reverseScale(item, matrix);
 			break;
 			case "MERGE":
-				TEMP_TIMELINE.currentFrame = i;
 				lib.addItemToDocument(pos, MERGE_ID);
 
 				var item = TEMP_LAYER.frames[i].elements[0];
@@ -312,6 +316,15 @@ function exportAtlas(exportPath, symbolNames)
 
 				var elemIndices = queuedFrame[0].replace("[","").replace("]","").split(",");
 				var selection = new Array();
+
+				// Remove frame filters (only from Animate 2020 upwards)
+				if (flversion >= 20)
+				{
+					if (!bakedFilters && TEMP_LAYER.setFiltersAtFrame != undefined)
+					{
+						TEMP_LAYER.setFiltersAtFrame(i, new Array());
+					}
+				}
 
 				var e = 0;
 				var elements = frame.elements;
@@ -333,13 +346,13 @@ function exportAtlas(exportPath, symbolNames)
 						var filters = element.filters;
 						if (filters != undefined && filters.length > 0 && (matrix.a > 1.01 || matrix.d > 1.01))
 						{
-							TEMP_TIMELINE.currentFrame = i;
 							doc.selectNone();
 							doc.selection = [element];
 
 							forEachFilter(filters, function (filter) {
 								switch (filter.name)
 								{
+									case "glowFilter":
 									case "blurFilter":
 										filter.blurX /= matrix.a;
 										filter.blurY /= matrix.d;
@@ -359,7 +372,6 @@ function exportAtlas(exportPath, symbolNames)
 				}
 
 				if (selection.length > 0) {
-					TEMP_TIMELINE.currentFrame = i;
 					doc.selectNone();
 					doc.selection = selection;
 					doc.deleteSelection();
@@ -837,6 +849,18 @@ function parseFrames(frames, layerIndex, timeline)
 
 			jsonVar(key("index", "I"), f);
 			jsonVar(key("duration", "DU"), frame.duration);
+			
+			if (!bakedFilters)
+			{
+				var frameFilters = getFrameFilters(timeline.layers[layerIndex], f);
+				if (frameFilters.length > 0)
+				{
+					parseFilters(frameFilters);
+					removeTrail(1);
+					push(",");
+				}
+			}
+			
 			parseElements(frame.elements, f, layerIndex, timeline);
 			push('},');
 		}
@@ -917,6 +941,9 @@ function parseElements(elements, frameIndex, layerIndex, timeline)
 	var e = 0;
 	var shapeQueue = [];
 
+	var frameFilters = getFrameFilters(timeline.layers[layerIndex], frameIndex);
+	var hasFrameFilters = (bakedFilters && frameFilters.length > 0);
+
 	while (e < elements.length)
 	{
 		var element = elements[e];
@@ -950,13 +977,14 @@ function parseElements(elements, frameIndex, layerIndex, timeline)
 				switch (element.instanceType) {
 					case "symbol":
 
-					var bakeInstanceFilters = (bakedFilters && (element.filters != undefined && element.filters.length > 0));
-					var bakeInstanceSkew = (flattenSkewing && (element.skewX != 0 || element.skewY != 0));
-					var bakeInstance = (bakeInstanceFilters || bakeInstanceSkew);
+					var hasFilters = element.filters != undefined && element.filters.length > 0;
+					var bakeInstanceFilters = (bakedFilters && (hasFilters || hasFrameFilters));
+					//var bakeInstanceSkew = (flattenSkewing && (element.skewX != 0 || element.skewY != 0));
+					var bakeInstance = (bakeInstanceFilters);// || bakeInstanceSkew);
 					
 					if (bakeInstance)
 					{
-						pushElementSpritemap(timeline, layerIndex, frameIndex, e, element.matrix);
+						pushElementSpritemap(timeline, layerIndex, frameIndex, e, frameFilters);
 					}
 					else
 					{
@@ -1000,7 +1028,14 @@ function parseElements(elements, frameIndex, layerIndex, timeline)
 
 	if (shapeQueue.length > 0) {
 		push("{");
-		parseShape(timeline, layerIndex, frameIndex, shapeQueue, true)
+		if (hasFrameFilters && bakedFilters)
+		{
+			pushElementSpritemap(timeline, layerIndex, frameIndex, shapeQueue, frameFilters);
+		}
+		else
+		{
+			parseShape(timeline, layerIndex, frameIndex, shapeQueue, true);
+		}
 		push("}");
 	}
 
@@ -1136,16 +1171,18 @@ function parseShape(timeline, layerIndex, frameIndex, elementIndices, checkMatri
 		{
 			var shape = shapes[s++];
 			var rect = getVerticesRect(shape.vertices);
+			
 			shapeX = min(shapeX, shape.x + (rect.x * 0.5));
 			shapeY = min(shapeY, shape.y + (rect.y * 0.5));
 			shapeWidth = max(shapeWidth, rect.width);
 			shapeHeight = max(shapeHeight, rect.height);
+
+			// isRectangle = (shape.isRectangleObject || shape.vertices.length === 4)
 		}
 
 		var transformingX = (shapeX - (shapeWidth * 0.5));
 		var transformingY = (shapeY - (shapeHeight * 0.5));
-		var scale = getMatrixScale(shapeWidth, shapeHeight);
-		
+		var scale = getMatrixScale(shapeWidth, shapeHeight);		
 		mtx = makeMatrix(scale, 0, 0, scale, transformingX, transformingY);
 	}
 	else
@@ -1162,34 +1199,56 @@ function parseShape(timeline, layerIndex, frameIndex, elementIndices, checkMatri
 	parseAtlasInstance(mtx, atlasIndex);
 }
 
-function getInstanceRect(symbolInstance)
+function getInstanceRect(instance, frameFilters)
 {
-	var timeline = symbolInstance.libraryItem.timeline;
-	var frameIndex = (symbolInstance.firstFrame != undefined) ? symbolInstance.firstFrame : 0;
-
 	var minX = Number.POSITIVE_INFINITY
 	var minY = Number.POSITIVE_INFINITY;
 	var maxX = Number.NEGATIVE_INFINITY;
 	var maxY = Number.NEGATIVE_INFINITY;
 
-	var l = 0;
-	while (l < timeline.layers.length)
+	if (instance.vertices != null) // shape instance
 	{
-		var frameElements = timeline.layers[l++].frames[frameIndex].elements;
-		var e = 0;
-		while (e < frameElements.length)
+		var shapeRect = getVerticesRect(instance.vertices);
+		minX = instance.x + (shapeRect.x * 0.5);
+		minY = instance.y + (shapeRect.y * 0.5);
+		maxX = shapeRect.width;
+		maxY = shapeRect.height;
+	}
+	else // symbol instance
+	{
+		var timeline = instance.libraryItem.timeline;
+		var frameIndex = (instance.firstFrame != undefined) ? instance.firstFrame : 0;
+	
+		var l = 0;
+		while (l < timeline.layers.length)
 		{
-			var element = frameElements[e++];
-			minX = min(minX, element.x);
-			minY = min(minY, element.y);
-			maxX = max(maxX, element.width);
-			maxY = max(maxY, element.height);
+			var frameElements = timeline.layers[l++].frames[frameIndex].elements;
+			var e = 0;
+			while (e < frameElements.length)
+			{
+				var element = frameElements[e++];
+				minX = min(minX, element.x);
+				minY = min(minY, element.y);
+				maxX = max(maxX, element.width);
+				maxY = max(maxY, element.height);
+			}
 		}
 	}
 
-	forEachFilter(symbolInstance.filters, function (filter) {
+	var instanceFilters = new Array();
+
+	if (frameFilters != null && frameFilters.length > 0)
+		instanceFilters = instanceFilters.concat(frameFilters);
+
+	if (instance.filters != null && instance.filters.length > 0)
+		instanceFilters = instanceFilters.concat(instance.filters);
+	
+	forEachFilter(instanceFilters, function (filter) {
 		switch (filter.name)
 		{
+			case "glowFilter":
+				if (filter.inner)
+					break;
 			case "blurFilter":
 				var blurMult = getQualityScale(filter.quality);
 				minX -= filter.blurX * blurMult;
@@ -1258,13 +1317,13 @@ function parseAtlasInstance(matrix, index)
 	push('}');
 }
 
-function pushElementSpritemap(timeline, layerIndex, frameIndex, elementIndex)
+function pushElementSpritemap(timeline, layerIndex, frameIndex, elementIndices, frameFilters)
 {
 	var lockedLayer = timeline.layers[layerIndex].locked;
 	timeline.setSelectedLayers(layerIndex, true);
 	timeline.copyFrames(frameIndex, frameIndex);
 	TEMP_TIMELINE.pasteFrames(smIndex);
-	pushElement([elementIndex]);
+	pushElement(elementIndices);
 	timeline.layers[layerIndex].locked = lockedLayer;
 
 	initJson();
@@ -1275,8 +1334,8 @@ function pushElementSpritemap(timeline, layerIndex, frameIndex, elementIndex)
 	jsonHeader(key("TIMELINE", "TL"));
 	jsonArray(key("LAYERS", "L"));
 
-	var elem = TEMP_LAYER.frames[smIndex].elements[elementIndex];
-	var rect = getInstanceRect(elem);
+	var elem = TEMP_LAYER.frames[smIndex].elements[elementIndices[0]];
+	var rect = getInstanceRect(elem, frameFilters);
 
 	var matScale = getMatrixScale(rect.width, rect.height);
 	var matScaleX = (elem.scaleX < 1) ? (1 / elem.scaleX) * matScale : matScale;
@@ -1356,7 +1415,7 @@ function pushFrameSpritemap(timeline, frameIndex)
 			mergeTimeline.cutFrames(0, 0);
 			mergeTimeline.pasteFrames(newIndex);
 		}
-			
+
 		i++;
 	}
 
@@ -1375,7 +1434,7 @@ function pushFrameSpritemap(timeline, frameIndex)
 	frameQueue.push("MERGE_" + newIndex);
 
 	var scale = getMatrixScale(mergeWidth, mergeHeight);
-	var matrix = makeMatrix(scale, 0, 0, scale, minX, minY);
+	var matrix = makeMatrix(scale, 0, 0, scale, minX , minY);
 	
 	resizeInstanceMatrix(curSymbol, matrix);
 	parseAtlasInstance(matrix, smIndex);
@@ -1478,6 +1537,21 @@ function pushInstanceSize(name, scaleX, scaleY)
 	list[1] = max(list[1], scaleX);
 }
 
+function getFrameFilters(layer, frameIndex)
+{
+	if (flversion < 20)
+		return new Array(0);
+
+	if (layer.getFiltersAtFrame != null)
+	{
+		var filters = layer.getFiltersAtFrame(frameIndex);
+		if (filters != null)
+			return filters;
+	}
+
+	return new Array(0);
+}
+
 function parseSymbolInstance(instance, itemName)
 {
 	var bakedInstance = (itemName != undefined);
@@ -1571,109 +1645,117 @@ function parseSymbolInstance(instance, itemName)
 
 	if (instance.symbolType != "graphic")
 	{
-		if (instance.blendMode != "normal")
+		if (instance.blendMode != null && instance.blendMode != "normal")
 			jsonStr(key("blend", "B"), instance.blendMode);
 
-		var filters = instance.filters;
-		var hasFilters = (filters != undefined && filters.length > 0)
+		var filters = (instance.filters != null) ? instance.filters.concat(extraFilters) : null;
+		var hasFilters = (filters != null && filters.length > 0)
 
 		// Add Filters
 		if (hasFilters && !bakedFilters)
 		{
-			jsonArray(key("filters", "F"));
-			var n = key("name", "N");
-
-			var i = 0;
-			while (i < filters.length)
-			{
-				var filter = filters[i];
-				push('{\n');
-
-				switch (filter.name) {
-					case "adjustColorFilter":
-						jsonStr(n, key("adjustColorFilter", "ACF"));
-						jsonVar(key("brightness", "BRT"), filter.brightness);
-						jsonVar(key("hue", "H"), filter.hue);
-						jsonVar(key("contrast", "CT"), filter.contrast);
-						jsonVarEnd(key("saturation", "SAT"), filter.saturation);
-					break;
-					case "bevelFilter":
-						jsonStr(n, key("bevelFilter", "BF"));
-						jsonVar(key("blurX", "BLX"), filter.blurX);
-						jsonVar(key("blurY", "BLY"), filter.blurY);
-						jsonVar(key("distance", "D"), filter.distance);
-						jsonVar(key("knockout", "KK"), filter.knockout);
-						jsonStr(key("type", "T"), filter.type);
-						jsonVar(key("strength", "STR"), filter.strength);
-						jsonVar(key("angle", "A"), filter.angle);
-						jsonStr(key("shadowColor", "SC"), filter.shadowColor);
-						jsonStr(key("highlightColor", "HC"), filter.highlightColor);
-						jsonVarEnd(key("quality", "Q"), parseQuality(filter.quality));
-					break;
-					case "blurFilter":
-						jsonStr(n, key("blurFilter", "BLF"));
-						jsonVar(key("blurX", "BLX"), filter.blurX);
-						jsonVar(key("blurY", "BLY"), filter.blurY);
-						jsonVarEnd(key("quality", "Q"), parseQuality(filter.quality));
-					break;
-					case "dropShadowFilter":
-						jsonStr(n, key("dropShadowFilter", "DSF"));
-						jsonVar(key("blurX", "BLX"), filter.blurX);
-						jsonVar(key("blurY", "BLY"), filter.blurY);
-						jsonVar(key("distance", "D"), filter.distance);
-						jsonVar(key("knockout", "KK"), filter.knockout);
-						jsonVar(key("inner", "IN"), filter.inner);
-						jsonVar(key("hideObject", "HO"), filter.hideObject);
-						jsonVar(key("strength", "STR"), filter.strength);
-						jsonVar(key("angle", "A"), filter.angle);
-						jsonStr(key("color", "C"), filter.color);
-						jsonVarEnd(key("quality", "Q"), parseQuality(filter.quality));
-					break;
-					case "glowFilter":
-						jsonStr(n, key("glowFilter", "GF"));
-						jsonVar(key("blurX", "BLX"), filter.blurX);
-						jsonVar(key("blurY", "BLY"), filter.blurY);
-						jsonVar(key("inner", "IN"), filter.inner);
-						jsonVar(key("knockout", "KK"), filter.knockout);
-						jsonVar(key("strength", "STR"), filter.strength);
-						jsonStr(key("color", "C"), filter.color);
-						jsonVarEnd(key("quality", "Q"), parseQuality(filter.quality));
-					break;
-					case "gradientBevelFilter":
-						jsonStr(n, key("gradientBevelFilter", "GBF"));
-						jsonVar(key("blurX", "BLX"), filter.blurX);
-						jsonVar(key("blurY", "BLY"), filter.blurY);
-						jsonVar(key("distance", "D"), filter.distance);
-						jsonVar(key("knockout", "KK"), filter.knockout);
-						jsonStr(key("type", "T"), filter.type);
-						jsonVar(key("strength", "STR"), filter.strength);
-						jsonVar(key("angle", "A"), filter.angle);
-						jsonVar(key("colorArray", "CA"), parseArray(filter.colorArray));
-						jsonVarEnd(key("quality", "Q"), parseQuality(filter.quality));
-					break;
-					case "gradientGlowFilter":
-						jsonStr(n, key("gradientGlowFilter", "GGF"));
-						jsonVar(key("blurX", "BLX"), filter.blurX);
-						jsonVar(key("blurY", "BLY"), filter.blurY);
-						jsonVar(key("inner", "IN"), filter.inner);
-						jsonVar(key("knockout", "KK"), filter.knockout);
-						jsonVar(key("strength", "STR"), filter.strength);
-						jsonVar(key("colorArray", "CA"), parseArray(filter.colorArray));
-						jsonVarEnd(key("quality", "Q"), parseQuality(filter.quality));
-					break;
-				}
-
-				push((i < filters.length - 1) ? '},' : '}\n');
-				i++;
-			}
-
-			push(']\n');
+			parseFilters(filters)
 		}
-		else removeTrail(2);
+		else
+		{
+			removeTrail(2);
+		}
 	}
 	else removeTrail(2);
 
 	push('}');
+}
+
+function parseFilters(filters)
+{
+	jsonArray(key("filters", "F"));
+	var n = key("name", "N");
+
+	var i = 0;
+	while (i < filters.length)
+	{
+		var filter = filters[i];
+		push('{\n');
+
+		switch (filter.name) {
+			case "adjustColorFilter":
+				jsonStr(n, key("adjustColorFilter", "ACF"));
+				jsonVar(key("brightness", "BRT"), filter.brightness);
+				jsonVar(key("hue", "H"), filter.hue);
+				jsonVar(key("contrast", "CT"), filter.contrast);
+				jsonVarEnd(key("saturation", "SAT"), filter.saturation);
+			break;
+			case "bevelFilter":
+				jsonStr(n, key("bevelFilter", "BF"));
+				jsonVar(key("blurX", "BLX"), filter.blurX);
+				jsonVar(key("blurY", "BLY"), filter.blurY);
+				jsonVar(key("distance", "D"), filter.distance);
+				jsonVar(key("knockout", "KK"), filter.knockout);
+				jsonStr(key("type", "T"), filter.type);
+				jsonVar(key("strength", "STR"), filter.strength);
+				jsonVar(key("angle", "A"), filter.angle);
+				jsonStr(key("shadowColor", "SC"), filter.shadowColor);
+				jsonStr(key("highlightColor", "HC"), filter.highlightColor);
+				jsonVarEnd(key("quality", "Q"), parseQuality(filter.quality));
+			break;
+			case "blurFilter":
+				jsonStr(n, key("blurFilter", "BLF"));
+				jsonVar(key("blurX", "BLX"), filter.blurX);
+				jsonVar(key("blurY", "BLY"), filter.blurY);
+				jsonVarEnd(key("quality", "Q"), parseQuality(filter.quality));
+			break;
+			case "dropShadowFilter":
+				jsonStr(n, key("dropShadowFilter", "DSF"));
+				jsonVar(key("blurX", "BLX"), filter.blurX);
+				jsonVar(key("blurY", "BLY"), filter.blurY);
+				jsonVar(key("distance", "D"), filter.distance);
+				jsonVar(key("knockout", "KK"), filter.knockout);
+				jsonVar(key("inner", "IN"), filter.inner);
+				jsonVar(key("hideObject", "HO"), filter.hideObject);
+				jsonVar(key("strength", "STR"), filter.strength);
+				jsonVar(key("angle", "A"), filter.angle);
+				jsonStr(key("color", "C"), filter.color);
+				jsonVarEnd(key("quality", "Q"), parseQuality(filter.quality));
+			break;
+			case "glowFilter":
+				jsonStr(n, key("glowFilter", "GF"));
+				jsonVar(key("blurX", "BLX"), filter.blurX);
+				jsonVar(key("blurY", "BLY"), filter.blurY);
+				jsonVar(key("inner", "IN"), filter.inner);
+				jsonVar(key("knockout", "KK"), filter.knockout);
+				jsonVar(key("strength", "STR"), filter.strength);
+				jsonStr(key("color", "C"), filter.color);
+				jsonVarEnd(key("quality", "Q"), parseQuality(filter.quality));
+			break;
+			case "gradientBevelFilter":
+				jsonStr(n, key("gradientBevelFilter", "GBF"));
+				jsonVar(key("blurX", "BLX"), filter.blurX);
+				jsonVar(key("blurY", "BLY"), filter.blurY);
+				jsonVar(key("distance", "D"), filter.distance);
+				jsonVar(key("knockout", "KK"), filter.knockout);
+				jsonStr(key("type", "T"), filter.type);
+				jsonVar(key("strength", "STR"), filter.strength);
+				jsonVar(key("angle", "A"), filter.angle);
+				jsonVar(key("colorArray", "CA"), parseArray(filter.colorArray));
+				jsonVarEnd(key("quality", "Q"), parseQuality(filter.quality));
+			break;
+			case "gradientGlowFilter":
+				jsonStr(n, key("gradientGlowFilter", "GGF"));
+				jsonVar(key("blurX", "BLX"), filter.blurX);
+				jsonVar(key("blurY", "BLY"), filter.blurY);
+				jsonVar(key("inner", "IN"), filter.inner);
+				jsonVar(key("knockout", "KK"), filter.knockout);
+				jsonVar(key("strength", "STR"), filter.strength);
+				jsonVar(key("colorArray", "CA"), parseArray(filter.colorArray));
+				jsonVarEnd(key("quality", "Q"), parseQuality(filter.quality));
+			break;
+		}
+
+		push((i < filters.length - 1) ? '},' : '}\n');
+		i++;
+	}
+
+	push(']\n');
 }
 
 function makeMatrix(a, b, c, d, tx, ty)
