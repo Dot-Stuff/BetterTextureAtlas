@@ -1438,7 +1438,7 @@ function pushFrameSpritemap(timeline, frameIndex)
 	frameQueue.push("MERGE_" + newIndex);
 
 	var scale = getMatrixScale(mergeWidth, mergeHeight);
-	var matrix = makeMatrix(scale, 0, 0, scale, bounds.left , bounds.top);
+	var matrix = makeMatrix(scale, 0, 0, scale, bounds.left, bounds.top);
 	
 	resizeInstanceMatrix(curSymbol, matrix);
 	parseAtlasInstance(matrix, smIndex);
@@ -1471,19 +1471,33 @@ function getFrameBounds(timeline, frameIndex)
 		
 		while (e < elems.length)
 		{
-			var rect = getInstanceRect(elems[e++]);
-			minX = min(minX, rect.x);
-			minY = min(minY, rect.y);
-			maxX = max(maxX, rect.x + rect.width);
-			maxY = max(maxY, rect.y + rect.height);
+			var elem = elems[e++];
+
+			switch (elem.elementType)
+			{
+				case "shape":
+					var shapeRect = getVerticesRect(elem.vertices);
+					minX = min(minX, shapeRect.x);
+					minY = min(minY, shapeRect.y);
+					maxX = max(maxX, shapeRect.width);
+					maxY = max(maxY, shapeRect.height);
+				break;
+				default:
+					var rect = getInstanceRect(elem);
+					minX = min(minX, rect.x);
+					minY = min(minY, rect.y);
+					maxX = max(maxX, rect.x + rect.width);
+					maxY = max(maxY, rect.y + rect.height);
+				break;
+			}
 		}
 	}
 
 	return {
-		left: 0,
-		top: 0,
-		right: (maxX - minX),
-		bottom: (maxY - minY)
+		left: minX,
+		top: minY,
+		right: maxX,
+		bottom: maxY
 	}
 }
 
