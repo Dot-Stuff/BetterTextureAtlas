@@ -1,6 +1,6 @@
 var version = fl.version.split(" ")[1].split(",");
 
-function xmlData()
+function xmlData(symbols)
 {
     var data = FLfile.read(fl.configURI + "Commands/bta_src/BTADialog.xml");
     var saveData = FLfile.read(fl.configURI + "Commands/bta_src/saveBTA.txt").split("\n");

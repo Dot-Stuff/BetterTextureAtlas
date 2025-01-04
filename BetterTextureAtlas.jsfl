@@ -88,7 +88,7 @@ function _main()
 	//fl.runScript(fl.configURI + "Commands/bta_src/save.scr", "setupSaves");
 	SaveData.setupSaves();
 
-	var rawXML = fl.runScript(fl.configURI + "Commands/bta_src/save.scr", "xmlData");
+	var rawXML = fl.runScript(fl.configURI + "Commands/bta_src/save.scr", "xmlData", [symbols]);
 
 	var xPan = SaveData.openXMLFromString(rawXML);
 
@@ -316,22 +316,14 @@ function exportAtlas(exportPath, symbolNames)
 			case "ITEM":
 				var id = queuedFrame.join("");
 				lib.addItemToDocument(pos, id);
-
 				var item = TEMP_LAYER.frames[i].elements[0];
 				reverseScale(item, matrix);
 			break;
 			case "MERGE":
 				lib.addItemToDocument(pos, MERGE_ID);
-
 				var mergeElem = TEMP_LAYER.frames[i].elements[0];
-				if (mergeElem == undefined)
-				{
-					trace("MERGE ERROR");
-					break;
-				}
 				
 				reverseScale(mergeElem, matrix);
-				
 				var mergeIndex = parseInt(queuedFrame[0]);
 				mergeElem.firstFrame = mergeIndex;
 			break;
@@ -365,6 +357,9 @@ function exportAtlas(exportPath, symbolNames)
 						
 						if (!flattenSkewing)
 							element.skewX = element.skewY = 0;
+
+						if (element.blendMode != undefined)
+							element.blendMode = "normal";
 
 						if (element.colorMode != undefined)
 							element.colorMode = "none";
@@ -415,31 +410,71 @@ function exportAtlas(exportPath, symbolNames)
 
 		i++;
 	}
+	
+	if (flversion < 12) // Super primitive spritemap export for versions below CS6
+	{
+		var shapeLength = TEMP_TIMELINE.frameCount;
+		var SPRITESHEET_ID = "__BTA_TEMP_SPRITESHEET_";
 
-	doc.selectNone();
-	doc.exitEditMode();
+		var sheetItem = initBtaItem(SPRITESHEET_ID);
+		var sheetFrame = sheetItem.timeline.layers[0].frames[0];
+		lib.editItem(sheetItem.name);
 
-	//});
+		var ogWidth = doc.width;
+		var ogHeight = doc.height;
 
-	// Generate Spritemap
-	var sm = makeSpritemap();
-	sm.addSymbol(TEMP_ITEM);
+		var sheet = cs4Spritesheet(shapeLength, sheetFrame);
+		doc.width = Math.floor(sheet.width);
+		doc.height = Math.floor(sheet.height);
 
-	var smData = {sm: sm, index:0};
-	spritemaps = [smData];
+		var smPath = path + "/spritemap1";
 
-	// Divide Spritemap if overflowed
-	if (sm.overflowed) {
-		divideSpritemap(smData, TEMP_ITEM);
+		if (FLfile.exists(smPath + ".json"))
+			FLfile.remove(smPath + ".json");
+
+		FLfile.write(smPath + ".json", sheet.json);
+
+		if (FLfile.exists(smPath + ".png"))
+			FLfile.remove(smPath + ".png");
+		
+		doc.exportPNG(smPath, true, true);
+		FLfile.copy(smPath + "img.png", smPath + ".png");
+		FLfile.remove(smPath + "img.png");
+
+		doc.width = ogWidth;
+		doc.height = ogHeight;
+
+		doc.selectNone();
+		doc.exitEditMode();
+
+		lib.deleteItem(SPRITESHEET_ID);
+		lib.deleteItem(TEMP_SPRITEMAP);
 	}
+	else
+	{
+		doc.selectNone();
+		doc.exitEditMode();
 
-	var i = 0;
-	while (i < spritemaps.length) {
-		var id = SPRITEMAP_ID + i;
-		var exportId = (i == 0) ? 1 : Math.abs(i - spritemaps.length - 1);
+		// Generate Spritemap
+		var sm = makeSpritemap();
+		sm.addSymbol(TEMP_ITEM);
 
-		exportSpritemap(id, exportPath, spritemaps[i++], exportId);
-		lib.deleteItem(id);
+		var smData = {sm: sm, index:0};
+		spritemaps = [smData];
+
+		// Divide Spritemap if overflowed
+		if (sm.overflowed) {
+			divideSpritemap(smData, TEMP_ITEM);
+		}
+
+		var i = 0;
+		while (i < spritemaps.length) {
+			var id = SPRITEMAP_ID + i;
+			var exportId = (i == 0) ? 1 : Math.abs(i - spritemaps.length - 1);
+
+			exportSpritemap(id, exportPath, spritemaps[i++], exportId);
+			lib.deleteItem(id);
+		}
 	}
 
 	if (tmpSymbol)
@@ -1235,8 +1270,8 @@ function getInstanceRect(instance, frameFilters)
 	{
 		case "shape":
 			var shapeRect = getVerticesRect(instance.vertices);
-			minX = instance.x + (shapeRect.x * 0.5);
-			minY = instance.y + (shapeRect.y * 0.5);
+			minX = (instance.x + (shapeRect.x * 0.5));
+			minY = (instance.y + (shapeRect.y * 0.5));
 			maxX = shapeRect.width;
 			maxY = shapeRect.height;
 		break;
@@ -2041,4 +2076,95 @@ function xmlNode(xml)
     }
     
     return obj;
+}
+
+function cs4Spritesheet(shapeLength, sheetFrame)
+{
+    var curX = BrdPad;
+    var curY = BrdPad;
+    var sheetWidth = 0;
+    var maxHeight = 0;
+    var maxSheetWidth = 0;
+    var maxSheetHeight = 0;
+    var packedRectangles = [];
+    
+    var i = 0;
+    while (i < shapeLength)
+	{
+		lib.addItemToDocument({x: 0, y: 0}, TEMP_SPRITEMAP);
+        
+		var ogElem = TEMP_LAYER.frames[i].elements[0];
+		var elem = sheetFrame.elements[i];
+		elem.firstFrame = i;
+		i++;
+
+		var rect = getInstanceRect(ogElem);
+		var rectWidth = rect.width;
+		var rectHeight = rect.height;
+
+		elem.x = curX - (rect.x - (rectWidth * 0.5));
+		elem.y = curY - (rect.y - (rectHeight * 0.5));
+
+		var packedRect = {
+            x: Math.floor(curX),
+            y: Math.floor(curY),
+            width: Math.floor(rectWidth),
+            height: Math.floor(rectHeight)
+        }
+
+		packedRectangles.push(packedRect);
+        
+        if (curX + rectWidth + ShpPad > 2880)
+		{
+            curX = BrdPad;
+            curY += maxHeight + ShpPad;
+            maxHeight = 0;
+
+			packedRect.x = Math.floor(curX);
+			packedRect.y = Math.floor(curY);
+
+			elem.x = curX - (rect.x - (rectWidth * 0.5));
+			elem.y = curY - (rect.y - (rectHeight * 0.5));
+
+			curX += rectWidth + ShpPad;
+        }
+		else {
+            curX += rectWidth + ShpPad;
+            maxHeight = Math.max(maxHeight, rectHeight);
+            sheetWidth = Math.max(sheetWidth, curX);
+        }
+
+        maxSheetWidth = Math.max(maxSheetWidth, sheetWidth);
+        maxSheetHeight = Math.max(maxSheetHeight, curY + maxHeight);
+        
+
+    }
+
+	initJson();
+	push('{"ATLAS":{"SPRITES":[\n');
+
+	var i = 0;
+	while (i < packedRectangles.length)
+	{	
+		var rect = packedRectangles[i];
+		push('{"SPRITE":{');
+		jsonStr("name", i);
+		jsonVar("x", rect.x);
+		jsonVar("y", rect.y);
+		jsonVar("w", rect.width);
+		jsonVar("h", rect.height);
+		jsonVarEnd("rotated", false);
+		push('}},');
+		i++;
+	}
+
+	removeTrail(1);
+	push("]}}\n");
+
+    return {
+        width: maxSheetWidth,
+        height: maxSheetHeight,
+        rectangles: packedRectangles,
+		json: closeJson()
+    };
 }
