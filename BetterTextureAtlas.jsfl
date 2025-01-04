@@ -185,6 +185,7 @@ _main();
 var MERGE_ID;
 var SPRITEMAP_ID;
 var TEMP_MERGE;
+var TEMP_MERGE_TIMELINE;
 var TEMP_SPRITEMAP;
 var TEMP_ITEM;
 var TEMP_TIMELINE;
@@ -260,6 +261,9 @@ function exportAtlas(exportPath, symbolNames)
 	}
 	
 	TEMP_MERGE = initBtaItem(MERGE_ID);
+	TEMP_MERGE_TIMELINE = TEMP_MERGE.timeline;
+	TEMP_MERGE_TIMELINE.addNewLayer();
+
 	TEMP_ITEM = initBtaItem(TEMP_SPRITEMAP);
 
 	TEMP_TIMELINE = TEMP_ITEM.timeline;
@@ -267,6 +271,18 @@ function exportAtlas(exportPath, symbolNames)
 	TEMP_TIMELINE.removeFrames(0,0);
 
 	ogSym = symbol;
+
+	// This is a temp fix for CS6 until i figure out why the file text box is broken
+	if (path.indexOf("unknown|") !== -1)
+	{
+		var defaultOutputFolder = fl.configURI + "Commands/bta_output";
+		FLfile.createFolder(defaultOutputFolder);
+
+		exportPath = path = (defaultOutputFolder + "/" + ogSym.name);
+		FLfile.createFolder(path);
+
+		trace("ERROR: Invalid output path, export redirected to " + path);
+	}
 
 	//measure(function () {
 
@@ -289,8 +305,11 @@ function exportAtlas(exportPath, symbolNames)
 		var type = queuedFrame.shift();
 		var matrix = cachedMatrices[i];
 		
+		TEMP_TIMELINE.currentLayer = 0;
 		TEMP_TIMELINE.currentFrame = i;
-		doc.selectNone();
+
+		if (flversion > 12)
+			doc.selectNone();
 
 		switch (type)
 		{
@@ -304,11 +323,17 @@ function exportAtlas(exportPath, symbolNames)
 			case "MERGE":
 				lib.addItemToDocument(pos, MERGE_ID);
 
-				var item = TEMP_LAYER.frames[i].elements[0];
-				reverseScale(item, matrix);
+				var mergeElem = TEMP_LAYER.frames[i].elements[0];
+				if (mergeElem == undefined)
+				{
+					trace("MERGE ERROR");
+					break;
+				}
+				
+				reverseScale(mergeElem, matrix);
 				
 				var mergeIndex = parseInt(queuedFrame[0]);
-				item.firstFrame = mergeIndex;
+				mergeElem.firstFrame = mergeIndex;
 			break;
 			case "ELEMENT": // TODO: do some lines to fills crap here for changing resolutions
 				var matrix = cachedMatrices[i];
@@ -366,7 +391,7 @@ function exportAtlas(exportPath, symbolNames)
 							doc.setFilters(filters);
 						}
 					}
-					else
+					else if (flversion > 12 || element.elementType != "shape") // Half-assed fix for broken shape cleanup on CS6, give it a look later
 					{
 						selection[selection.length] = element;
 					}
@@ -374,8 +399,13 @@ function exportAtlas(exportPath, symbolNames)
 					e++;
 				}
 
-				if (selection.length > 0) {
-					doc.selectNone();
+				if (selection.length > 0)
+				{
+					TEMP_TIMELINE.currentFrame = i;
+					
+					if (flversion > 12)
+						doc.selectNone();
+					
 					doc.selection = selection;
 					doc.deleteSelection();
 				}
@@ -478,7 +508,8 @@ function exportSpritemap(id, exportPath, smData, index)
 	var sm = smData.sm;
 	sm.exportSpriteSheet(smPath, smSettings, true);
 
-	if (optimizeDimensions) for (__ = 0; __ < 2; __++) // TODO: figure out a better way to double-check trimmed resolutions
+	// TODO: this is causing issues for CS6, revise later
+	if (optimizeDimensions && flversion > 12) for (__ = 0; __ < 2; __++) // TODO: figure out a better way to double-check trimmed resolutions
 	{
 		var smWidth = 1;
 		var smHeight = 1;
@@ -788,19 +819,21 @@ function parseFrames(frames, layerIndex, timeline)
 
 				if (isCubic)
 				{	
-					// FLfile.createFolder(path + "/LIBRARY");
 					jsonArray(key("curve", "CV"));
+					var e = 0;
 					var eases = frame.getCustomEase();
-					for (var i = 0; i < eases.length; i++)
+					while (e < eases.length)
 					{
-						var field = eases[i];
+						var field = eases[e++];
 						push("{");
 						jsonVar("x", field.x);
 						jsonVarEnd("y", field.y);
 						push("},\n");
 					}
 
-					removeTrail(2);
+					if (eases.length > 0)
+						removeTrail(2);
+					
 					push("],\n");
 				}
 				else
@@ -1392,7 +1425,7 @@ function forEachFilter(filters, callback)
 }
 
 function pushFrameSpritemap(timeline, frameIndex)
-{	
+{
 	var l = 0;
 	var usedLayers = new Array();
 	while (l < timeline.layerCount)
@@ -1406,8 +1439,8 @@ function pushFrameSpritemap(timeline, frameIndex)
 
 	if (usedLayers.length <= 0)
 		return;
-	
-	var mergeTimeline = TEMP_MERGE.timeline;
+
+	var mergeTimeline = TEMP_MERGE_TIMELINE;
 
 	// Add any extra neccesary layers
 	while (mergeTimeline.layerCount < usedLayers.length)
@@ -2009,4 +2042,3 @@ function xmlNode(xml)
     
     return obj;
 }
-
