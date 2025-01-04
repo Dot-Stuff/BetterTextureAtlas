@@ -322,7 +322,7 @@ function exportAtlas(exportPath, symbolNames)
 				{
 					if (!bakedFilters && TEMP_LAYER.setFiltersAtFrame != undefined)
 					{
-						TEMP_LAYER.setFiltersAtFrame(i, new Array());
+						TEMP_LAYER.setFiltersAtFrame(i, new Array(0));
 					}
 				}
 
@@ -1430,26 +1430,61 @@ function pushFrameSpritemap(timeline, frameIndex)
 		mergeTimeline.insertBlankKeyframe(newIndex + 1);
 	}
 
-	// TODO: getBounds is Adobe Animate exclusive, figure out later a fix for old flash versions
-	// I just wanna get this shit done already
-	var bounds = mergeTimeline.getBounds(newIndex + 1);
-	var minX = bounds.left;
-	var minY = bounds.top;
-	var maxX = bounds.right;
-	var maxY = bounds.bottom;
-
-	var mergeWidth = (maxX - minX);
-	var mergeHeight = (maxY - minY);
+	var bounds = getFrameBounds(mergeTimeline, newIndex);
+	var mergeWidth = (bounds.right - bounds.left);
+	var mergeHeight = (bounds.bottom - bounds.top);
 
 	TEMP_TIMELINE.insertBlankKeyframe(smIndex);
 	frameQueue.push("MERGE_" + newIndex);
 
 	var scale = getMatrixScale(mergeWidth, mergeHeight);
-	var matrix = makeMatrix(scale, 0, 0, scale, minX , minY);
+	var matrix = makeMatrix(scale, 0, 0, scale, bounds.left , bounds.top);
 	
 	resizeInstanceMatrix(curSymbol, matrix);
 	parseAtlasInstance(matrix, smIndex);
 	smIndex++;
+}
+
+function getFrameBounds(timeline, frameIndex)
+{
+	// For versions where its allowed, timeline.getBounds is generally faster than our own function
+	// TODO: may have to change in the future due to filter bounds tho
+	if (flversion >= 15)
+	{
+		return timeline.getBounds(frameIndex + 1);
+	}
+
+	var minX = Number.POSITIVE_INFINITY;
+	var minY = Number.POSITIVE_INFINITY;
+	var maxX = Number.NEGATIVE_INFINITY;
+	var maxY = Number.NEGATIVE_INFINITY;
+
+	var l = 0;
+	while (l < timeline.layerCount)
+	{
+		var layer = timeline.layers[l++];	
+		if (frameIndex > layer.frameCount - 1)
+			continue;
+
+		var e = 0;
+		var elems = layer.frames[frameIndex].elements;
+		
+		while (e < elems.length)
+		{
+			var rect = getInstanceRect(elems[e++]);
+			minX = min(minX, rect.x);
+			minY = min(minY, rect.y);
+			maxX = max(maxX, rect.x + rect.width);
+			maxY = max(maxY, rect.y + rect.height);
+		}
+	}
+
+	return {
+		left: 0,
+		top: 0,
+		right: (maxX - minX),
+		bottom: (maxY - minY)
+	}
 }
 
 function pushItemSpritemap(item)
@@ -1550,10 +1585,7 @@ function pushInstanceSize(name, scaleX, scaleY)
 
 function getFrameFilters(layer, frameIndex)
 {
-	if (flversion < 20)
-		return new Array(0);
-
-	if (layer.getFiltersAtFrame != null)
+	if (flversion >= 20 && layer.getFiltersAtFrame != null)
 	{
 		var filters = layer.getFiltersAtFrame(frameIndex);
 		if (filters != null)
@@ -1872,8 +1904,10 @@ function measure(func)
 
 function traceFields(value)
 {
+	var traceCrap = "";
 	for (var field in value)
-		trace(field + ": " + value[field]);
+		traceCrap += field + ": " + value[field] + ", ";
+	trace(traceCrap);
 }
 
 function trace(msg) {
