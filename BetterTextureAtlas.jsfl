@@ -304,6 +304,7 @@ function exportAtlas(exportPath, symbolNames)
 		var queuedFrame = frameQueue[i].split("_");
 		var type = queuedFrame.shift();
 		var matrix = cachedMatrices[i];
+		var frame = TEMP_LAYER.frames[i];
 		
 		TEMP_TIMELINE.currentLayer = 0;
 		TEMP_TIMELINE.currentFrame = i;
@@ -316,21 +317,18 @@ function exportAtlas(exportPath, symbolNames)
 			case "ITEM":
 				var id = queuedFrame.join("");
 				lib.addItemToDocument(pos, id);
-				var item = TEMP_LAYER.frames[i].elements[0];
+				var item = frame.elements[0];
 				reverseScale(item, matrix);
 			break;
 			case "MERGE":
 				lib.addItemToDocument(pos, MERGE_ID);
-				var mergeElem = TEMP_LAYER.frames[i].elements[0];
+				var mergeElem = frame.elements[0];
 				
 				reverseScale(mergeElem, matrix);
 				var mergeIndex = parseInt(queuedFrame[0]);
 				mergeElem.firstFrame = mergeIndex;
 			break;
 			case "ELEMENT": // TODO: do some lines to fills crap here for changing resolutions
-				var matrix = cachedMatrices[i];
-				var frame = TEMP_LAYER.frames[i];
-
 				var elemIndices = queuedFrame[0].replace("[","").replace("]","").split(",");
 				var selection = new Array();
 
@@ -428,18 +426,13 @@ function exportAtlas(exportPath, symbolNames)
 		doc.height = Math.floor(sheet.height);
 
 		var smPath = path + "/spritemap1";
-
-		if (FLfile.exists(smPath + ".json"))
-			FLfile.remove(smPath + ".json");
-
-		FLfile.write(smPath + ".json", sheet.json);
+		writeFile(smPath + ".json", sheet.json);
 
 		if (FLfile.exists(smPath + ".png"))
 			FLfile.remove(smPath + ".png");
 		
 		doc.exportPNG(smPath, true, true);
-		FLfile.copy(smPath + "img.png", smPath + ".png");
-		FLfile.remove(smPath + "img.png");
+		renameFile(smPath + "img.png", smPath + ".png");
 
 		doc.width = ogWidth;
 		doc.height = ogHeight;
@@ -450,7 +443,7 @@ function exportAtlas(exportPath, symbolNames)
 		lib.deleteItem(SPRITESHEET_ID);
 		lib.deleteItem(TEMP_SPRITEMAP);
 	}
-	else
+	else // Use the actual spritesheet exporter on CS6 and above
 	{
 		doc.selectNone();
 		doc.exitEditMode();
@@ -1010,6 +1003,10 @@ function parseElements(elements, frameIndex, layerIndex, timeline)
 	jsonArray(key("elements", "E"));
 
 	var e = 0;
+
+	// TODO: while looping through frame elements the slight lag caused by copying frames can corrupt many values, not only shapes
+	// idk if this is because jsfl or other operations are multithreaded or something, but it can and will fuck up some stuff
+	// should prob move all element types to their own small queues/buffers to make sure this doesnt happen
 	var shapeQueue = [];
 
 	var frameFilters = getFrameFilters(timeline.layers[layerIndex], frameIndex);
@@ -1213,6 +1210,17 @@ function parseBitmapInstance(bitmap)
 	parseAtlasInstance(matrix, itemIndex);
 }
 
+function getShapeBounds(shape)
+{
+	var vertexBounds = getVerticesBounds(shape.vertices);
+	return {
+		left: shape.x + (vertexBounds.left * 0.5),
+		top: shape.y + (vertexBounds.top * 0.5),
+		right: vertexBounds.right,
+		bottom: vertexBounds.bottom
+	}
+}
+
 function parseShape(timeline, layerIndex, frameIndex, elementIndices, checkMatrix)
 {
 	var shapes = pushShapeSpritemap(timeline, layerIndex, frameIndex, elementIndices);
@@ -1229,13 +1237,11 @@ function parseShape(timeline, layerIndex, frameIndex, elementIndices, checkMatri
 		var s = 0;
 		while (s < shapes.length)
 		{
-			var shape = shapes[s++];
-			var rect = getVerticesRect(shape.vertices);
-			
-			shapeX = min(shapeX, shape.x + (rect.x * 0.5));
-			shapeY = min(shapeY, shape.y + (rect.y * 0.5));
-			shapeWidth = max(shapeWidth, rect.width);
-			shapeHeight = max(shapeHeight, rect.height);
+			var bounds = getShapeBounds(shapes[s++]);
+			shapeX = min(shapeX, bounds.left);
+			shapeY = min(shapeY, bounds.top);
+			shapeWidth = max(shapeWidth, bounds.right);
+			shapeHeight = max(shapeHeight, bounds.bottom);
 
 			// isRectangle = (shape.isRectangleObject || shape.vertices.length === 4)
 		}
@@ -1259,25 +1265,25 @@ function parseShape(timeline, layerIndex, frameIndex, elementIndices, checkMatri
 	parseAtlasInstance(mtx, atlasIndex);
 }
 
-function getInstanceRect(instance, frameFilters)
+function getElementRect(instance, frameFilters)
 {
-	var minX = Number.POSITIVE_INFINITY
-	var minY = Number.POSITIVE_INFINITY;
-	var maxX = Number.NEGATIVE_INFINITY;
-	var maxY = Number.NEGATIVE_INFINITY;
+	var minX; var minY; var maxX; var maxY;
 
 	switch (instance.elementType)
 	{
 		case "shape":
-			var shapeRect = getVerticesRect(instance.vertices);
-			minX = (instance.x + (shapeRect.x * 0.5));
-			minY = (instance.y + (shapeRect.y * 0.5));
-			maxX = shapeRect.width;
-			maxY = shapeRect.height;
+			var bounds = getShapeBounds(instance);
+			minX = bounds.left;
+			minY = bounds.top;
+			maxX = bounds.right;
+			maxY = bounds.bottom;
 		break;
 		case "instance":
 			var timeline = instance.libraryItem.timeline;
 			var frameIndex = (instance.firstFrame != undefined) ? instance.firstFrame : 0;
+
+			minX = minY = Number.POSITIVE_INFINITY;
+			maxX = maxY = Number.NEGATIVE_INFINITY;
 		
 			var l = 0;
 			while (l < timeline.layers.length)
@@ -1286,11 +1292,11 @@ function getInstanceRect(instance, frameFilters)
 				var e = 0;
 				while (e < frameElements.length)
 				{
-					var element = frameElements[e++];
-					minX = min(minX, element.x);
-					minY = min(minY, element.y);
-					maxX = max(maxX, element.width);
-					maxY = max(maxY, element.height);
+					var elem = getElementRect(frameElements[e++]);
+					minX = min(minX, elem.x);
+					minY = min(minY, elem.y);
+					maxX = max(maxX, elem.width);
+					maxY = max(maxY, elem.height);
 				}
 			}
 		break;
@@ -1331,14 +1337,15 @@ function getInstanceRect(instance, frameFilters)
 	}
 }
 
-function getVerticesRect(vertices)
+// Get shape dimensions based on vertices because element.left and element.top doesnt cut it
+function getVerticesBounds(vertices)
 {
 	var minVertX = Number.POSITIVE_INFINITY;
 	var minVertY = Number.POSITIVE_INFINITY;
 	var maxVertX = Number.NEGATIVE_INFINITY;
 	var maxVertY = Number.NEGATIVE_INFINITY;
 
-	var v = 0; // Get shape dimensions based on vertices because animate kinda sucks
+	var v = 0;
 	while (v < vertices.length)
 	{
 		var vert = vertices[v++];				
@@ -1349,10 +1356,10 @@ function getVerticesRect(vertices)
 	}
 
 	return {
-		x: minVertX,
-		y: minVertY,
-		width: maxVertX,
-		height: maxVertY
+		left: minVertX,
+		top: minVertY,
+		right: maxVertX,
+		bottom: maxVertY
 	}
 }
 
@@ -1404,7 +1411,7 @@ function pushElementSpritemap(timeline, layerIndex, frameIndex, elementIndices, 
 	jsonArray(key("LAYERS", "L"));
 
 	var elem = TEMP_LAYER.frames[smIndex].elements[elementIndices[0]];
-	var rect = getInstanceRect(elem, frameFilters);
+	var rect = getElementRect(elem, frameFilters);
 
 	var matScale = getMatrixScale(rect.width, rect.height);
 	var matScaleX = (elem.scaleX < 1) ? (1 / elem.scaleX) * matScale : matScale;
@@ -1544,14 +1551,14 @@ function getFrameBounds(timeline, frameIndex)
 			switch (elem.elementType)
 			{
 				case "shape":
-					var shapeRect = getVerticesRect(elem.vertices);
-					minX = min(minX, shapeRect.x);
-					minY = min(minY, shapeRect.y);
-					maxX = max(maxX, shapeRect.width);
-					maxY = max(maxY, shapeRect.height);
+					var rect = getVerticesBounds(elem.vertices);
+					minX = min(minX, rect.left);
+					minY = min(minY, rect.top);
+					maxX = max(maxX, rect.right);
+					maxY = max(maxY, rect.bottom);
 				break;
 				default:
-					var rect = getInstanceRect(elem);
+					var rect = getElementRect(elem);
 					minX = min(minX, rect.x);
 					minY = min(minY, rect.y);
 					maxX = max(maxX, rect.x + rect.width);
@@ -2078,6 +2085,20 @@ function xmlNode(xml)
     return obj;
 }
 
+function writeFile(path, content)
+{
+	if (FLfile.exists(path))
+		FLfile.remove(path);
+
+	FLfile.write(path, content);
+}
+
+function renameFile(path, newPath)
+{
+	FLfile.copy(path, newPath);
+	FLfile.remove(path);
+}
+
 function cs4Spritesheet(shapeLength, sheetFrame)
 {
     var curX = BrdPad;
@@ -2087,23 +2108,38 @@ function cs4Spritesheet(shapeLength, sheetFrame)
     var maxSheetWidth = 0;
     var maxSheetHeight = 0;
     var packedRectangles = [];
-    
-    var i = 0;
-    while (i < shapeLength)
+
+	var elem;
+	var rect;
+
+	var moveElement = function (x, y) {
+		elem.x = x - (rect.x - (rect.width * 0.5)) * elem.scaleX;
+		elem.y = y - (rect.y - (rect.height * 0.5)) * elem.scaleY;
+	}
+
+	lib.addItemToDocument({x: 0, y: 0}, TEMP_SPRITEMAP);
+
+    while (sheetFrame.elements.length < shapeLength)
 	{
-		lib.addItemToDocument({x: 0, y: 0}, TEMP_SPRITEMAP);
-        
+		doc.selectNone();
+		doc.selection = sheetFrame.elements;
+		doc.clipCopy();
+		doc.clipPaste();
+	}
+    
+    i = 0;
+    while (i < shapeLength)
+	{   
 		var ogElem = TEMP_LAYER.frames[i].elements[0];
-		var elem = sheetFrame.elements[i];
+		elem = sheetFrame.elements[i];
 		elem.firstFrame = i;
 		i++;
 
-		var rect = getInstanceRect(ogElem);
+		rect = getElementRect(ogElem);
 		var rectWidth = rect.width;
 		var rectHeight = rect.height;
 
-		elem.x = curX - (rect.x - (rectWidth * 0.5));
-		elem.y = curY - (rect.y - (rectHeight * 0.5));
+		moveElement(curX, curY);
 
 		var packedRect = {
             x: Math.floor(curX),
@@ -2123,9 +2159,7 @@ function cs4Spritesheet(shapeLength, sheetFrame)
 			packedRect.x = Math.floor(curX);
 			packedRect.y = Math.floor(curY);
 
-			elem.x = curX - (rect.x - (rectWidth * 0.5));
-			elem.y = curY - (rect.y - (rectHeight * 0.5));
-
+			moveElement(curX, curY);
 			curX += rectWidth + ShpPad;
         }
 		else {
@@ -2136,9 +2170,21 @@ function cs4Spritesheet(shapeLength, sheetFrame)
 
         maxSheetWidth = Math.max(maxSheetWidth, sheetWidth);
         maxSheetHeight = Math.max(maxSheetHeight, curY + maxHeight);
-        
-
     }
+
+	var extraShapes = sheetFrame.elements.length - shapeLength;
+	if (extraShapes > 0)
+	{
+		i = shapeLength;
+		doc.selectNone();
+		
+		while (i < sheetFrame.elements.length)
+		{
+			sheetFrame.elements[i++].selected = true;
+		}
+
+		doc.deleteSelection();
+	}
 
 	initJson();
 	push('{"ATLAS":{"SPRITES":[\n');
@@ -2147,18 +2193,14 @@ function cs4Spritesheet(shapeLength, sheetFrame)
 	while (i < packedRectangles.length)
 	{	
 		var rect = packedRectangles[i];
-		push('{"SPRITE":{');
-		jsonStr("name", i);
-		jsonVar("x", rect.x);
-		jsonVar("y", rect.y);
-		jsonVar("w", rect.width);
-		jsonVar("h", rect.height);
-		jsonVarEnd("rotated", false);
-		push('}},');
+		push('{"SPRITE":{"name":"' + i +
+			'","x":' + rect.x + ',"y":' + rect.y + ',"w":' + rect.width + ',"h":' + rect.height +
+			',"rotated":' + false +
+		'}},\n');
 		i++;
 	}
 
-	removeTrail(1);
+	removeTrail(2);
 	push("]}}\n");
 
     return {
