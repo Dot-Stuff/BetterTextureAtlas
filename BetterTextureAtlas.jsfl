@@ -135,11 +135,13 @@ function _main()
 	flatten = xPan.FlatSke;
 	AllRot = xPan.Rotate;
 
-	var dataAdd = FLfile.read(fl.configURI + "Commands/bta_src/saveADDBTA.txt");
-	inlineSym = dataAdd[0];
-	bakeTexts = dataAdd[1];
-	includeSnd = dataAdd[2];
-	bakeOneFR = dataAdd[3];
+	var dataAdd = FLfile.read(fl.configURI + "Commands/bta_src/saveADDBTA.txt").split("\n");;
+	inlineSym = dataAdd[0] == "true";
+	bakeTexts = dataAdd[1] == "true";
+	includeSnd = dataAdd[2] == "true";
+	bakeOneFR = dataAdd[3] == "true";
+
+	fl.trace("INLINE SYM: " + inlineSym);
 	
 	var fileuri = xPan.saveBox;
 	if (doc.path != null)

@@ -83,6 +83,8 @@ A popup window will show up, revealing different export settings and an export p
 		<file source="bta_src/BTADialog.xml" destination="$flash/Commands/bta_src" />
 		<file source="bta_src/BTAAdd.xml" destination="$flash/Commands/bta_src" />
 		<file source="bta_src/BTAConfirm.xml" destination="$flash/Commands/bta_src" />
+		<file source="bta_src/SaveData.sjs" destination="$flash/Commands/bta_src" />
+		<file source="bta_src/xmlScripts/DialogXML.sjs" destination="$flash/Commands/bta_src/xmlScripts" />
 	</files>
 
 </macromedia-extension>
