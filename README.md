@@ -15,6 +15,7 @@ Adding features and fixing its Animation file format so it presents more data fo
   <summary><b>Features</b></summary>
 
   * [x] Blend Mode Support
+  * [x] Baked Filters Support
   * [x] Matrix reformatting
   * [x] Multi-Symbol Support
   * [x] Extra Metadata
@@ -27,6 +28,7 @@ Adding features and fixing its Animation file format so it presents more data fo
   <summary><b>Fixes</b></summary>
 
   * [x] Reformatting of Filters
+  * [x] Filtered One Frame Symbols matrix errors
   * [x] Optimized exports (being able to export 5~ SWF videos with relative ease)
 </details>
 

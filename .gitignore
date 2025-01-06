@@ -6,5 +6,6 @@ names.XML
 bta_src/saveBTA.txt
 bta_src/saveADDBTA.txt
 bta_src/BTATheme.txt
+bta_output/
 testing/
 .vscode/

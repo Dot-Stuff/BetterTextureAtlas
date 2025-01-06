@@ -15,15 +15,15 @@ if (FLfile.exists(fl.configURI + "Commands/bta_src/saveBTA.txt"))
 
 function myThing()
 {
-    fl.trace(fl.xmlui.get("imgDims"));
+    //fl.trace(fl.xmlui.get("imgDims"));
     var isVisible = fl.xmlui.getVisible("DFormat"); 
-    fl.trace(isVisible);
+    //fl.trace(isVisible);
     
-    fl.trace(fl.xmlui.get("algorithm"));
+    //fl.trace(fl.xmlui.get("algorithm"));
     fl.xmlui.set("algorithm", "MaxRects");
 
 
-    fl.trace(save);
+    //fl.trace(save);
 }
 
 function addParams()
@@ -41,6 +41,8 @@ function addParams()
     save[1] = xPan.BATX;
     save[2] = xPan.INCS;
     save[3] = xPan.BOFS;
+    save[4] = xPan.BF;
+    save[5] = xPan.BTW;
 
     FLfile.write(fl.configURI + "Commands/bta_src/saveADDBTA.txt", save.join("\n"));
 }
@@ -133,8 +135,8 @@ function saveAndClose()
     save[8] = fl.xmlui.get("imgFormat");
     save[9] = fl.xmlui.get("Rotate");
 
-    fl.trace(save.join("\n"));
-    fl.trace(fl.configURI + "Commands/bta_src/saveBTA.txt");
+    //fl.trace(save.join("\n"));
+    //fl.trace(fl.configURI + "Commands/bta_src/saveBTA.txt");
 
     FLfile.write(fl.configURI + "Commands/bta_src/saveBTA.txt", save.join("\n"));
     fl.xmlui.accept();

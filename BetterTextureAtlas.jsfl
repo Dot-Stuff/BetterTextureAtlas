@@ -5,7 +5,6 @@ fl.include = function(file) {
 	eval(FLfile.read(fl.configURI+"Commands/bta_src/"+file+".sjs"));
 }
 
-
 fl.include("SaveData");
 
 ///// CONFIGURATION
@@ -31,7 +30,7 @@ var inlineSym = false;
 var includeSnd = true;
 
 var bakedFilters = false; // TODO
-var bakedTweens = false; // TODO: add non-baked tweens
+var bakedTweens = false; // TODO
 var bakeOneFR = true;
 var bakeTexts = false;
 /////
@@ -89,21 +88,19 @@ function _main()
 	//fl.runScript(fl.configURI + "Commands/bta_src/save.scr", "setupSaves");
 	SaveData.setupSaves();
 
-	var config = fl.configURI;
-
-	var rawXML = fl.runScript(fl.configURI + "Commands/bta_src/save.scr", "xmlData");
+	var rawXML = fl.runScript(fl.configURI + "Commands/bta_src/save.scr", "xmlData", [symbols]);
 
 	var xPan = SaveData.openXMLFromString(rawXML);
 
 	if (xPan == null)
 	{
-		alert("Failed loading XML Panel");
+		alert("ERROR: Failed loading XML Panel");
 		return;
 	}
 	
 	if (xPan.dismiss == "cancel")
 	{
-		fl.trace("Operation cancelled");
+		trace("Operation cancelled");
 		return;
 	}
 
@@ -135,13 +132,13 @@ function _main()
 	flatten = xPan.FlatSke;
 	AllRot = xPan.Rotate;
 
-	var dataAdd = FLfile.read(fl.configURI + "Commands/bta_src/saveADDBTA.txt").split("\n");;
+	var dataAdd = FLfile.read(fl.configURI + "Commands/bta_src/saveADDBTA.txt").split("\n");
 	inlineSym = dataAdd[0] == "true";
 	bakeTexts = dataAdd[1] == "true";
 	includeSnd = dataAdd[2] == "true";
 	bakeOneFR = dataAdd[3] == "true";
-
-	fl.trace("INLINE SYM: " + inlineSym);
+	bakedFilters = dataAdd[4] == "true";
+	bakedTweens = dataAdd[5] == "true";
 	
 	var fileuri = xPan.saveBox;
 	if (doc.path != null)
@@ -167,12 +164,6 @@ function _main()
 	FLfile.createFolder(path);
 	exportAtlas(path, symbols);
 
-	var saveArray = fileuri.split("\\");
-	saveArray.pop();
-	var savePath = saveArray.join("\\");
-
-	initJson();
-
 	for (i = 0; i < familySymbol.length; i++)
 	{
 		doc.getTimeline().currentFrame = frs[i];
@@ -182,12 +173,19 @@ function _main()
 
 	doc.getTimeline().currentFrame = curFr;
 
-	fl.trace("DONE");
+	if (resizedContain)
+		trace("WARNING: some shapes were resized to fit within the 8192 size limit");
+
+	trace("DONE");
 	fl.showIdleMessage(true);
 }
 
 _main();
+
+var MERGE_ID;
 var SPRITEMAP_ID;
+var TEMP_MERGE;
+var TEMP_MERGE_TIMELINE;
 var TEMP_SPRITEMAP;
 var TEMP_ITEM;
 var TEMP_TIMELINE;
@@ -196,17 +194,31 @@ var smIndex;
 
 var frameQueue;
 var dictionary;
+var bakedDictionary;
 
 var ogSym;
+var flversion;
+
+function initVars()
+{
+	MERGE_ID = "__BTA_TEMP_MERGE_";
+	SPRITEMAP_ID = "__BTA_TEMP_SPRITEMAP_";
+	TEMP_SPRITEMAP = SPRITEMAP_ID + "0";
+
+	frameQueue = [];
+	cachedMatrices = [];
+	instanceSizes = [];
+
+	dictionary = [];
+	bakedDictionary = [];
+	smIndex = 0;
+
+	flversion = parseInt(fl.version.split(" ")[1].split(",")[0]);
+}
 
 function exportAtlas(exportPath, symbolNames)
 {
-	SPRITEMAP_ID = "__BTA_TEMP_SPRITEMAP_";
-	TEMP_SPRITEMAP = SPRITEMAP_ID + "0";
-	frameQueue = [];
-	smIndex = 0;
-
-	dictionary = [];
+	initVars();
 
 	var tmpSymbol = false;
 	var symbol;
@@ -247,14 +259,30 @@ function exportAtlas(exportPath, symbolNames)
 				symbol.timeline.insertBlankKeyframe(startIndex);
 		}
 	}
+	
+	TEMP_MERGE = initBtaItem(MERGE_ID);
+	TEMP_MERGE_TIMELINE = TEMP_MERGE.timeline;
+	TEMP_MERGE_TIMELINE.addNewLayer();
 
-	lib.addNewItem("graphic", TEMP_SPRITEMAP);
-	TEMP_ITEM = findItem(TEMP_SPRITEMAP);
+	TEMP_ITEM = initBtaItem(TEMP_SPRITEMAP);
+
 	TEMP_TIMELINE = TEMP_ITEM.timeline;
 	TEMP_LAYER = TEMP_TIMELINE.layers[0];
 	TEMP_TIMELINE.removeFrames(0,0);
 
 	ogSym = symbol;
+
+	// This is a temp fix for CS6 until i figure out why the file text box is broken
+	if (path.indexOf("unknown|") !== -1)
+	{
+		var defaultOutputFolder = fl.configURI + "Commands/bta_output";
+		FLfile.createFolder(defaultOutputFolder);
+
+		exportPath = path = (defaultOutputFolder + "/" + ogSym.name);
+		FLfile.createFolder(path);
+
+		trace("ERROR: Invalid output path, export redirected to " + path);
+	}
 
 	//measure(function () {
 
@@ -262,71 +290,204 @@ function exportAtlas(exportPath, symbolNames)
 	FLfile.write(path + "/Animation.json", generateAnimation(symbol));
 
 	// Add items and fix resolutions
-	var editedQueue = false;
 	var pos = {x:0, y:0};
+	lib.editItem(TEMP_SPRITEMAP);
+
+	var reverseScale = function (element, mat) {
+		element.scaleX /= mat.a;
+		element.scaleY /= mat.d;
+	}
 
 	var i = 0;
 	while (i < frameQueue.length)
 	{
 		var queuedFrame = frameQueue[i].split("_");
 		var type = queuedFrame.shift();
-		var id = queuedFrame.join("");
+		var matrix = cachedMatrices[i];
+		var frame = TEMP_LAYER.frames[i];
+		
+		TEMP_TIMELINE.currentLayer = 0;
+		TEMP_TIMELINE.currentFrame = i;
 
-		if (type == "ITEM") // Push the item frame
+		if (flversion > 12)
+			doc.selectNone();
+
+		switch (type)
 		{
-			if (!editedQueue)
-			{
-				editedQueue = true;
-				lib.editItem(TEMP_SPRITEMAP);
-			}
+			case "ITEM":
+				var id = queuedFrame.join("");
+				lib.addItemToDocument(pos, id);
+				var item = frame.elements[0];
+				reverseScale(item, matrix);
+			break;
+			case "MERGE":
+				lib.addItemToDocument(pos, MERGE_ID);
+				var mergeElem = frame.elements[0];
+				
+				reverseScale(mergeElem, matrix);
+				var mergeIndex = parseInt(queuedFrame[0]);
+				mergeElem.firstFrame = mergeIndex;
+			break;
+			case "ELEMENT": // TODO: do some lines to fills crap here for changing resolutions
+				var elemIndices = queuedFrame[0].replace("[","").replace("]","").split(",");
+				var selection = new Array();
 
-			TEMP_TIMELINE.currentFrame = i;
-			lib.addItemToDocument(pos, id);
-			
-			// TODO: only do resolution < 1 if its a bitmap item
-			if (resolution < 1) {
-				var item = TEMP_LAYER.frames[i].elements[0];
-				item.scaleX = item.scaleY = resolution;
-			}
-		}
-		else // TODO: do some lines to fills crap here for changing resolutions
-		{
+				// Remove frame filters (only from Animate 2020 upwards)
+				if (flversion >= 20)
+				{
+					if (!bakedFilters && TEMP_LAYER.setFiltersAtFrame != undefined)
+					{
+						TEMP_LAYER.setFiltersAtFrame(i, new Array(0));
+					}
+				}
 
+				var e = 0;
+				var elements = frame.elements;
+				while (e < elements.length)
+				{
+					var element = elements[e];
+					var exportElem = elemIndices.indexOf(String(e)) !== -1;
+
+					if (exportElem)
+					{
+						element.rotation = 0;
+						element.scaleX = element.scaleY = 1;
+						
+						if (!flattenSkewing)
+							element.skewX = element.skewY = 0;
+
+						if (element.blendMode != undefined)
+							element.blendMode = "normal";
+
+						if (element.colorMode != undefined)
+							element.colorMode = "none";
+
+						reverseScale(element, matrix);
+
+						var filters = element.filters;
+						if (filters != undefined && filters.length > 0 && (matrix.a > 1.01 || matrix.d > 1.01))
+						{
+							doc.selectNone();
+							doc.selection = [element];
+
+							forEachFilter(filters, function (filter) {
+								switch (filter.name)
+								{
+									case "glowFilter":
+									case "blurFilter":
+										filter.blurX /= matrix.a;
+										filter.blurY /= matrix.d;
+									break;
+								}
+							});
+
+							doc.setFilters(filters);
+						}
+					}
+					else if (flversion > 12 || element.elementType != "shape") // Half-assed fix for broken shape cleanup on CS6, give it a look later
+					{
+						selection[selection.length] = element;
+					}
+
+					e++;
+				}
+
+				if (selection.length > 0)
+				{
+					TEMP_TIMELINE.currentFrame = i;
+					
+					if (flversion > 12)
+						doc.selectNone();
+					
+					doc.selection = selection;
+					doc.deleteSelection();
+				}
+
+			break;
 		}
 
 		i++;
 	}
+	
+	if (flversion < 12) // Super primitive spritemap export for versions below CS6
+	{
+		var shapeLength = TEMP_TIMELINE.frameCount;
+		var SPRITESHEET_ID = "__BTA_TEMP_SPRITESHEET_";
 
-	if (editedQueue)
+		var sheetItem = initBtaItem(SPRITESHEET_ID);
+		var sheetFrame = sheetItem.timeline.layers[0].frames[0];
+		lib.editItem(sheetItem.name);
+
+		var ogWidth = doc.width;
+		var ogHeight = doc.height;
+
+		var sheet = cs4Spritesheet(shapeLength, sheetFrame);
+		doc.width = Math.floor(sheet.width);
+		doc.height = Math.floor(sheet.height);
+
+		var smPath = path + "/spritemap1";
+		writeFile(smPath + ".json", sheet.json);
+
+		if (FLfile.exists(smPath + ".png"))
+			FLfile.remove(smPath + ".png");
+		
+		doc.exportPNG(smPath, true, true);
+		renameFile(smPath + "img.png", smPath + ".png");
+
+		doc.width = ogWidth;
+		doc.height = ogHeight;
+
+		doc.selectNone();
 		doc.exitEditMode();
 
-	//});
-
-	// Generate Spritemap
-	var sm = makeSpritemap();
-	sm.addSymbol(TEMP_ITEM);
-
-	var smData = {sm: sm, index:0};
-	spritemaps = [smData];
-
-	// Divide Spritemap if overflowed
-	if (sm.overflowed) {
-		divideSpritemap(smData, TEMP_ITEM);
+		lib.deleteItem(SPRITESHEET_ID);
+		lib.deleteItem(TEMP_SPRITEMAP);
 	}
+	else // Use the actual spritesheet exporter on CS6 and above
+	{
+		doc.selectNone();
+		doc.exitEditMode();
 
-	var i = 0;
-	while (i < spritemaps.length) {
-		var id = SPRITEMAP_ID + i;
-		var exportId = (i == 0) ? 1 : Math.abs(i - spritemaps.length - 1);
+		// Generate Spritemap
+		var sm = makeSpritemap();
+		sm.addSymbol(TEMP_ITEM);
 
-		exportSpritemap(id, exportPath, spritemaps[i++], exportId);
-		lib.deleteItem(id);
+		var smData = {sm: sm, index:0};
+		spritemaps = [smData];
+
+		// Divide Spritemap if overflowed
+		if (sm.overflowed) {
+			divideSpritemap(smData, TEMP_ITEM);
+		}
+
+		var i = 0;
+		while (i < spritemaps.length) {
+			var id = SPRITEMAP_ID + i;
+			var exportId = (i == 0) ? 1 : Math.abs(i - spritemaps.length - 1);
+
+			exportSpritemap(id, exportPath, spritemaps[i++], exportId);
+			lib.deleteItem(id);
+		}
 	}
 
 	if (tmpSymbol)
 		lib.deleteItem(symbol.name);
 
-	fl.trace("Exported to folder: " + exportPath);
+	lib.deleteItem(MERGE_ID);
+
+	trace("Exported to folder: " + exportPath);
+}
+
+function initBtaItem(ID)
+{
+	if (lib.itemExists(ID))
+	{
+		trace("WARNING: removing " + ID + " item");
+		lib.deleteItem(ID);
+	}
+
+	lib.addNewItem("graphic", ID);
+	return findItem(ID);
 }
 
 var spritemaps;
@@ -336,6 +497,12 @@ function divideSpritemap(smData, symbol)
 	var parent = smData.sm;
 	var framesLength = symbol.timeline.layers[0].frames.length;
 	var cutFrames = Math.floor(framesLength * 0.5);
+
+	if (framesLength === 1)
+	{
+		alert("ERROR: a shape couldnt fit inside the spritemap");
+		return;
+	}
 
 	var nextSmID = SPRITEMAP_ID + spritemaps.length;
 	lib.addNewItem("graphic", nextSmID);
@@ -369,7 +536,8 @@ function exportSpritemap(id, exportPath, smData, index)
 	var sm = smData.sm;
 	sm.exportSpriteSheet(smPath, smSettings, true);
 
-	if (optimizeDimensions) for (__ = 0; __ < 2; __++) // TODO: figure out a better way to double-check trimmed resolutions
+	// TODO: this is causing issues for CS6, revise later
+	if (optimizeDimensions && flversion > 12) for (__ = 0; __ < 2; __++) // TODO: figure out a better way to double-check trimmed resolutions
 	{
 		var smWidth = 1;
 		var smHeight = 1;
@@ -472,7 +640,7 @@ function generateAnimation(symbol)
 	push('},\n');
 
 	// Add Symbol Dictionary
-	if (dictionary.length > 0)
+	if (dictionary.length > 0 || bakedDictionary.length > 0)
 	{
 		if (inlineSym)
 		{
@@ -483,11 +651,22 @@ function generateAnimation(symbol)
 			while (dictIndex < dictionary.length)
 			{
 				var symbol = findItem(dictionary[dictIndex++]);
+				curSymbol = symbol.name;
+				if (curSymbol == ogSym.name)
+					continue;
+				
 				push('{\n');
-				jsonStr(key("SYMBOL_name", "SN"), symbol.name);
+				jsonStr(key("SYMBOL_name", "SN"), curSymbol);
 				jsonHeader(key("TIMELINE", "TL"));
 				parseSymbol(symbol);
 				push('},');
+			}
+			
+			dictIndex = 0;
+			while (dictIndex < bakedDictionary.length)
+			{
+				push(bakedDictionary[dictIndex++]);
+				push(',');
 			}
 
 			removeTrail(1);
@@ -500,15 +679,19 @@ function generateAnimation(symbol)
 			var dictIndex = 0;
 			while (dictIndex < dictionary.length)
 			{
+				var symbol = findItem(dictionary[dictIndex++]);
+				curSymbol = symbol.name;
+				if (curSymbol == ogSym.name)
+					continue;
+				
 				initJson();
 				push("{");
-				push(parseSymbol(findItem(dictionary[dictIndex++]) ));
+				push(parseSymbol(symbol));
 				
-				var pathDict = dictionary[dictIndex - 1].split("/");
+				var pathDict = curSymbol.split("/");
+				var folderStuff = "";
 				var foldI = 0;
 				
-				
-				var folderStuff = "";
 				while (foldI < pathDict.length - 1)
 				{
 					if (folderStuff != "") folderStuff += "/";
@@ -517,9 +700,8 @@ function generateAnimation(symbol)
 					
 					foldI++;
 				}
-				
 	
-				FLfile.write(path + "/LIBRARY/" + dictionary[dictIndex - 1] + ".json", closeJson());
+				FLfile.write(path + "/LIBRARY/" + curSymbol + ".json", closeJson());
 			}
 		}
 	}
@@ -562,27 +744,19 @@ function parseSymbol(symbol)
 	jsonArray(key("LAYERS", "L"));
 
 	// TODO: rework this into bake shape layers
-	if (bakeOneFR && symbol != ogSym && timeline.frameCount == 1)
+	if (bakeOneFR && (timeline.frameCount == 1) && (timeline.layers.length > 1))
 	{
-		push('{');
-		jsonStr(key("Layer_name", "LN"), "Layer 1");
-		jsonArray(key("Frames", "FR"));
-		push('{');
-		jsonVar(key("index", "I"), 0);
-		jsonVar(key("duration", "DU"), 1);
-		jsonArray(key("elements", "E"));
-		push('{');
-		pushItemSpritemap(symbol);
-		push('}]}]}]}');
+		makeBasicLayer(function () {
+			pushFrameSpritemap(timeline, 0);
+		});
 		return;
 	}
 
 	var l = 0;
-	var ll = layers.length;
-	while (l < ll)
+	while (l < layers.length)
 	{
 		var layer = layers[l];
-		if (layer.visible || !onlyVisibleLayers)
+		if ((layer.visible || !onlyVisibleLayers) && layer.frameCount > 0)
 		{
 			var lockedLayer = layer.locked;
 			layer.locked = false;
@@ -634,20 +808,29 @@ function parseSymbol(symbol)
 	push(']}');
 }
 
+function makeBasicLayer(elementCallback) {
+	push('{');
+	jsonStr(key("Layer_name", "LN"), "Layer 1");
+	jsonArray(key("Frames", "FR"));
+	push('{');
+	jsonVar(key("index", "I"), 0);
+	jsonVar(key("duration", "DU"), 1);
+	jsonArray(key("elements", "E"));
+	push('{');
+	if (elementCallback != null)
+		elementCallback();
+	push('}]}]}]}');
+}
+
 function parseFrames(frames, layerIndex, timeline)
 {
 	jsonArray(key("Frames", "FR"));
 
 	var f = 0;
-	var fr = frames.length;
-	while (f < fr)
+	while (f < frames.length)
 	{
 		var frame = frames[f];
-		var pushFrame = (f == frame.startFrame);
-
-		if (frame.tweenType != "none")
-		{
-		}
+		var pushFrame = (f === frame.startFrame);
 
 		if (pushFrame)
 		{
@@ -664,28 +847,22 @@ function parseFrames(frames, layerIndex, timeline)
 
 				if (isCubic)
 				{	
-					// FLfile.createFolder(path + "/LIBRARY");
 					jsonArray(key("curve", "CV"));
+					var e = 0;
 					var eases = frame.getCustomEase();
-					for (var i = 0; i < eases.length; i++)
+					while (e < eases.length)
 					{
-						var field = eases[i];
+						var field = eases[e++];
 						push("{");
 						jsonVar("x", field.x);
 						jsonVarEnd("y", field.y);
 						push("},\n");
 					}
 
-					removeTrail(2);
-
-					push("],\n");
-					// var oldJSON = curJson;
-					// initJson();
+					if (eases.length > 0)
+						removeTrail(2);
 					
-					// push("{\n");
-
-
-					// FLfile.write(path + "/LIBRARY/eases.json", );
+					push("],\n");
 				}
 				else
 				{
@@ -701,16 +878,13 @@ function parseFrames(frames, layerIndex, timeline)
 					jsonVar(key("scale", "SL"), frame.motionTweenScale);
 					jsonVar(key("snap", "SP"), frame.motionTweenSnap);
 					jsonVarEnd(key("sync", "SC"), frame.motionTweenSync);
-
 					break;
 					case "motion object":
 					jsonStr(key("type", "T"), key("motion_OBJECT", "MTO"));
 					parseMotionObject(xmlToObject(frame.getMotionObjectXML()));
-					
 					break;
 					case "shape":
-					jsonStr(key("type", "T"), key("shape", "SHP"));
-
+					jsonStrEnd(key("type", "T"), key("shape", "SHP"));
 					break;
 				}	
 
@@ -739,6 +913,18 @@ function parseFrames(frames, layerIndex, timeline)
 
 			jsonVar(key("index", "I"), f);
 			jsonVar(key("duration", "DU"), frame.duration);
+			
+			if (!bakedFilters)
+			{
+				var frameFilters = getFrameFilters(timeline.layers[layerIndex], f);
+				if (frameFilters.length > 0)
+				{
+					parseFilters(frameFilters);
+					removeTrail(1);
+					push(",");
+				}
+			}
+			
 			parseElements(frame.elements, f, layerIndex, timeline);
 			push('},');
 		}
@@ -796,7 +982,7 @@ function parseMotionObject(motionData)
 				jsonVar(key("anchor", "ANC"), "[" + keyframe.anchor + "]");
 				jsonVar(key("next", "NXT"), "[" + keyframe.next + "]");
 				jsonVar(key("previous", "PRV"), "[" + keyframe.previous + "]");
-				jsonVarEnd(key("index", "I"), keyframe.timevalue * 0.001);
+				jsonNumEnd(key("index", "I"), keyframe.timevalue * 0.001);
 				push("},");
 			}
 
@@ -817,10 +1003,16 @@ function parseElements(elements, frameIndex, layerIndex, timeline)
 	jsonArray(key("elements", "E"));
 
 	var e = 0;
-	var el = elements.length;
+
+	// TODO: while looping through frame elements the slight lag caused by copying frames can corrupt many values, not only shapes
+	// idk if this is because jsfl or other operations are multithreaded or something, but it can and will fuck up some stuff
+	// should prob move all element types to their own small queues/buffers to make sure this doesnt happen
 	var shapeQueue = [];
 
-	while (e < el)
+	var frameFilters = getFrameFilters(timeline.layers[layerIndex], frameIndex);
+	var hasFrameFilters = (bakedFilters && frameFilters.length > 0);
+
+	while (e < elements.length)
 	{
 		var element = elements[e];
 		var elementType = element.elementType;
@@ -852,10 +1044,21 @@ function parseElements(elements, frameIndex, layerIndex, timeline)
 			case "instance":
 				switch (element.instanceType) {
 					case "symbol":
-					if (bakedFilters && (element.filters != undefined && element.filters.length > 0))
-						parseShape(timeline, layerIndex, frameIndex, [e], true);
+
+					var hasFilters = element.filters != undefined && element.filters.length > 0;
+					var bakeInstanceFilters = (bakedFilters && (hasFilters || hasFrameFilters));
+					//var bakeInstanceSkew = (flattenSkewing && (element.skewX != 0 || element.skewY != 0));
+					var bakeInstance = (bakeInstanceFilters);// || bakeInstanceSkew);
+					
+					if (bakeInstance)
+					{
+						pushElementSpritemap(timeline, layerIndex, frameIndex, [e], frameFilters);
+					}
 					else
+					{
 						parseSymbolInstance(element);
+					}
+
 					break;
 					case "bitmap":
 						parseBitmapInstance(element);
@@ -872,12 +1075,15 @@ function parseElements(elements, frameIndex, layerIndex, timeline)
 				{
 					case "static": // TODO: add missing text types
 					case "dynamic": 
-					case "input": 
-						fl.trace(element.useDeviceFonts);
+					case "input":
 						if (!element.useDeviceFonts || bakeTexts)
-							parseShape(timeline, layerIndex, frameIndex, [e], false);
+						{
+							pushElementSpritemap(timeline, layerIndex, frameIndex, [e], frameFilters);
+						}
 						else
+						{
 							parseTextInstance(element);
+						}
 					break;
 				}
 			break;
@@ -894,7 +1100,14 @@ function parseElements(elements, frameIndex, layerIndex, timeline)
 
 	if (shapeQueue.length > 0) {
 		push("{");
-		parseShape(timeline, layerIndex, frameIndex, shapeQueue, true)
+		if (hasFrameFilters && bakedFilters)
+		{
+			pushElementSpritemap(timeline, layerIndex, frameIndex, shapeQueue, frameFilters);
+		}
+		else
+		{
+			parseShape(timeline, layerIndex, frameIndex, shapeQueue, true);
+		}
 		push("}");
 	}
 
@@ -906,51 +1119,36 @@ function parseTextInstance(text)
 	jsonHeader(key("textFIELD_Instance", "TFI"));
 	jsonStr(key("text", "TXT"), text.getTextString());
 	jsonStr(key("type", "T"), text.textType);
+	
 	if (text.textType != "static")
 		jsonStr(key("Instance_name", "IN"), text.name);
 
-	var orientation = "";
-
+	var orientation = null;
 	switch (text.orientation)
 	{
-		case "horizontal":
-		orientation = key("horizontal", "HR");
-		break;
-		case "vertical left to right":
-			orientation = key("vertical right to left", "VLTR");
-		break;
-		case "vertical right to left":
-
-		orientation = key("vertical right to left", "VRTL");
-		break;
+		case "horizontal":				orientation = key("horizontal", "HR");					break;
+		case "vertical left to right":	orientation = key("vertical right to left", "VLTR");	break;
+		case "vertical right to left":	orientation = key("vertical right to left", "VRTL");	break;
 	}
 
-	jsonStr(key("orientation", "ORT"), orientation);
+	if (orientation != null)
+		jsonStr(key("orientation", "ORT"), orientation);
 
-	var linetype = "";
-
+	var linetype = null;
 	if (text.textType != "static")
 	{
 		switch (text.lineType)
 		{
-			case "single line":
-				linetype = key("single line", "SL");
-			break;
-			case "multiline":
-				linetype = key("multiline", "ML");
-			break;
-			case "multiline no wrap":
-
-				linetype = key("multiline no wrap", "MLN");
-			break;
-			case "password":
-
-				linetype = key("password", "PSW");
-			break;
+			case "single line": 		linetype = key("single line", "SL"); 				break;
+			case "multiline": 			linetype = key("multiline", "ML");			 		break;
+			case "multiline no wrap": 	linetype = key("multiline no wrap", "MLN"); 		break;
+			case "password": 			linetype = key("password", "PSW"); 					break;
 		}
 	}
 
-	jsonStr(key("lineType", "LT"), linetype);	
+	if (lineType != null)
+		jsonStr(key("lineType", "LT"), linetype);	
+	
 	jsonArray(key("attributes", "ATR"));
 	
 	var t = 0;
@@ -994,118 +1192,388 @@ function parseTextInstance(text)
 	push("}\n");
 }
 
+var cachedMatrices;
+
 function parseBitmapInstance(bitmap)
 {
-	var m = bitmap.matrix;
-	var matrix = {a:m.a, b:m.b, c:m.c, d:m.d, tx:m.tx, ty:m.ty};
+	var item = bitmap.libraryItem;
+	var matrix = cloneMatrix(bitmap.matrix);
+	var scale = getMatrixScale(item.hPixels, item.vPixels);
 
-	if (resolution < 1) {
-		matrix.a *= resScale;
-		matrix.d *= resScale;
+	if (scale > 1)
+	{
+		matrix.a *= scale;
+		matrix.d *= scale;
 	}
 
-	var itemIndex = pushItemSpritemap(bitmap.libraryItem);
+	var itemIndex = pushItemSpritemap(item);
 	parseAtlasInstance(matrix, itemIndex);
+}
+
+function getShapeBounds(shape)
+{
+	var vertexBounds = getVerticesBounds(shape.vertices);
+	return {
+		left: shape.x + (vertexBounds.left * 0.5),
+		top: shape.y + (vertexBounds.top * 0.5),
+		right: vertexBounds.right,
+		bottom: vertexBounds.bottom
+	}
 }
 
 function parseShape(timeline, layerIndex, frameIndex, elementIndices, checkMatrix)
 {
-	var shapes = pushElementSpritemap(timeline, layerIndex, frameIndex, elementIndices);
-	var shape = shapes[0];
-	var mtx;
+	var shapes = pushShapeSpritemap(timeline, layerIndex, frameIndex, elementIndices);
+	var atlasIndex = (smIndex - 1);
+	var mtx = undefined;
 	
-	
-
 	if (checkMatrix)
 	{
-		var minX = shape.x;
-		var minY = shape.y;
-		var maxX = shape.width;
-		var maxY = shape.height;
-		
+		var shapeX = Number.POSITIVE_INFINITY;
+		var shapeY = Number.POSITIVE_INFINITY;
+		var shapeWidth = Number.NEGATIVE_INFINITY;
+		var shapeHeight = Number.NEGATIVE_INFINITY;
 
-		var s = 1;
+		var s = 0;
 		while (s < shapes.length)
 		{
-			var shape = shapes[s];
-			minX = Math.min(minX, shape.x);
-        	minY = Math.min(minY, shape.y);
-        	maxX = Math.max(maxX, shape.width);
-        	maxY = Math.max(maxY, shape.height);
-			s++;
+			var bounds = getShapeBounds(shapes[s++]);
+			shapeX = min(shapeX, bounds.left);
+			shapeY = min(shapeY, bounds.top);
+			shapeWidth = max(shapeWidth, bounds.right);
+			shapeHeight = max(shapeHeight, bounds.bottom);
+
+			// isRectangle = (shape.isRectangleObject || shape.vertices.length === 4)
 		}
-		
 
-		var transformingX = (minX - (rShape(maxX * 0.5)));
-		var transformingY = (minY - (rShape(maxY * 0.5)));
-		
-		// var tx = Math.round();
-
-		mtx = {a: resScale, b: 0, c: 0, d: resScale, tx: transformingX, ty: transformingY}
+		var transformingX = (shapeX - (shapeWidth * 0.5));
+		var transformingY = (shapeY - (shapeHeight * 0.5));
+		var scale = getMatrixScale(shapeWidth, shapeHeight);		
+		mtx = makeMatrix(scale, 0, 0, scale, transformingX, transformingY);
 	}
 	else
 	{
+		var shape = timeline.layers[layerIndex].frames[frameIndex].elements[elementIndices[0]];
+		var scale = getMatrixScale(shape.width, shape.height);
+		
 		mtx = cloneMatrix(shape.matrix);
-		mtx.a *= resScale;
-		mtx.d *= resScale;
+		mtx.a *= scale;
+		mtx.d *= scale;
 	}
 
-	parseAtlasInstance(mtx, smIndex - 1);
+	resizeInstanceMatrix(curSymbol, mtx);
+	parseAtlasInstance(mtx, atlasIndex);
 }
 
-function rShape(value)
+function getElementRect(instance, frameFilters)
 {
-	var v = value.toFixed(3);
+	var minX; var minY; var maxX; var maxY;
 
-	if (Math.floor(v) == v)
-		return v;
+	switch (instance.elementType)
+	{
+		case "shape":
+			var bounds = getShapeBounds(instance);
+			minX = bounds.left;
+			minY = bounds.top;
+			maxX = bounds.right;
+			maxY = bounds.bottom;
+		break;
+		case "instance":
+			var timeline = instance.libraryItem.timeline;
+			var frameIndex = (instance.firstFrame != undefined) ? instance.firstFrame : 0;
+
+			minX = minY = Number.POSITIVE_INFINITY;
+			maxX = maxY = Number.NEGATIVE_INFINITY;
+		
+			var l = 0;
+			while (l < timeline.layers.length)
+			{
+				var frameElements = timeline.layers[l++].frames[frameIndex].elements;
+				var e = 0;
+				while (e < frameElements.length)
+				{
+					var elem = getElementRect(frameElements[e++]);
+					minX = min(minX, elem.x);
+					minY = min(minY, elem.y);
+					maxX = max(maxX, elem.width);
+					maxY = max(maxY, elem.height);
+				}
+			}
+		break;
+		case "text":
+			minX = minY = maxX = maxY = 0;
+		break;
+	}
+
+	var instanceFilters = new Array();
+
+	if (frameFilters != null && frameFilters.length > 0)
+		instanceFilters = instanceFilters.concat(frameFilters);
+
+	if (instance.filters != null && instance.filters.length > 0)
+		instanceFilters = instanceFilters.concat(instance.filters);
 	
-	v *= 10;
-	
-	var tV = Math.floor(v);
+	forEachFilter(instanceFilters, function (filter) {
+		switch (filter.name)
+		{
+			case "glowFilter":
+				if (filter.inner)
+					break;
+			case "blurFilter":
+				var blurMult = getQualityScale(filter.quality);
+				minX -= filter.blurX * blurMult;
+				minY -= filter.blurY * blurMult;
+				maxX += filter.blurX * blurMult;
+				maxY += filter.blurY * blurMult;
+			break;
+		}
+	});
 
-	v -= tV;
-	
-	var r = Math.round(v);
-	if (r == 0)
-		v = 0;
-	if (v == 1)
-		v = 0.5;
-
-	v *= 0.1;
-	v += tV * 0.1;
-
-	return v.toFixed(3);
-
+	return {
+		x: minX,
+		y: minY,
+		width: maxX,
+		height: maxY
+	}
 }
 
-function parseAtlasInstance(matrix, name)
+// Get shape dimensions based on vertices because element.left and element.top doesnt cut it
+function getVerticesBounds(vertices)
 {
+	var minVertX = Number.POSITIVE_INFINITY;
+	var minVertY = Number.POSITIVE_INFINITY;
+	var maxVertX = Number.NEGATIVE_INFINITY;
+	var maxVertY = Number.NEGATIVE_INFINITY;
+
+	var v = 0;
+	while (v < vertices.length)
+	{
+		var vert = vertices[v++];				
+		minVertX = min(minVertX, vert.x);
+		minVertY = min(minVertY, vert.y);
+		maxVertX = max(maxVertX, vert.x);
+		maxVertY = max(maxVertY, vert.y);
+	}
+
+	return {
+		left: minVertX,
+		top: minVertY,
+		right: maxVertX,
+		bottom: maxVertY
+	}
+}
+
+var resizedContain = false;
+
+function getMatrixScale(width, height)
+{
+	var maxSize = max(width * resolution, height * resolution);
+	var mxScale = resScale;
+	
+	if (maxSize > 8192)
+	{
+		resizedContain = true;
+		mxScale = 1.0 / (((8192 / maxSize) / 1.01) * resolution); // pixel rounding crap
+	}
+	
+	return mxScale;
+}
+
+function parseAtlasInstance(matrix, index)
+{
+	cachedMatrices[index] = matrix;
 	jsonHeader(key("ATLAS_SPRITE_instance", "ASI"));
 	jsonVar(key("Matrix", "MX"), parseMatrix(matrix));
-	jsonStrEnd(key("name", "N"), name);
+	jsonStrEnd(key("name", "N"), index);
 	push('}');
 }
 
-function pushFrameSpritemap(timeline)
+function pushElementsFromFrame(timeline, layerIndex, frameIndex, elementIndices)
 {
-	timeline.setSelectedLayers(0, true);
-	timeline.copyFrames(0, 0);
+	var lockedLayer = timeline.layers[layerIndex].locked;
+	timeline.setSelectedLayers(layerIndex, true);
+	timeline.copyFrames(frameIndex, frameIndex);
 	TEMP_TIMELINE.pasteFrames(smIndex);
-	frameQueue.push("ELEMENT_" + smIndex);	
+	pushElement(elementIndices);
+	timeline.layers[layerIndex].locked = lockedLayer;
+}
 
-	var e = 0;
-	var elements = TEMP_LAYER.frames[smIndex].elements;
-	while (e < elements.length)
+function pushElementSpritemap(timeline, layerIndex, frameIndex, elementIndices, frameFilters)
+{
+	pushElementsFromFrame(timeline, layerIndex, frameIndex, elementIndices);
+
+	initJson();
+	push('{\n');
+	
+	var itemName = "_bta_asi_" + smIndex;
+	jsonStr(key("SYMBOL_name", "SN"), itemName);
+	jsonHeader(key("TIMELINE", "TL"));
+	jsonArray(key("LAYERS", "L"));
+
+	var elem = TEMP_LAYER.frames[smIndex].elements[elementIndices[0]];
+	var rect = getElementRect(elem, frameFilters);
+
+	var matScale = getMatrixScale(rect.width, rect.height);
+	var matScaleX = (elem.scaleX < 1) ? (1 / elem.scaleX) * matScale : matScale;
+	var matScaleY = (elem.scaleY < 1) ? (1 / elem.scaleY) * matScale : matScale;
+
+	if (bakedFilters)
 	{
-		var item = elements[e++];
-		item.width = Math.round(item.width * resolution);
-		item.height = Math.round(item.height * resolution);
+		var scaleXMult = 1;
+		var scaleYMult = 1;
+	
+		// Scaling down blurry symbols so antialiasing can do the dirty work later
+		forEachFilter(elem.filters, function (filter) {
+			switch (filter.name) {
+				case "blurFilter":
+					var qualityScale = 0.5;
+					if (filter.quality == "medium") qualityScale = 0.75;
+					if (filter.quality == "low") 	qualityScale = 1;
+					scaleXMult *= (filter.blurX / (16 * qualityScale));
+					scaleYMult *= (filter.blurY / (16 * qualityScale));
+				break;
+			}
+		});
+	
+		matScaleX *= max(scaleXMult, 1);
+		matScaleY *= max(scaleYMult, 1);
 	}
 
-	var matrix = {a:resScale, b:0., c:0., d:resScale, tx: 0, ty: 0};
+	var atlasMatrix = makeMatrix(matScaleX, 0, 0, matScaleY,
+		rect.x - (rect.width * 0.5),
+		rect.y - (rect.height * 0.5)
+	);
+
+	makeBasicLayer(function () {
+		parseAtlasInstance(atlasMatrix, smIndex);
+		smIndex++;
+	});
+
+	push('}');
+
+	bakedDictionary.push(closeJson());
+	parseSymbolInstance(elem, itemName);
+}
+
+function forEachFilter(filters, callback)
+{
+	if (filters == undefined || filters.length <= 0)
+		return;
+
+	var f = 0;
+	while (f < filters.length) {
+		callback(filters[f++]);
+	}
+}
+
+function pushFrameSpritemap(timeline, frameIndex)
+{
+	var l = 0;
+	var usedLayers = new Array();
+	while (l < timeline.layerCount)
+	{
+		if (timeline.layers[l].frames[frameIndex].elements.length > 0)
+		{
+			usedLayers.push(l);
+		}
+		l++;
+	}
+
+	if (usedLayers.length <= 0)
+		return;
+
+	var mergeTimeline = TEMP_MERGE_TIMELINE;
+
+	// Add any extra neccesary layers
+	while (mergeTimeline.layerCount < usedLayers.length)
+	{
+		mergeTimeline.addNewLayer();
+	}
+
+	var newIndex = mergeTimeline.frameCount - 1;
+
+	l = 0;
+	while (l < usedLayers.length)
+	{
+		var layerIndex = usedLayers[l++];
+
+		timeline.setSelectedLayers(layerIndex, true);
+		timeline.copyFrames(frameIndex, frameIndex);
+		
+		mergeTimeline.setSelectedLayers(l - 1, true)
+		mergeTimeline.pasteFrames(newIndex);
+		mergeTimeline.insertBlankKeyframe(newIndex + 1);
+	}
+
+	var bounds = getFrameBounds(mergeTimeline, newIndex);
+	var mergeWidth = (bounds.right - bounds.left);
+	var mergeHeight = (bounds.bottom - bounds.top);
+
+	TEMP_TIMELINE.insertBlankKeyframe(smIndex);
+	frameQueue.push("MERGE_" + newIndex);
+
+	var scale = getMatrixScale(mergeWidth, mergeHeight);
+	var matrix = makeMatrix(scale, 0, 0, scale, bounds.left, bounds.top);
+	
+	resizeInstanceMatrix(curSymbol, matrix);
 	parseAtlasInstance(matrix, smIndex);
 	smIndex++;
+}
+
+function getFrameBounds(timeline, frameIndex)
+{
+	// For versions where its allowed, timeline.getBounds is generally faster than our own function
+	// TODO: may have to change in the future due to filter bounds tho
+	if (flversion >= 15)
+	{
+		return timeline.getBounds(frameIndex + 1);
+	}
+
+	var minX = Number.POSITIVE_INFINITY;
+	var minY = Number.POSITIVE_INFINITY;
+	var maxX = Number.NEGATIVE_INFINITY;
+	var maxY = Number.NEGATIVE_INFINITY;
+
+	var l = 0;
+	while (l < timeline.layerCount)
+	{
+		var layer = timeline.layers[l++];	
+		if (frameIndex > layer.frameCount - 1)
+			continue;
+
+		var e = 0;
+		var elems = layer.frames[frameIndex].elements;
+		
+		while (e < elems.length)
+		{
+			var elem = elems[e++];
+
+			switch (elem.elementType)
+			{
+				case "shape":
+					var rect = getVerticesBounds(elem.vertices);
+					minX = min(minX, rect.left);
+					minY = min(minY, rect.top);
+					maxX = max(maxX, rect.right);
+					maxY = max(maxY, rect.bottom);
+				break;
+				default:
+					var rect = getElementRect(elem);
+					minX = min(minX, rect.x);
+					minY = min(minY, rect.y);
+					maxX = max(maxX, rect.x + rect.width);
+					maxY = max(maxY, rect.y + rect.height);
+				break;
+			}
+		}
+	}
+
+	return {
+		left: minX,
+		top: minY,
+		right: maxX,
+		bottom: maxY
+	}
 }
 
 function pushItemSpritemap(item)
@@ -1123,19 +1591,18 @@ function pushItemSpritemap(item)
 	return index;
 }
 
-function pushElementSpritemap(timeline, layerIndex, frameIndex, elementIndices)
+function pushShapeSpritemap(timeline, layerIndex, frameIndex, elementIndices)
 {
 	timeline.setSelectedLayers(layerIndex, true);
 	timeline.copyFrames(frameIndex, frameIndex);
 	TEMP_TIMELINE.pasteFrames(smIndex);
 
 	var frameElements = TEMP_LAYER.frames[smIndex].elements;
-	var shape = frameElements[elementIndices[0]];
 	var shapes = [];
 
 	var e = 0;
 	var ei = 0;
-	var lastWidth = -1;
+	var lastWidth, lastHeight = Number.NEGATIVE_INFINITY;
 
 	while (e < frameElements.length)
 	{
@@ -1144,53 +1611,99 @@ function pushElementSpritemap(timeline, layerIndex, frameIndex, elementIndices)
 		if (elementIndices[ei] == e) // Add the actual parts of the array
 		{
 			ei++;
-
-			// TODO: move this to the frameQueue and fix the resolution lines bug
-			// Gotta check because its both the same shape instance but also not?? Really weird shit
-			if (Math.round(frameElement.width * resolution) != lastWidth)
+			
+			var elemWidth = Math.round(frameElement.width);
+			var elemHeight = Math.round(frameElement.height);
+			
+			// Checking because its both the same shape instance but also not?? Really weird shit
+			if (elemWidth != lastWidth && elemHeight != lastHeight)
 			{
 				// Gotta do this because jsfl scripts cant keep track well of instances data and will randomly corrupt values
 				shapes.push({
 					x: frameElement.x,
 					y: frameElement.y,
-					width: frameElement.width,
-					height: frameElement.height,
-					matrix: frameElement.matrix
+					vertices: frameElement.vertices
 				});
 
-				frameElement.matrix = matrixIdent(frameElement.matrix);
-				var roundWidth = Math.round(frameElement.width * resolution);
-				
-				frameElement.width = roundWidth;
-				frameElement.height = Math.round(frameElement.height * resolution);
-				lastWidth = roundWidth;
+				lastWidth = elemWidth;
+				lastHeight = elemHeight;
 			}
-		}
-		else // Remove other crap from the frame
-		{
-			frameElement.width = frameElement.height = 0;
-			frameElement.x = Math.round(shape.x);
-			frameElement.y = Math.round(shape.y);
 		}
 
 		e++;
 	}
 
-	frameQueue.push("ELEMENT_" + smIndex);
+	pushElement(elementIndices);
 	smIndex++;
 
 	return shapes;
 }
 
-function parseSymbolInstance(instance)
+function pushElement(elemIndices)
 {
-	jsonHeader(key("SYMBOL_Instance", "SI"));
-	var item = instance.libraryItem;
+	frameQueue.push("ELEMENT_" + String(elemIndices));
+}
 
-	if (item != undefined) {
-		jsonStr(key("SYMBOL_name", "SN"), item.name);
-		if (dictionary.indexOf(item.name) == -1)
-			dictionary.push(item.name);
+var instanceSizes;
+var curSymbol;
+
+function resizeInstanceMatrix(name, matrix)
+{
+	var maxScale = instanceSizes[name];
+	if (maxScale == null)
+		return;
+	
+	matrix.a /= maxScale[0];	
+	matrix.d /= maxScale[1];
+}
+
+// TODO: make this inheritance based so its a full calculation of all the max sizes of the instance
+function pushInstanceSize(name, scaleX, scaleY)
+{
+	if (instanceSizes[name] == null)
+	{
+		var list = [scaleX, scaleY];
+		instanceSizes[name] = list;
+		return;
+	}
+
+	var list = instanceSizes[name];
+	list[0] = max(list[0], scaleX);
+	list[1] = max(list[1], scaleX);
+}
+
+function getFrameFilters(layer, frameIndex)
+{
+	if (flversion >= 20 && layer.getFiltersAtFrame != null)
+	{
+		var filters = layer.getFiltersAtFrame(frameIndex);
+		if (filters != null)
+			return filters;
+	}
+
+	return new Array(0);
+}
+
+function parseSymbolInstance(instance, itemName)
+{
+	var bakedInstance = (itemName != undefined);
+	jsonHeader(key("SYMBOL_Instance", "SI"));
+
+	if (itemName == undefined)
+	{
+		item = instance.libraryItem;
+		if (item != undefined) {
+			itemName = item.name;
+			if (dictionary.indexOf(itemName) == -1)
+				dictionary.push(itemName);
+		}
+	}
+
+	if (itemName != undefined) {
+		jsonStr(key("SYMBOL_name", "SN"), itemName);
+
+		if (!bakedInstance)
+			pushInstanceSize(itemName, instance.scaleX, instance.scaleY);
 	}
 
 	if (instance.firstFrame != undefined)
@@ -1211,7 +1724,8 @@ function parseSymbolInstance(instance)
 		',"y":' + instance.transformY + "}"
 	);
 
-	if (instance.colorMode != "none") {
+	if (instance.colorMode != "none")// && !(bakedInstance && bakedFilters))
+	{
 		jsonHeader(key("color", "C"));
 		var modeKey = key("mode", "M");
 
@@ -1223,18 +1737,18 @@ function parseSymbolInstance(instance)
 			case "tint":
 				jsonStr(modeKey, key("Tint", "T"));
 				jsonStr(key("tintColor", "TC"), instance.tintColor);
-				jsonVarEnd(key("tintMultiplier", "TM"), instance.tintPercent * 0.01);
+				jsonNumEnd(key("tintMultiplier", "TM"), instance.tintPercent * 0.01);
 			break;
 			case "alpha":
 				jsonStr(modeKey, key("Alpha", "CA"));
-				jsonVarEnd(key("alphaMultiplier", "AM"), instance.colorAlphaPercent * 0.01);
+				jsonNumEnd(key("alphaMultiplier", "AM"), instance.colorAlphaPercent * 0.01);
 			break;
 			case "advanced":
 				jsonStr(modeKey, key("Advanced", "AD"));
-				jsonVar(key("RedMultiplier", "RM"), instance.colorRedPercent * 0.01);
-				jsonVar(key("greenMultiplier", "GM"), instance.colorGreenPercent * 0.01);
-				jsonVar(key("blueMultiplier", "BM"), instance.colorBluePercent * 0.01);
-				jsonVar(key("alphaMultiplier", "AM"), instance.colorAlphaPercent * 0.01);
+				jsonNum(key("RedMultiplier", "RM"), instance.colorRedPercent * 0.01);
+				jsonNum(key("greenMultiplier", "GM"), instance.colorGreenPercent * 0.01);
+				jsonNum(key("blueMultiplier", "BM"), instance.colorBluePercent * 0.01);
+				jsonNum(key("alphaMultiplier", "AM"), instance.colorAlphaPercent * 0.01);
 				jsonVar(key("redOffset", "RO"), instance.colorRedAmount);
 				jsonVar(key("greenOffset", "GO"), instance.colorGreenAmount);
 				jsonVar(key("blueOffset", "BO"), instance.colorBlueAmount);
@@ -1263,165 +1777,154 @@ function parseSymbolInstance(instance)
 
 	if (instance.symbolType != "graphic")
 	{
-		if (instance.blendMode != "normal")
+		if (instance.blendMode != null && instance.blendMode != "normal")
 			jsonStr(key("blend", "B"), instance.blendMode);
 
 		var filters = instance.filters;
-		var hasFilters = (filters != undefined && filters.length > 0)
+		var hasFilters = (filters != null && filters.length > 0)
 
 		// Add Filters
-		if (hasFilters)
+		if (hasFilters && !bakedFilters)
 		{
-			if (!bakedFilters)
-			{
-				jsonArray(key("filters", "F"));
-				var n = key("name", "N");
-
-				var i = 0;
-				while (i < filters.length)
-				{
-					var filter = filters[i];
-
-					push('{\n');
-
-					switch (filter.name) {
-						case "adjustColorFilter":
-							jsonStr(n, key("adjustColorFilter", "ACF"));
-							jsonVar(key("brightness", "BRT"), filter.brightness);
-							jsonVar(key("hue", "H"), filter.hue);
-							jsonVar(key("contrast", "CT"), filter.contrast);
-							jsonVarEnd(key("saturation", "SAT"), filter.saturation);
-						break;
-						case "bevelFilter":
-							jsonStr(n, key("bevelFilter", "BF"));
-							jsonVar(key("blurX", "BLX"), filter.blurX);
-							jsonVar(key("blurY", "BLY"), filter.blurY);
-							jsonVar(key("distance", "D"), filter.distance);
-							jsonVar(key("knockout", "KK"), filter.knockout);
-							jsonStr(key("type", "T"), filter.type);
-							jsonVar(key("strength", "STR"), filter.strength);
-							jsonVar(key("angle", "A"), filter.angle);
-							jsonStr(key("shadowColor", "SC"), filter.shadowColor);
-							jsonStr(key("highlightColor", "HC"), filter.highlightColor);
-							jsonVarEnd(key("quality", "Q"), parseQuality(filter.quality));
-						break;
-						case "blurFilter":
-							jsonStr(n, key("blurFilter", "BLF"));
-							jsonVar(key("blurX", "BLX"), filter.blurX);
-							jsonVar(key("blurY", "BLY"), filter.blurY);
-							jsonVarEnd(key("quality", "Q"), parseQuality(filter.quality));
-						break;
-						case "dropShadowFilter":
-							jsonStr(n, key("dropShadowFilter", "DSF"));
-							jsonVar(key("blurX", "BLX"), filter.blurX);
-							jsonVar(key("blurY", "BLY"), filter.blurY);
-							jsonVar(key("distance", "D"), filter.distance);
-							jsonVar(key("knockout", "KK"), filter.knockout);
-							jsonVar(key("inner", "IN"), filter.inner);
-							jsonVar(key("hideObject", "HO"), filter.hideObject);
-							jsonVar(key("strength", "STR"), filter.strength);
-							jsonVar(key("angle", "A"), filter.angle);
-							jsonStr(key("color", "C"), filter.color);
-							jsonVarEnd(key("quality", "Q"), parseQuality(filter.quality));
-						break;
-						case "glowFilter":
-							jsonStr(n, key("glowFilter", "GF"));
-							jsonVar(key("blurX", "BLX"), filter.blurX);
-							jsonVar(key("blurY", "BLY"), filter.blurY);
-							jsonVar(key("inner", "IN"), filter.inner);
-							jsonVar(key("knockout", "KK"), filter.knockout);
-							jsonVar(key("strength", "STR"), filter.strength);
-							jsonStr(key("color", "C"), filter.color);
-							jsonVarEnd(key("quality", "Q"), parseQuality(filter.quality));
-						break;
-						case "gradientBevelFilter":
-							jsonStr(n, key("gradientBevelFilter", "GBF"));
-							jsonVar(key("blurX", "BLX"), filter.blurX);
-							jsonVar(key("blurY", "BLY"), filter.blurY);
-							jsonVar(key("distance", "D"), filter.distance);
-							jsonVar(key("knockout", "KK"), filter.knockout);
-							jsonStr(key("type", "T"), filter.type);
-							jsonVar(key("strength", "STR"), filter.strength);
-							jsonVar(key("angle", "A"), filter.angle);
-							jsonVar(key("colorArray", "CA"), parseArray(filter.colorArray));
-							jsonVarEnd(key("quality", "Q"), parseQuality(filter.quality));
-						break;
-						case "gradientGlowFilter":
-							jsonStr(n, key("gradientGlowFilter", "GGF"));
-							jsonVar(key("blurX", "BLX"), filter.blurX);
-							jsonVar(key("blurY", "BLY"), filter.blurY);
-							jsonVar(key("inner", "IN"), filter.inner);
-							jsonVar(key("knockout", "KK"), filter.knockout);
-							jsonVar(key("strength", "STR"), filter.strength);
-							jsonVar(key("colorArray", "CA"), parseArray(filter.colorArray));
-							jsonVarEnd(key("quality", "Q"), parseQuality(filter.quality));
-						break;
-					}
-
-					push((i < filters.length - 1) ? '},' : '}\n');
-					i++;
-				}
-
-				push(']\n');
-			}
-			else
-			{
-
-			}
+			parseFilters(filters)
 		}
-		else removeTrail(2);
+		else
+		{
+			removeTrail(2);
+		}
 	}
 	else removeTrail(2);
 
 	push('}');
 }
 
-function matrixIdent(mat)
+function parseFilters(filters)
 {
-	mat.a = mat.d = 1;
-	mat.b = mat.c = mat.tx = mat.ty = 0;
-	return mat;
+	jsonArray(key("filters", "F"));
+	var n = key("name", "N");
+
+	var i = 0;
+	while (i < filters.length)
+	{
+		var filter = filters[i];
+		push('{\n');
+
+		switch (filter.name) {
+			case "adjustColorFilter":
+				jsonStr(n, key("adjustColorFilter", "ACF"));
+				jsonVar(key("brightness", "BRT"), filter.brightness);
+				jsonVar(key("hue", "H"), filter.hue);
+				jsonVar(key("contrast", "CT"), filter.contrast);
+				jsonVarEnd(key("saturation", "SAT"), filter.saturation);
+			break;
+			case "bevelFilter":
+				jsonStr(n, key("bevelFilter", "BF"));
+				jsonVar(key("blurX", "BLX"), filter.blurX);
+				jsonVar(key("blurY", "BLY"), filter.blurY);
+				jsonVar(key("distance", "D"), filter.distance);
+				jsonVar(key("knockout", "KK"), filter.knockout);
+				jsonStr(key("type", "T"), filter.type);
+				jsonVar(key("strength", "STR"), filter.strength);
+				jsonVar(key("angle", "A"), filter.angle);
+				jsonStr(key("shadowColor", "SC"), filter.shadowColor);
+				jsonStr(key("highlightColor", "HC"), filter.highlightColor);
+				jsonVarEnd(key("quality", "Q"), parseQuality(filter.quality));
+			break;
+			case "blurFilter":
+				jsonStr(n, key("blurFilter", "BLF"));
+				jsonVar(key("blurX", "BLX"), filter.blurX);
+				jsonVar(key("blurY", "BLY"), filter.blurY);
+				jsonVarEnd(key("quality", "Q"), parseQuality(filter.quality));
+			break;
+			case "dropShadowFilter":
+				jsonStr(n, key("dropShadowFilter", "DSF"));
+				jsonVar(key("blurX", "BLX"), filter.blurX);
+				jsonVar(key("blurY", "BLY"), filter.blurY);
+				jsonVar(key("distance", "D"), filter.distance);
+				jsonVar(key("knockout", "KK"), filter.knockout);
+				jsonVar(key("inner", "IN"), filter.inner);
+				jsonVar(key("hideObject", "HO"), filter.hideObject);
+				jsonVar(key("strength", "STR"), filter.strength);
+				jsonVar(key("angle", "A"), filter.angle);
+				jsonStr(key("color", "C"), filter.color);
+				jsonVarEnd(key("quality", "Q"), parseQuality(filter.quality));
+			break;
+			case "glowFilter":
+				jsonStr(n, key("glowFilter", "GF"));
+				jsonVar(key("blurX", "BLX"), filter.blurX);
+				jsonVar(key("blurY", "BLY"), filter.blurY);
+				jsonVar(key("inner", "IN"), filter.inner);
+				jsonVar(key("knockout", "KK"), filter.knockout);
+				jsonVar(key("strength", "STR"), filter.strength);
+				jsonStr(key("color", "C"), filter.color);
+				jsonVarEnd(key("quality", "Q"), parseQuality(filter.quality));
+			break;
+			case "gradientBevelFilter":
+				jsonStr(n, key("gradientBevelFilter", "GBF"));
+				jsonVar(key("blurX", "BLX"), filter.blurX);
+				jsonVar(key("blurY", "BLY"), filter.blurY);
+				jsonVar(key("distance", "D"), filter.distance);
+				jsonVar(key("knockout", "KK"), filter.knockout);
+				jsonStr(key("type", "T"), filter.type);
+				jsonVar(key("strength", "STR"), filter.strength);
+				jsonVar(key("angle", "A"), filter.angle);
+				jsonVar(key("colorArray", "CA"), parseArray(filter.colorArray));
+				jsonVarEnd(key("quality", "Q"), parseQuality(filter.quality));
+			break;
+			case "gradientGlowFilter":
+				jsonStr(n, key("gradientGlowFilter", "GGF"));
+				jsonVar(key("blurX", "BLX"), filter.blurX);
+				jsonVar(key("blurY", "BLY"), filter.blurY);
+				jsonVar(key("inner", "IN"), filter.inner);
+				jsonVar(key("knockout", "KK"), filter.knockout);
+				jsonVar(key("strength", "STR"), filter.strength);
+				jsonVar(key("colorArray", "CA"), parseArray(filter.colorArray));
+				jsonVarEnd(key("quality", "Q"), parseQuality(filter.quality));
+			break;
+		}
+
+		push((i < filters.length - 1) ? '},' : '}\n');
+		i++;
+	}
+
+	push(']\n');
+}
+
+function makeMatrix(a, b, c, d, tx, ty)
+{
+	return {a: a, b: b, c: c, d: d, tx: tx, ty: ty}
 }
 
 function cloneMatrix(mat)
 {
-	return {a: mat.a, b: mat.b, c: mat.c, d: mat.d, tx: mat.tx, ty: mat.ty}
+	return makeMatrix(mat.a, mat.b, mat.c, mat.d, mat.tx, mat.ty);
 }
 
 function parseMatrix(m) {
 	return "[" +
-	m.a + "," +
-	m.b + "," +
-	m.c + "," +
-	m.d + "," +
-	m.tx + "," +
-	m.ty +
+	rValue(m.a) + "," + rValue(m.b) + "," + rValue(m.c) + "," +
+	rValue(m.d) + "," + rValue(m.tx) + "," + rValue(m.ty) +
 	"]";
 }
 
 function parseMatrix3D(m) {
 	return "[" +
-	m.m00 + "," +
-	m.m01 + "," +
-	m.m02 + "," +
-	m.m03 + "," +
-	m.m10 + "," +
-	m.m11 + "," +
-	m.m12 + "," +
-	m.m13 + "," +
-	m.m20 + "," +
-	m.m21 + "," +
-	m.m22 + "," +
-	m.m23 + "," +
-	m.m30 + "," +
-	m.m31 + "," +
-	m.m32 + "," +
-	m.m33 +
+	m.m00 + "," + m.m01 + "," + m.m02 + "," + m.m03 + "," +
+	m.m10 + "," + m.m11 + "," + m.m12 + "," + m.m13 + "," +
+	m.m20 + "," + m.m21 + "," + m.m22 + "," + m.m23 + "," +
+	m.m30 + "," + m.m31 + "," + m.m32 + "," + m.m33 +
 	"]";
 }
 
 function parseArray(array) {
 	return '["' + array.join('","') +'"]';
+}
+
+function getQualityScale(quality)
+{
+	if (quality == "low") return 0.333;
+	if (quality == "medium") return 0.75;
+	return 1;
 }
 
 function parseQuality(quality) {
@@ -1465,34 +1968,53 @@ function findItem(name) {
 	if (lib.itemExists(name))
 		return lib.items[lib.findItemIndex(name)];
 
-	fl.trace("Item not found: " + name);
+	trace("Item not found: " + name);
 	return null;
 }
 
 function key(normal, optimized) 	{ return optimizeJson ? optimized : normal; }
-function jsonVarEnd(name, value)	{ push('"' + name +'":' + value + '\n'); }
-function jsonVar(name, value)		{ push('"' + name +'":' + value + ',\n'); }
+function jsonVarEnd(name, value)	{ push('"' + name + '":' + value + '\n'); }
+function jsonVar(name, value)		{ push('"' + name + '":' + value + ',\n'); }
 function jsonStrEnd(name, value)	{ push('"' + name + '":"' + value + '"\n'); }
 function jsonStr(name, value)		{ push('"' + name + '":"' + value + '",\n'); }
 function jsonArray(name)			{ push('"' + name + '":[\n'); }
 function jsonHeader(name)			{ push('"' + name + '":{\n'); }
 
+function jsonNumEnd(name, value) { jsonVarEnd(name, rValue(value)); }
+function jsonNum(name, value) { jsonVar(name, rValue(value)); }
+function rValue(value) { return parseFloat(value.toFixed(3)); }
+
 function measure(func)
 {
 	var last = Date.now();
 	func();
-	fl.trace("" + (Date.now() - last) + "ms");
+	trace("" + (Date.now() - last) + "ms");
 }
 
 function traceFields(value)
 {
+	var traceCrap = "";
 	for (var field in value)
-		fl.trace(field + ": " + value[field]);
+		traceCrap += field + ": " + value[field] + ", ";
+	trace(traceCrap);
+}
+
+function trace(msg) {
+	fl.trace(String(msg));
 }
 
 function isArray(value)
 {
 	return value.push != undefined;
+}
+
+// I have no idea why jsfl corrupts Math.min and Math.max, sooooo yeah
+function min(a, b) {
+	return (a < b) ? a : b;
+}
+
+function max(a, b) {
+	return (a > b) ? a : b;
 }
 
 var lastJson = undefined;
@@ -1523,8 +2045,7 @@ function removeTrail(trail)
 
 function xmlToObject(__xml)
 {
-    var rawXML = String(__xml);
-    var xmlData = new XML(rawXML);
+    var xmlData = new XML(String(__xml));
     return xmlNode(xmlData);
 }
 
@@ -1533,19 +2054,19 @@ function xmlNode(xml)
     var obj = {};
 
 	var at = 0;
-	while (at < xml.attributes().length())
+	var attributes = xml.attributes();
+	while (at < atrib.length())
     {
-        var attribute = xml.attributes()[at];
+        var attribute = attributes[at++];
         obj[attribute.name()] = attribute.toString();
-        at++;
     }
 
 	var j = 0;
-    while (j < xml.children().length())
+	var children = xml.children();
+    while (j < children.length())
 	{
-        var child = xml.children()[j];
+        var child = children[j++];
         var childName = child.name();
-        j++;
 
 		if (obj[childName] == undefined) // Basic value
 		{
@@ -1564,3 +2085,128 @@ function xmlNode(xml)
     return obj;
 }
 
+function writeFile(path, content)
+{
+	if (FLfile.exists(path))
+		FLfile.remove(path);
+
+	FLfile.write(path, content);
+}
+
+function renameFile(path, newPath)
+{
+	FLfile.copy(path, newPath);
+	FLfile.remove(path);
+}
+
+function cs4Spritesheet(shapeLength, sheetFrame)
+{
+    var curX = BrdPad;
+    var curY = BrdPad;
+    var sheetWidth = 0;
+    var maxHeight = 0;
+    var maxSheetWidth = 0;
+    var maxSheetHeight = 0;
+    var packedRectangles = [];
+
+	var elem;
+	var rect;
+
+	var moveElement = function (x, y) {
+		elem.x = x - (rect.x - (rect.width * 0.5)) * elem.scaleX;
+		elem.y = y - (rect.y - (rect.height * 0.5)) * elem.scaleY;
+	}
+
+	lib.addItemToDocument({x: 0, y: 0}, TEMP_SPRITEMAP);
+
+    while (sheetFrame.elements.length < shapeLength)
+	{
+		doc.selectNone();
+		doc.selection = sheetFrame.elements;
+		doc.clipCopy();
+		doc.clipPaste();
+	}
+    
+    i = 0;
+    while (i < shapeLength)
+	{   
+		var ogElem = TEMP_LAYER.frames[i].elements[0];
+		elem = sheetFrame.elements[i];
+		elem.firstFrame = i;
+		i++;
+
+		rect = getElementRect(ogElem);
+		var rectWidth = rect.width;
+		var rectHeight = rect.height;
+
+		moveElement(curX, curY);
+
+		var packedRect = {
+            x: Math.floor(curX),
+            y: Math.floor(curY),
+            width: Math.floor(rectWidth),
+            height: Math.floor(rectHeight)
+        }
+
+		packedRectangles.push(packedRect);
+        
+        if (curX + rectWidth + ShpPad > 2880)
+		{
+            curX = BrdPad;
+            curY += maxHeight + ShpPad;
+            maxHeight = 0;
+
+			packedRect.x = Math.floor(curX);
+			packedRect.y = Math.floor(curY);
+
+			moveElement(curX, curY);
+			curX += rectWidth + ShpPad;
+        }
+		else {
+            curX += rectWidth + ShpPad;
+            maxHeight = Math.max(maxHeight, rectHeight);
+            sheetWidth = Math.max(sheetWidth, curX);
+        }
+
+        maxSheetWidth = Math.max(maxSheetWidth, sheetWidth);
+        maxSheetHeight = Math.max(maxSheetHeight, curY + maxHeight);
+    }
+
+	var extraShapes = sheetFrame.elements.length - shapeLength;
+	if (extraShapes > 0)
+	{
+		i = shapeLength;
+		doc.selectNone();
+		
+		while (i < sheetFrame.elements.length)
+		{
+			sheetFrame.elements[i++].selected = true;
+		}
+
+		doc.deleteSelection();
+	}
+
+	initJson();
+	push('{"ATLAS":{"SPRITES":[\n');
+
+	var i = 0;
+	while (i < packedRectangles.length)
+	{	
+		var rect = packedRectangles[i];
+		push('{"SPRITE":{"name":"' + i +
+			'","x":' + rect.x + ',"y":' + rect.y + ',"w":' + rect.width + ',"h":' + rect.height +
+			',"rotated":' + false +
+		'}},\n');
+		i++;
+	}
+
+	removeTrail(2);
+	push("]}}\n");
+
+    return {
+        width: maxSheetWidth,
+        height: maxSheetHeight,
+        rectangles: packedRectangles,
+		json: closeJson()
+    };
+}
