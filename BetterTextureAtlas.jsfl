@@ -1,4 +1,4 @@
-﻿var included = {};
+﻿﻿var included = {};
 fl.include = function(file) {
 	if (included[file]) { return; }
 		included[file] = true;
@@ -160,9 +160,11 @@ function _main()
 
 	// First ask for the export folder
 	path = formatPath(fileuri);
-
 	FLfile.createFolder(path);
+
+	//measure(function() {
 	exportAtlas(path, symbols);
+	//});
 
 	for (i = 0; i < familySymbol.length; i++)
 	{
@@ -298,7 +300,9 @@ function exportAtlas(exportPath, symbolNames)
 		element.scaleY /= mat.d;
 	}
 
+	var addedMerge = false;
 	var i = 0;
+
 	while (i < frameQueue.length)
 	{
 		var queuedFrame = frameQueue[i].split("_");
@@ -317,16 +321,29 @@ function exportAtlas(exportPath, symbolNames)
 			case "ITEM":
 				var id = queuedFrame.join("");
 				lib.addItemToDocument(pos, id);
+				
 				var item = frame.elements[0];
 				reverseScale(item, matrix);
 			break;
 			case "MERGE":
-				lib.addItemToDocument(pos, MERGE_ID);
-				var mergeElem = frame.elements[0];
 				
+				if (addedMerge)
+				{
+					TEMP_TIMELINE.pasteFrames(i);
+				}
+				else
+				{
+					lib.addItemToDocument(pos, MERGE_ID);
+					TEMP_TIMELINE.copyFrames(i);
+					addedMerge = true;
+				}
+				
+				var mergeElem = TEMP_LAYER.frames[i].elements[0];
 				reverseScale(mergeElem, matrix);
+
 				var mergeIndex = parseInt(queuedFrame[0]);
 				mergeElem.firstFrame = mergeIndex;
+
 			break;
 			case "ELEMENT": // TODO: do some lines to fills crap here for changing resolutions
 				var elemIndices = queuedFrame[0].replace("[","").replace("]","").split(",");
@@ -1390,12 +1407,10 @@ function parseAtlasInstance(matrix, index)
 
 function pushElementsFromFrame(timeline, layerIndex, frameIndex, elementIndices)
 {
-	var lockedLayer = timeline.layers[layerIndex].locked;
 	timeline.setSelectedLayers(layerIndex, true);
-	timeline.copyFrames(frameIndex, frameIndex);
+	timeline.copyFrames(frameIndex);
 	TEMP_TIMELINE.pasteFrames(smIndex);
 	pushElement(elementIndices);
-	timeline.layers[layerIndex].locked = lockedLayer;
 }
 
 function pushElementSpritemap(timeline, layerIndex, frameIndex, elementIndices, frameFilters)
@@ -1593,16 +1608,15 @@ function pushItemSpritemap(item)
 
 function pushShapeSpritemap(timeline, layerIndex, frameIndex, elementIndices)
 {
-	timeline.setSelectedLayers(layerIndex, true);
-	timeline.copyFrames(frameIndex, frameIndex);
-	TEMP_TIMELINE.pasteFrames(smIndex);
+	pushElementsFromFrame(timeline, layerIndex, frameIndex, elementIndices);
 
 	var frameElements = TEMP_LAYER.frames[smIndex].elements;
 	var shapes = [];
 
 	var e = 0;
 	var ei = 0;
-	var lastWidth, lastHeight = Number.NEGATIVE_INFINITY;
+	var lastWidth = Number.NEGATIVE_INFINITY;
+	var lastHeight = Number.NEGATIVE_INFINITY;
 
 	while (e < frameElements.length)
 	{
@@ -1633,9 +1647,7 @@ function pushShapeSpritemap(timeline, layerIndex, frameIndex, elementIndices)
 		e++;
 	}
 
-	pushElement(elementIndices);
 	smIndex++;
-
 	return shapes;
 }
 
