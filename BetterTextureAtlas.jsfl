@@ -914,10 +914,15 @@ function parseFrames(frames, layerIndex, timeline)
 				var ext = ".mp3";
 				if (frame.soundLibraryItem.originalCompressionType == "RAW")
 					ext = ".wav";
-				frame.soundLibraryItem.exportToFile(path + "/LIBRARY/" + frame.soundLibraryItem.name + ext);
+				
+				var fileName = frame.soundLibraryItem.name;
+				if (fileName.indexOf(ext) === -1)
+					fileName += ext;
+				
+				frame.soundLibraryItem.exportToFile(path + "/LIBRARY/" + fileName);
 				jsonHeader(key("Sound", "SND"));
 
-				jsonStr(key("name", "N"), frame.soundLibraryItem.name + ext);
+				jsonStr(key("name", "N"), fileName);
 				jsonStr(key("Sync", "SNC"), frame.soundSync);
 				jsonStr(key("Loop", "LP"), frame.soundLoopMode);
 				
