@@ -184,10 +184,7 @@ function _main()
 
 _main();
 
-var MERGE_ID;
 var SPRITEMAP_ID;
-var TEMP_MERGE;
-var TEMP_MERGE_TIMELINE;
 var TEMP_SPRITEMAP;
 var TEMP_ITEM;
 var TEMP_TIMELINE;
@@ -201,9 +198,10 @@ var bakedDictionary;
 var ogSym;
 var flversion;
 
+var oneFrameSymbols;
+
 function initVars()
 {
-	MERGE_ID = "__BTA_TEMP_MERGE_";
 	SPRITEMAP_ID = "__BTA_TEMP_SPRITEMAP_";
 	TEMP_SPRITEMAP = SPRITEMAP_ID + "0";
 
@@ -214,6 +212,8 @@ function initVars()
 	dictionary = [];
 	bakedDictionary = [];
 	smIndex = 0;
+
+	oneFrameSymbols = {};
 
 	flversion = parseInt(fl.version.split(" ")[1].split(",")[0]);
 }
@@ -261,10 +261,6 @@ function exportAtlas(exportPath, symbolNames)
 				symbol.timeline.insertBlankKeyframe(startIndex);
 		}
 	}
-	
-	TEMP_MERGE = initBtaItem(MERGE_ID);
-	TEMP_MERGE_TIMELINE = TEMP_MERGE.timeline;
-	TEMP_MERGE_TIMELINE.addNewLayer();
 
 	TEMP_ITEM = initBtaItem(TEMP_SPRITEMAP);
 
@@ -300,9 +296,7 @@ function exportAtlas(exportPath, symbolNames)
 		element.scaleY /= mat.d;
 	}
 
-	var addedMerge = false;
 	var i = 0;
-
 	while (i < frameQueue.length)
 	{
 		var queuedFrame = frameQueue[i].split("_");
@@ -324,26 +318,6 @@ function exportAtlas(exportPath, symbolNames)
 				
 				var item = frame.elements[0];
 				reverseScale(item, matrix);
-			break;
-			case "MERGE":
-				
-				if (addedMerge)
-				{
-					TEMP_TIMELINE.pasteFrames(i);
-				}
-				else
-				{
-					lib.addItemToDocument(pos, MERGE_ID);
-					TEMP_TIMELINE.copyFrames(i);
-					addedMerge = true;
-				}
-				
-				var mergeElem = TEMP_LAYER.frames[i].elements[0];
-				reverseScale(mergeElem, matrix);
-
-				var mergeIndex = parseInt(queuedFrame[0]);
-				mergeElem.firstFrame = mergeIndex;
-
 			break;
 			case "ELEMENT": // TODO: do some lines to fills crap here for changing resolutions
 				var elemIndices = queuedFrame[0].replace("[","").replace("]","").split(",");
@@ -367,18 +341,7 @@ function exportAtlas(exportPath, symbolNames)
 
 					if (exportElem)
 					{
-						element.rotation = 0;
-						element.scaleX = element.scaleY = 1;
-						
-						if (!flattenSkewing)
-							element.skewX = element.skewY = 0;
-
-						if (element.blendMode != undefined)
-							element.blendMode = "normal";
-
-						if (element.colorMode != undefined)
-							element.colorMode = "none";
-
+						cleanElement(element);
 						reverseScale(element, matrix);
 
 						var filters = element.filters;
@@ -490,9 +453,22 @@ function exportAtlas(exportPath, symbolNames)
 	if (tmpSymbol)
 		lib.deleteItem(symbol.name);
 
-	lib.deleteItem(MERGE_ID);
-
 	trace("Exported to folder: " + exportPath);
+}
+
+function cleanElement(elem)
+{
+	elem.scaleX = elem.scaleY = 1;
+	elem.rotation = 0;
+
+	if (!flattenSkewing)
+		elem.skewX = elem.skewY = 0;
+
+	if (elem.blendMode != null)
+		elem.blendMode = "normal";
+
+	if (elem.colorMode != null)
+		elem.colorMode = "none";
 }
 
 function initBtaItem(ID)
@@ -753,6 +729,23 @@ function metadata()
 	jsonVarEnd(key("framerate", "FRT"), doc.frameRate);
 }
 
+function pushOneFrameSymbol(symbolInstance, timeline, layerIndex, frameIndex, elemIndex)
+{
+	var item = symbolInstance.libraryItem;
+	var name = item.name;
+
+	if (oneFrameSymbols[name] != null)
+		return;
+
+	oneFrameSymbols[name] = smIndex;
+	pushElementsFromFrame(timeline, layerIndex, frameIndex, [elemIndex]);
+	smIndex++;
+}
+
+function isOneFrame(itemTimeline) {
+	return bakeOneFR && (itemTimeline.frameCount == 1) && (itemTimeline.layers.length > 1);
+}
+
 function parseSymbol(symbol)
 {
 	var timeline = symbol.timeline;
@@ -760,11 +753,19 @@ function parseSymbol(symbol)
 
 	jsonArray(key("LAYERS", "L"));
 
-	// TODO: rework this into bake shape layers
-	if (bakeOneFR && (timeline.frameCount == 1) && (timeline.layers.length > 1))
+	if (isOneFrame(timeline))
 	{
 		makeBasicLayer(function () {
-			pushFrameSpritemap(timeline, 0);
+			var index = oneFrameSymbols[symbol.name];
+			var symbolElem = TEMP_LAYER.frames[index].elements[0];
+			cleanElement(symbolElem)
+
+			var bounds = getFrameBounds(timeline, 0);
+			var scale = getMatrixScale(bounds.right - bounds.left, bounds.bottom - bounds.top);
+			var matrix = makeMatrix(scale, 0, 0, scale, bounds.left, bounds.top);
+
+			resizeInstanceMatrix(curSymbol, matrix);
+			parseAtlasInstance(matrix, index);
 		});
 		return;
 	}
@@ -773,7 +774,9 @@ function parseSymbol(symbol)
 	while (l < layers.length)
 	{
 		var layer = layers[l];
-		if ((layer.visible || !onlyVisibleLayers) && layer.frameCount > 0)
+		var layerType = layer.layerType;
+
+		if ((layer.visible || !onlyVisibleLayers) && layer.frameCount > 0 && layerType != "guide" && layerType != "guided")
 		{
 			var lockedLayer = layer.locked;
 			layer.locked = false;
@@ -781,7 +784,7 @@ function parseSymbol(symbol)
 			push('{\n');
 			jsonStr(key("Layer_name", "LN"), layer.name);
 
-			switch (layer.layerType)
+			switch (layerType)
 			{
 				case "mask":
 					jsonStr(key("Layer_type", "LT"), key("Clipper", "Clp"));
@@ -811,7 +814,7 @@ function parseSymbol(symbol)
 				break;
 			}
 
-			if (layer.layerType != "folder")
+			if (layerType != "folder")
 				parseFrames(layer.frames, l, timeline);
 
 			push('},');
@@ -1078,6 +1081,11 @@ function parseElements(elements, frameIndex, layerIndex, timeline)
 					}
 					else
 					{
+						if (isOneFrame(element.libraryItem.timeline))
+						{
+							pushOneFrameSymbol(element, timeline, layerIndex, frameIndex, e);
+						}
+
 						parseSymbolInstance(element);
 					}
 
@@ -1486,60 +1494,6 @@ function forEachFilter(filters, callback)
 	}
 }
 
-function pushFrameSpritemap(timeline, frameIndex)
-{
-	var l = 0;
-	var usedLayers = new Array();
-	while (l < timeline.layerCount)
-	{
-		if (timeline.layers[l].frames[frameIndex].elements.length > 0)
-		{
-			usedLayers.push(l);
-		}
-		l++;
-	}
-
-	if (usedLayers.length <= 0)
-		return;
-
-	var mergeTimeline = TEMP_MERGE_TIMELINE;
-
-	// Add any extra neccesary layers
-	while (mergeTimeline.layerCount < usedLayers.length)
-	{
-		mergeTimeline.addNewLayer();
-	}
-
-	var newIndex = mergeTimeline.frameCount - 1;
-
-	l = 0;
-	while (l < usedLayers.length)
-	{
-		var layerIndex = usedLayers[l++];
-
-		timeline.setSelectedLayers(layerIndex, true);
-		timeline.copyFrames(frameIndex, frameIndex);
-		
-		mergeTimeline.setSelectedLayers(l - 1, true)
-		mergeTimeline.pasteFrames(newIndex);
-		mergeTimeline.insertBlankKeyframe(newIndex + 1);
-	}
-
-	var bounds = getFrameBounds(mergeTimeline, newIndex);
-	var mergeWidth = (bounds.right - bounds.left);
-	var mergeHeight = (bounds.bottom - bounds.top);
-
-	TEMP_TIMELINE.insertBlankKeyframe(smIndex);
-	frameQueue.push("MERGE_" + newIndex);
-
-	var scale = getMatrixScale(mergeWidth, mergeHeight);
-	var matrix = makeMatrix(scale, 0, 0, scale, bounds.left, bounds.top);
-	
-	resizeInstanceMatrix(curSymbol, matrix);
-	parseAtlasInstance(matrix, smIndex);
-	smIndex++;
-}
-
 function getFrameBounds(timeline, frameIndex)
 {
 	// For versions where its allowed, timeline.getBounds is generally faster than our own function
@@ -1907,15 +1861,8 @@ function parseFilters(filters)
 	push(']\n');
 }
 
-function makeMatrix(a, b, c, d, tx, ty)
-{
-	return {a: a, b: b, c: c, d: d, tx: tx, ty: ty}
-}
-
-function cloneMatrix(mat)
-{
-	return makeMatrix(mat.a, mat.b, mat.c, mat.d, mat.tx, mat.ty);
-}
+function makeMatrix(a, b, c, d, tx, ty) { return {a: a, b: b, c: c, d: d, tx: tx, ty: ty} }
+function cloneMatrix(mat) { return makeMatrix(mat.a, mat.b, mat.c, mat.d, mat.tx, mat.ty); }
 
 function parseMatrix(m) {
 	return "[" +
@@ -2006,6 +1953,11 @@ function measure(func)
 	var last = Date.now();
 	func();
 	trace("" + (Date.now() - last) + "ms");
+}
+
+function traceArray(array)
+{
+	trace(array.join(", "));
 }
 
 function traceFields(value)
