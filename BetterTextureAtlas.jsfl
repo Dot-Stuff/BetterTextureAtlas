@@ -10,11 +10,11 @@ fl.include("SaveData");
 ///// CONFIGURATION
 
 fl.outputPanel.clear(); // debug purposes
-
 fl.showIdleMessage(false);
+
 var symbols = [];
 var meshExport = false; // If to use a spritemap or mesh vertex data
-var BTA_version = "bta_1"; // easy to modify
+var BTA_version = "BTA 1.0.0"; // cur bta release version
 var algorithm = "maxRects";
 var onlyVisibleLayers = true;
 var optimizeDimensions = true;
@@ -41,13 +41,8 @@ var path = "";
 var instance = null;
 var resScale = 1.0;
 
-
-var profileXML=fl.getDocumentDOM().exportPublishProfileString(); 
-onlyVisibleLayers = profileXML.split("<InvisibleLayer>")[1].charAt(0) == "0";
-
 function _main()
 {
-	
 	if (doc == null)
 	{
 		alert("you need to be in an document in order to export the atlas");
@@ -585,7 +580,14 @@ function exportSpritemap(id, exportPath, smData, index)
 		var frame = limbData[1].substring(9, limbData[1].length - 2);
 		var rotated = limbData[2].slice(0, -1);
 
-		smJson.push('{"SPRITE":{"name":"' +  name + '",' + frame + ',' + rotated + '}}');
+		// expand the frame a pixel because animate makes em too small for some reason
+		var frameValues = frame.split(",");
+		frameValues[0] = '"x":' + (parseInt(frameValues[0].substring(4, frameValues[0].length)) - 1);
+		frameValues[1] = '"y":' + (parseInt(frameValues[1].substring(4, frameValues[1].length)) - 1);
+		frameValues[2] = '"w":' + (parseInt(frameValues[2].substring(4, frameValues[2].length)) + 1);
+		frameValues[3] = '"h":' + (parseInt(frameValues[3].substring(4, frameValues[3].length)) + 1);
+
+		smJson.push('{"SPRITE":{"name":"' +  name + '",' + frameValues.join(",") + ',' + rotated + '}}');
 		if (l < atlasLimbs.length - 1) smJson.push(',\n');
 		l++;
 	}
@@ -603,8 +605,8 @@ function makeSpritemap() {
 	var sm = new SpriteSheetExporter;
 	sm.algorithm = algorithm;
 	sm.autoSize = true;
-	sm.borderPadding = BrdPad;
-	sm.shapePadding = ShpPad;
+	sm.borderPadding = max(BrdPad, 1);
+	sm.shapePadding = max(ShpPad, 1);
 	sm.allowRotate = AllRot;
 	sm.allowTrimming = true;
 	sm.stackDuplicate = true;
@@ -1765,7 +1767,7 @@ function parseSymbolInstance(instance, itemName)
 	if (instance.symbolType != "graphic")
 	{
 		if (instance.blendMode != null && instance.blendMode != "normal")
-			jsonStr(key("blend", "B"), instance.blendMode);
+			jsonStr(key("blend", "B"), instance.blendMode); // TODO: output as indices
 
 		var filters = instance.filters;
 		var hasFilters = (filters != null && filters.length > 0)
