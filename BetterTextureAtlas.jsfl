@@ -663,10 +663,10 @@ function generateAnimation(symbol)
 			{
 				push(bakedDictionary[dictIndex]);
 				dictIndex += 2;
-				if (dictIndex < bakedDictionary.length)
-					push(',');
+				push(',');
 			}
 
+			removeTrail(1);
 			push(']}');
 		}
 		else
