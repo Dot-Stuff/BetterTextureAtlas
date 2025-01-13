@@ -1,4 +1,4 @@
-﻿﻿var included = {};
+﻿﻿﻿var included = {};
 fl.include = function(file) {
 	if (included[file]) { return; }
 		included[file] = true;
@@ -659,11 +659,11 @@ function generateAnimation(symbol)
 			while (dictIndex < bakedDictionary.length)
 			{
 				push(bakedDictionary[dictIndex++]);
-				push(',');
+				if (dictIndex < bakedDictionary.length)
+					push(',');
 			}
 
-			removeTrail(1);
-			push(']},\n');
+			push(']}');
 		}
 		else
 		{
@@ -702,15 +702,14 @@ function generateAnimation(symbol)
 	// Add Metadata
 	if (inlineSym)
 	{
+		push(",\n");
 		jsonHeader(key("metadata", "MD"));
 		metadata();
 		push('}}');
 	}
 	else
 	{
-		removeTrail(2);
 		push("}");
-
 		initJson();
 
 		push("{\n");
