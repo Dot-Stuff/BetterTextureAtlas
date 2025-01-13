@@ -1,4 +1,4 @@
-﻿﻿﻿var included = {};
+﻿﻿var included = {};
 fl.include = function(file) {
 	if (included[file]) { return; }
 		included[file] = true;
