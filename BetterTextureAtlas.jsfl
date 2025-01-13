@@ -630,13 +630,16 @@ function generateAnimation(symbol)
 	jsonStr(key("SYMBOL_name", "SN"), symbol.name);
 	jsonHeader(key("TIMELINE", "TL"));
 	parseSymbol(symbol);
-	push('},\n');
+	push('}');
+
+	var animJson;
 
 	// Add Symbol Dictionary
 	if (dictionary.length > 0 || bakedDictionary.length > 0)
 	{
 		if (inlineSym)
 		{
+			push(',\n');
 			jsonHeader(key("SYMBOL_DICTIONARY", "SD"));
 			jsonArray(key ("Symbols", "S"));
 
@@ -658,7 +661,8 @@ function generateAnimation(symbol)
 			dictIndex = 0;
 			while (dictIndex < bakedDictionary.length)
 			{
-				push(bakedDictionary[dictIndex++]);
+				push(bakedDictionary[dictIndex]);
+				dictIndex += 2;
 				if (dictIndex < bakedDictionary.length)
 					push(',');
 			}
@@ -667,7 +671,27 @@ function generateAnimation(symbol)
 		}
 		else
 		{
+			push("}");
+			animJson = closeJson();
+
 			FLfile.createFolder(path + "/LIBRARY");
+
+			var pushSymbolLibrary = function (symbolName, jsonContent)
+			{
+				var pathDict = symbolName.split("/");
+				var folderStuff = "";
+				var foldI = 0;
+				
+				while (foldI < pathDict.length - 1)
+				{
+					if (folderStuff != "") folderStuff += "/";
+					folderStuff += pathDict[foldI];
+					FLfile.createFolder(path + "/LIBRARY/" + folderStuff);
+					foldI++;
+				}
+	
+				FLfile.write(path + "/LIBRARY/" + symbolName + ".json", jsonContent);
+			}
 
 			var dictIndex = 0;
 			while (dictIndex < dictionary.length)
@@ -680,21 +704,14 @@ function generateAnimation(symbol)
 				initJson();
 				push("{");
 				push(parseSymbol(symbol));
-				
-				var pathDict = curSymbol.split("/");
-				var folderStuff = "";
-				var foldI = 0;
-				
-				while (foldI < pathDict.length - 1)
-				{
-					if (folderStuff != "") folderStuff += "/";
-					folderStuff += pathDict[foldI];
-					FLfile.createFolder(path + "/LIBRARY/" + folderStuff);
-					
-					foldI++;
-				}
-	
-				FLfile.write(path + "/LIBRARY/" + curSymbol + ".json", closeJson());
+				pushSymbolLibrary(curSymbol, closeJson());
+			}
+
+			dictIndex = 0;
+			while (dictIndex < bakedDictionary.length)
+			{
+				pushSymbolLibrary(bakedDictionary[dictIndex + 1], bakedDictionary[dictIndex]);
+				dictIndex += 2;
 			}
 		}
 	}
@@ -706,12 +723,11 @@ function generateAnimation(symbol)
 		jsonHeader(key("metadata", "MD"));
 		metadata();
 		push('}}');
+		animJson = closeJson();
 	}
 	else
-	{
-		push("}");
+	{		
 		initJson();
-
 		push("{\n");
 		metadata();
 		push("}\n");
@@ -719,7 +735,7 @@ function generateAnimation(symbol)
 		FLfile.write(path + "/metadata.json", closeJson());
 	}
 
-	return closeJson();
+	return animJson;
 }
 
 function metadata()
@@ -1479,6 +1495,7 @@ function pushElementSpritemap(timeline, layerIndex, frameIndex, elementIndices, 
 	push('}');
 
 	bakedDictionary.push(closeJson());
+	bakedDictionary.push(itemName);
 	parseSymbolInstance(elem, itemName);
 }
 
