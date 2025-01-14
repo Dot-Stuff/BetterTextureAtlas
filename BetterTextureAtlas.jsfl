@@ -831,8 +831,10 @@ function parseSymbol(symbol)
 				break;
 			}
 
-			if (layerType != "folder")
+			if (layerType != "folder") {
 				parseFrames(layer.frames, l, timeline);
+				curFrameMatrix = null;
+			}
 
 			push('},');
 
@@ -862,6 +864,9 @@ function makeBasicLayer(elementCallback) {
 function parseFrames(frames, layerIndex, timeline)
 {
 	jsonArray(key("Frames", "FR"));
+
+	var layer = timeline.layers[layerIndex];
+	var hasRig = (flversion >= 20) && (layer.getRigParentAtFrame(0) != undefined);
 
 	var f = 0;
 	while (f < frames.length)
@@ -966,7 +971,8 @@ function parseFrames(frames, layerIndex, timeline)
 					push(",");
 				}
 			}
-			
+
+			curFrameMatrix = (hasRig) ? layer.getRigMatrixAtFrame(f) : null;
 			parseElements(frame.elements, f, layerIndex, timeline);
 			push('},');
 		}
@@ -1039,6 +1045,8 @@ function parseMotionObject(motionData)
 	removeTrail(1);
 	push("]\n");
 }
+
+var curFrameMatrix;
 
 function parseElements(elements, frameIndex, layerIndex, timeline)
 {
@@ -1692,7 +1700,18 @@ function parseSymbolInstance(instance, itemName)
 		jsonStr(key("SYMBOL_name", "SN"), itemName);
 
 		if (!bakedInstance)
-			pushInstanceSize(itemName, instance.scaleX, instance.scaleY);
+		{
+			var scaleX = instance.scaleX;
+			var scaleY = instance.scaleY;
+
+			if (curFrameMatrix != null)
+			{
+				scaleX *= curFrameMatrix.a;
+				scaleY *= curFrameMatrix.d;
+			}
+
+			pushInstanceSize(itemName, scaleX, scaleY);
+		}
 	}
 
 	if (instance.firstFrame != undefined)
@@ -1882,7 +1901,25 @@ function parseFilters(filters)
 function makeMatrix(a, b, c, d, tx, ty) { return {a: a, b: b, c: c, d: d, tx: tx, ty: ty} }
 function cloneMatrix(mat) { return makeMatrix(mat.a, mat.b, mat.c, mat.d, mat.tx, mat.ty); }
 
-function parseMatrix(m) {
+function concatMatrix(mat1, mat2) {
+	return makeMatrix(
+		mat1.a * mat2.a + mat1.b * mat2.c,
+		mat1.a * mat2.b + mat1.b * mat2.d,
+		mat1.c * mat2.a + mat1.d * mat2.c,
+		mat1.c * mat2.b + mat1.d * mat2.d,
+		mat1.tx * mat2.a + mat1.ty * mat2.c + mat2.tx,
+		mat1.tx * mat2.b + mat1.ty * mat2.d + mat2.ty
+	);
+}
+
+function parseMatrix(m)
+{
+	// Concat the current frame matrix
+	if (curFrameMatrix != null)
+	{
+		m = concatMatrix(m, curFrameMatrix);
+	}
+	
 	return "[" +
 	rValue(m.a) + "," + rValue(m.b) + "," + rValue(m.c) + "," +
 	rValue(m.d) + "," + rValue(m.tx) + "," + rValue(m.ty) +
