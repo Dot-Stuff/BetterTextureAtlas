@@ -1901,23 +1901,12 @@ function parseFilters(filters)
 function makeMatrix(a, b, c, d, tx, ty) { return {a: a, b: b, c: c, d: d, tx: tx, ty: ty} }
 function cloneMatrix(mat) { return makeMatrix(mat.a, mat.b, mat.c, mat.d, mat.tx, mat.ty); }
 
-function concatMatrix(mat1, mat2) {
-	return makeMatrix(
-		mat1.a * mat2.a + mat1.b * mat2.c,
-		mat1.a * mat2.b + mat1.b * mat2.d,
-		mat1.c * mat2.a + mat1.d * mat2.c,
-		mat1.c * mat2.b + mat1.d * mat2.d,
-		mat1.tx * mat2.a + mat1.ty * mat2.c + mat2.tx,
-		mat1.tx * mat2.b + mat1.ty * mat2.d + mat2.ty
-	);
-}
-
 function parseMatrix(m)
 {
 	// Concat the current frame matrix
 	if (curFrameMatrix != null)
 	{
-		m = concatMatrix(m, curFrameMatrix);
+		m = fl.Math.concatMatrix(m, curFrameMatrix);
 	}
 	
 	return "[" +
