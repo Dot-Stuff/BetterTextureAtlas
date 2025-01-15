@@ -135,7 +135,7 @@ function _main()
 	bakedFilters = dataAdd[4] == "true";
 	bakedTweens = dataAdd[5] == "true";
 	
-	var fileuri = xPan.saveBox;
+	var fileuri = xPan.saveBox.split("/").join("\\");
 	if (doc.path != null)
 	{
 		var docarr = doc.path.split("\\");

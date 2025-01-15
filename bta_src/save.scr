@@ -21,7 +21,7 @@ function xmlData(symbols)
 
 	var buttonWidth = 0;
 	if (parseInt(version[0]) >= 20)
-		buttonWidth = 50;
+		buttonWidth = 45;
 
 	data = data.split("$BWI").join(buttonWidth);
 

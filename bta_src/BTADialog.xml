@@ -11,7 +11,17 @@
 	<script>
 		eval(FLfile.read(fl.configURI+"Commands/bta_src/"+"xmlScripts/DialogXML"+".sjs"));
 
+		function test()
+		{
+			// fl.trace(fl.xmlui.set("ResSld", "123"));
+			fl.trace(fl.xmlui.get("test"));
+		}
+
+		
+
 	</script>
+
+	<property id="test"/>
 
 	<radiogroup id="radioGroup" groupbox="true">
 
@@ -192,13 +202,19 @@
 			<column/>
 			<column/>
 			<column/>
+			<column/>
+			<column/>
 		</columns>
 		<rows>
 			<row>
 				<label value="Export Path" control="saveBox" />
 			</row>
 			<row>
-				<choosefile size="40" value="$FILEURI" required="true" pathtype="absolute" id="saveBox" type="save" />
+				<textbox id="saveBox" value="$FILEURI" />
+				<button align="center" label="Examine" oncommand="getPath();" width="$BWI"/>
+				
+
+				<!-- <choosefile size="40" value="$FILEURI" required="true" pathtype="absolute" id="saveBox" type="save" /> -->
 				<spacer/>
 				<label value=" "/>
 				<label value=" "/>
@@ -232,5 +248,8 @@
 			</row>
 		</rows>
 	</grid>
+
+	<!-- <flash src="$CONFIGDIRCommands\bta_src\folder stuff.swf" width="65" height="43"></flash> -->
+	
 	
 </dialog>

@@ -60,6 +60,38 @@ function algorithmSet()
     algorithmSel();
 }
 
+function getPath()
+{
+    var uri = null;
+    if (SaveData.version[0] > 12)
+        uri = fl.browseForFileURL("save", "Select destiny path", "(*.)", "");
+    else
+    {
+        uri = fl.browseForFileURL("save", "Select destiny path", {}, "|TEXT[*.||", "|*.||");
+    }
+
+    if (uri != null)
+    {
+        fl.xmlui.set("saveBox", formatPath(uri.substring(0, uri.length - 2)))
+    }
+}
+
+function formatPath(path)
+{
+	// All good here im gonna assume
+	if (path.split("file:///").length < 1) {
+		return path;
+	}
+
+	path = path.substring(8);
+	var actP = path.charAt(0) + ":";
+	path = path.substring(2);
+	
+	actP += path;
+
+	return actP;
+}
+
 fl.runScript(fl.configURI + "Commands/bta_src/save.scr", "theme");
 
 function imgFormatSet()
