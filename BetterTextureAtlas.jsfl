@@ -1786,7 +1786,7 @@ function parseSymbolInstance(instance, itemName)
 	if (instance.symbolType != "graphic")
 	{
 		if (instance.blendMode != null && instance.blendMode != "normal")
-			jsonStr(key("blend", "B"), instance.blendMode); // TODO: output as indices
+			jsonVar(key("blend", "B"), parseBlendMode(instance.blendMode)); // TODO: output as indices
 
 		var filters = instance.filters;
 		var hasFilters = (filters != null && filters.length > 0)
@@ -1804,6 +1804,28 @@ function parseSymbolInstance(instance, itemName)
 	else removeTrail(2);
 
 	push('}');
+}
+
+function parseBlendMode(blend)
+{
+	switch (blend)
+	{
+		case "add": return 0;
+		case "alpha": return 1;
+		case "darken": return 2;
+		case "difference": return 3;
+		case "erase": return 4;
+		case "hardlight": return 5;
+		case "invert": return 6;
+		case "layer": return 7;
+		case "lighten": return 8;
+		case "multiply": return 9;
+		case "overlay": return 11;
+		case "screen": return 12;
+		case "subtract": return 14;
+	}
+
+	return 10; // normal
 }
 
 function parseFilters(filters)
