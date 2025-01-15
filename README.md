@@ -6,12 +6,12 @@
 
 <h1>BetterTextureAtlas </h1>
 BetterTextureAtlas is an Adobe Animate extension that tries to enhance the Texture Atlas exports,<br> 
-Adding features and fixing its Animation file format so it presents more data for the user to easily change whether in-game or by tweaking values.
+Adding features and fixing its Animation file format so it presents more data for the user to easily change whether in-game or by tweaking values.<br>
 
 > [!NOTE]
-> Due to how JSFL works, tweened frame values is something hard to access, and we couldn't yet add baked tweens.<br>
+> Due to how JSFL works, tweened frames don't work, and we couldn't yet add baked tweens.<br>
 > If your animation contains tweens, convert your tweens to keyframes first.<br>
-> Support for Flash CS6 and specially CS4 is still really primitive, we recommend exporting using newer Animate versions.
+> Support for Flash CS6 and CS4 is still really primitive, we recommend exporting using newer Animate versions.
 
 ## What differs from the default Texture Atlas Exporter?
 
