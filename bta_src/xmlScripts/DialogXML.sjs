@@ -153,7 +153,7 @@ function saveAndClose()
 {
 
     var save = [];
-    var saveArray = fl.xmlui.get("saveBox").split("\\");
+    var saveArray = fl.xmlui.get("saveBox").split("/").join("\\").split("\\");
     saveArray.pop();
     var savePath = saveArray.join("\\");
     save[0] = savePath;
