@@ -1786,7 +1786,7 @@ function parseSymbolInstance(instance, itemName)
 	if (instance.symbolType != "graphic")
 	{
 		if (instance.blendMode != null && instance.blendMode != "normal")
-			jsonVar(key("blend", "B"), parseBlendMode(instance.blendMode)); // TODO: output as indices
+			jsonVar(key("blend", "B"), parseBlendMode(instance.blendMode));
 
 		var filters = instance.filters;
 		var hasFilters = (filters != null && filters.length > 0)
