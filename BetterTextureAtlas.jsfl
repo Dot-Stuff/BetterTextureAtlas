@@ -1062,10 +1062,6 @@ function parseElements(elements, frameIndex, layerIndex, timeline)
 	jsonArray(key("elements", "E"));
 
 	var e = 0;
-
-	// TODO: while looping through frame elements the slight lag caused by copying frames can corrupt many values, not only shapes
-	// idk if this is because jsfl or other operations are multithreaded or something, but it can and will fuck up some stuff
-	// should prob move all element types to their own small queues/buffers to make sure this doesnt happen
 	var shapeQueue = [];
 
 	var frameFilters = getFrameFilters(timeline.layers[layerIndex], frameIndex);
@@ -1401,7 +1397,9 @@ function getElementRect(instance, frameFilters)
 	}
 }
 
-// Get shape dimensions based on vertices because element.left and element.top doesnt cut it
+// TODO: make this check for invalid / corrupted contours
+// some shapes keep giving incorrect values, seamingly randomly
+// i hate this
 function getVerticesBounds(vertices)
 {
 	var minVertX = Number.POSITIVE_INFINITY;
@@ -1675,7 +1673,7 @@ function pushInstanceSize(name, scaleX, scaleY)
 
 	var list = instanceSizes[name];
 	list[0] = max(list[0], scaleX);
-	list[1] = max(list[1], scaleX);
+	list[1] = max(list[1], scaleY);
 }
 
 function getFrameFilters(layer, frameIndex)
