@@ -1,11 +1,11 @@
 ﻿<?xml version="1.0" encoding="UTF-8"?>
 <macromedia-extension
 	 name="Better Texture Atlas"
-	 version="1.0.0"
+	 version="1.1.0"
 	 type="command"
 	 requires-restart="true">
 
-	<author name="MaybeMaru and CheemsAndFriends" />
+	<author name="Dot-Stuff" />
 
 	<products>
 		<product name="Flash" version="10" primary="true" />
@@ -17,14 +17,14 @@
 ____________________________________________________________________<br>
 <br>
 <br>
-<h2>&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;BETTER TEXTURE ATLAS</h2><br>
+<h2>BETTER TEXTURE ATLAS</h2><br>
 ____________________________________________________________________<br>
 ____________________________________________________________________<br>
 <br>
 <h3>DESCRIPTION:</h3><br>
 --------------------------------------------------------------------------------------------------------------------------------------------<br>
 <br>
-&ensp;This command allows you to export <b>symbols</b> into a redesigned version of a &ensp;<b>Texture Atlas</b>, added by <b>Adobe</b> in <b>Animate 2018 CC</b><br>
+This command allows you to export <b>symbols</b> into a redesigned version of a <b>Texture Atlas</b>, added by <b>Adobe</b> in <b>Animate 2018 CC</b><br>
 <br>
 ____________________________________________________________________<br>
 <br>

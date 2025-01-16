@@ -41,6 +41,9 @@ var path = "";
 var instance = null;
 var resScale = 1.0;
 
+if (SaveData.version[0] <= 12)
+	alert("Even though it's functional, we still recommend using a newer version, such as Adobe Animate!");
+
 function _main()
 {
 	if (doc == null)
