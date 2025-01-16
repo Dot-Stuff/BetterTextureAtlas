@@ -14,7 +14,13 @@ fl.showIdleMessage(false);
 
 var symbols = [];
 var meshExport = false; // If to use a spritemap or mesh vertex data
-var BTA_version = "BTA 1.0.0"; // cur bta release version
+var BTA_version = "BTA "; // cur bta release version
+
+var _mxi = FLfile.read(fl.configURI + "Commands/BetterTextureAtlas.mxi");
+
+BTA_version += _mxi.split('version="')[2].split('"')[0];
+
+fl.trace(BTA_version);
 var algorithm = "maxRects";
 var onlyVisibleLayers = true;
 var optimizeDimensions = true;
