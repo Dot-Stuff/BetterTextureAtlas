@@ -1071,7 +1071,7 @@ function parseElements(elements, frameIndex, layerIndex, timeline)
 	{
 		var element = elements[e];
 		var elementType = element.elementType;
-		var isShape = (elementType == "shape") ? !element.isGroup : false;
+		var isShape = (elementType == "shape");
 		
 		if (isShape) // Adobe sometimes forgets how their own software works
 		{
@@ -1082,7 +1082,7 @@ function parseElements(elements, frameIndex, layerIndex, timeline)
 			if (shapeQueue.length > 0)
 			{
 				push("{");
-				parseShape(timeline, layerIndex, frameIndex, shapeQueue, true)
+				parseShape(timeline, layerIndex, frameIndex, shapeQueue)
 				push("},\n");
 				shapeQueue = [];
 			}
@@ -1092,10 +1092,6 @@ function parseElements(elements, frameIndex, layerIndex, timeline)
 
 		switch (element.elementType)
 		{
-			case "shape":
-				if (element.isGroup)
-					parseShape(timeline, layerIndex, frameIndex, [e], false);
-			break;
 			case "instance":
 				switch (element.instanceType) {
 					case "symbol":
@@ -1166,7 +1162,7 @@ function parseElements(elements, frameIndex, layerIndex, timeline)
 		}
 		else
 		{
-			parseShape(timeline, layerIndex, frameIndex, shapeQueue, true);
+			parseShape(timeline, layerIndex, frameIndex, shapeQueue);
 		}
 		push("}");
 	}
@@ -1281,45 +1277,34 @@ function getShapeBounds(shape)
 	}
 }
 
-function parseShape(timeline, layerIndex, frameIndex, elementIndices, checkMatrix)
+function parseShape(timeline, layerIndex, frameIndex, elementIndices)
 {
 	var shapes = pushShapeSpritemap(timeline, layerIndex, frameIndex, elementIndices);
 	var atlasIndex = (smIndex - 1);
 	var mtx = undefined;
 	
-	if (checkMatrix)
+	var shapeX = Number.POSITIVE_INFINITY;
+	var shapeY = Number.POSITIVE_INFINITY;
+	var shapeWidth = Number.NEGATIVE_INFINITY;
+	var shapeHeight = Number.NEGATIVE_INFINITY;
+
+	var s = 0;
+	while (s < shapes.length)
 	{
-		var shapeX = Number.POSITIVE_INFINITY;
-		var shapeY = Number.POSITIVE_INFINITY;
-		var shapeWidth = Number.NEGATIVE_INFINITY;
-		var shapeHeight = Number.NEGATIVE_INFINITY;
+		var bounds = getShapeBounds(shapes[s++]);
+		shapeX = min(shapeX, bounds.left);
+		shapeY = min(shapeY, bounds.top);
+		shapeWidth = max(shapeWidth, bounds.right);
+		shapeHeight = max(shapeHeight, bounds.bottom);
 
-		var s = 0;
-		while (s < shapes.length)
-		{
-			var bounds = getShapeBounds(shapes[s++]);
-			shapeX = min(shapeX, bounds.left);
-			shapeY = min(shapeY, bounds.top);
-			shapeWidth = max(shapeWidth, bounds.right);
-			shapeHeight = max(shapeHeight, bounds.bottom);
-
-			// isRectangle = (shape.isRectangleObject || shape.vertices.length === 4)
-		}
-
-		var transformingX = (shapeX - (shapeWidth * 0.5));
-		var transformingY = (shapeY - (shapeHeight * 0.5));
-		var scale = getMatrixScale(shapeWidth, shapeHeight);		
-		mtx = makeMatrix(scale, 0, 0, scale, transformingX, transformingY);
+		// isRectangle = (shape.isRectangleObject || shape.vertices.length === 4)
 	}
-	else
-	{
-		var shape = timeline.layers[layerIndex].frames[frameIndex].elements[elementIndices[0]];
-		var scale = getMatrixScale(shape.width, shape.height);
-		
-		mtx = cloneMatrix(shape.matrix);
-		mtx.a *= scale;
-		mtx.d *= scale;
-	}
+
+	var transformingX = (shapeX - (shapeWidth * 0.5));
+	var transformingY = (shapeY - (shapeHeight * 0.5));
+
+	var scale = getMatrixScale(shapeWidth, shapeHeight);		
+	var mtx = makeMatrix(scale, 0, 0, scale, transformingX, transformingY);
 
 	resizeInstanceMatrix(curSymbol, mtx);
 	parseAtlasInstance(mtx, atlasIndex);
