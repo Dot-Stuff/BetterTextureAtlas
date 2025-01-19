@@ -349,23 +349,35 @@ function exportAtlas(exportPath, symbolNames)
 						reverseScale(element, matrix);
 
 						var filters = element.filters;
-						if (filters != undefined && filters.length > 0 && (matrix.a > 1.01 || matrix.d > 1.01))
+						if (filters != undefined && filters.length > 0)
 						{
-							doc.selectNone();
-							doc.selection = [element];
-
-							forEachFilter(filters, function (filter) {
-								switch (filter.name)
+							if (bakedFilters)
+							{
+								if (matrix.a > 1.01 || matrix.d > 1.01)
 								{
-									case "glowFilter":
-									case "blurFilter":
-										filter.blurX /= matrix.a;
-										filter.blurY /= matrix.d;
-									break;
+									doc.selectNone();
+									doc.selection = [element];
+		
+									forEachFilter(filters, function (filter) {
+										switch (filter.name)
+										{
+											case "glowFilter":
+											case "blurFilter":
+												filter.blurX /= matrix.a;
+												filter.blurY /= matrix.d;
+											break;
+										}
+									});
+		
+									doc.setFilters(filters);
 								}
-							});
-
-							doc.setFilters(filters);
+							}
+							else
+							{
+								doc.selectNone();
+								doc.selection = [element];
+								doc.setFilters(new Array(0));
+							}
 						}
 					}
 					else if (flversion > 12 || element.elementType != "shape") // Half-assed fix for broken shape cleanup on CS6, give it a look later
@@ -772,18 +784,13 @@ function isOneFrame(itemTimeline)
 {
 	if (!bakeOneFR)
 		return false;
-
+	
 	if (itemTimeline.frameCount === 1)
 	{
-		if (itemTimeline.layerCount > 1)
-		{
-			return true;
-		}
-		else
-		{
-			return itemTimeline.layers[0].frames[0].elements.length > 1;
-		}
+		return true;
 	}
+
+	// TODO: also bake based on one keyframe + all being shapes
 
 	return false;
 }
@@ -795,7 +802,7 @@ function parseSymbol(symbol)
 
 	jsonArray(key("LAYERS", "L"));
 
-	if (isOneFrame(timeline))
+	if (isOneFrame(timeline) && oneFrameSymbols[symbol.name] != null)
 	{
 		makeBasicLayer(function () {
 			var index = oneFrameSymbols[symbol.name];
