@@ -186,8 +186,6 @@ function _main()
 	fl.showIdleMessage(true);
 }
 
-_main();
-
 var SPRITEMAP_ID;
 var TEMP_SPRITEMAP;
 var TEMP_ITEM;
@@ -203,6 +201,8 @@ var ogSym;
 var flversion;
 
 var oneFrameSymbols;
+
+_main();
 
 function initVars()
 {
@@ -777,6 +777,7 @@ function pushOneFrameSymbol(symbolInstance, timeline, layerIndex, frameIndex, el
 
 	oneFrameSymbols[name] = smIndex;
 	pushElementsFromFrame(timeline, layerIndex, frameIndex, [elemIndex]);
+	cleanElement(TEMP_LAYER.frames[smIndex].elements[elemIndex]);
 	smIndex++;
 }
 
@@ -806,9 +807,6 @@ function parseSymbol(symbol)
 	{
 		makeBasicLayer(function () {
 			var index = oneFrameSymbols[symbol.name];
-			var symbolElem = TEMP_LAYER.frames[index].elements[0];
-			cleanElement(symbolElem)
-
 			var bounds = getFrameBounds(timeline, 0);
 			var scale = getMatrixScale(bounds.right - bounds.left, bounds.bottom - bounds.top);
 			var matrix = makeMatrix(scale, 0, 0, scale, bounds.left, bounds.top);
@@ -904,23 +902,29 @@ function parseFrames(frames, layerIndex, timeline)
 	while (f < frames.length)
 	{
 		var frame = frames[f];
-		var pushFrame = (f === frame.startFrame);
+		var isKeyframe = (f === frame.startFrame);
+		var isTweenedFrame = frame.tweenType != "none";
+		var canBeBaked = bakedTweens && frame.tweenObj != null;
+		
+		// setup for baked tweens crap
+		curTweenMatrix = null;
+		curTweenColorTransform = null;
 
-		if (pushFrame)
+		if (isKeyframe || (isTweenedFrame && bakedTweens))
 		{
 			push('{\n');
 
 			if (frame.name.length > 0)
 				jsonStr(key("name", "N"), frame.name);
 
-			if (frame.tweenType != "none")
+			if (isTweenedFrame && !bakedTweens)
 			{
 				jsonHeader(key("tween", "TWN"));
 
 				var isCubic = frame.getCustomEase() != null;
 
 				if (isCubic)
-				{	
+				{
 					jsonArray(key("curve", "CV"));
 					var e = 0;
 					var eases = frame.getCustomEase();
@@ -964,6 +968,10 @@ function parseFrames(frames, layerIndex, timeline)
 
 				push("},\n");
 			}
+			else if (canBeBaked)
+			{
+				setupBakedTween(frame, f);
+			}
 
 			if (includeSnd && frame.soundLibraryItem != null)
 			{
@@ -991,7 +999,7 @@ function parseFrames(frames, layerIndex, timeline)
 			}
 
 			jsonVar(key("index", "I"), f);
-			jsonVar(key("duration", "DU"), frame.duration);
+			jsonVar(key("duration", "DU"), canBeBaked ? 1 : frame.duration);
 			
 			if (!bakedFilters)
 			{
@@ -1079,6 +1087,17 @@ function parseMotionObject(motionData)
 }
 
 var curFrameMatrix;
+
+var curTweenMatrix;
+var curTweenColorTransform;
+// TODO: implement curTweenFilter
+
+function setupBakedTween(frame, frameIndex)
+{
+	var frameOffset = (frameIndex - frame.startFrame);
+	curTweenMatrix = frame.tweenObj.getGeometricTransform(frameOffset);
+	curTweenColorTransform = frame.tweenObj.getColorTransform(frameOffset);
+}
 
 function parseElements(elements, frameIndex, layerIndex, timeline)
 {
@@ -1304,7 +1323,6 @@ function parseShape(timeline, layerIndex, frameIndex, elementIndices)
 {
 	var shapes = pushShapeSpritemap(timeline, layerIndex, frameIndex, elementIndices);
 	var atlasIndex = (smIndex - 1);
-	var mtx = undefined;
 	
 	var shapeX = Number.POSITIVE_INFINITY;
 	var shapeY = Number.POSITIVE_INFINITY;
@@ -1453,7 +1471,7 @@ function parseAtlasInstance(matrix, index)
 {
 	cachedMatrices[index] = matrix;
 	jsonHeader(key("ATLAS_SPRITE_instance", "ASI"));
-	jsonVar(key("Matrix", "MX"), parseMatrix(matrix));
+	jsonVar(key("Matrix", "MX"), parseMatrix(matrix, false));
 	jsonStrEnd(key("name", "N"), index);
 	push('}');
 }
@@ -1751,6 +1769,7 @@ function parseSymbolInstance(instance, itemName)
 	{
 		jsonHeader(key("color", "C"));
 		var modeKey = key("mode", "M");
+		var colorValues = curTweenColorTransform != null ? curTweenColorTransform : instance;
 
 		switch (instance.colorMode) {
 			case "brightness":
@@ -1764,18 +1783,18 @@ function parseSymbolInstance(instance, itemName)
 			break;
 			case "alpha":
 				jsonStr(modeKey, key("Alpha", "CA"));
-				jsonNumEnd(key("alphaMultiplier", "AM"), instance.colorAlphaPercent * 0.01);
+				jsonNumEnd(key("alphaMultiplier", "AM"), colorValues.colorAlphaPercent * 0.01);
 			break;
 			case "advanced":
 				jsonStr(modeKey, key("Advanced", "AD"));
-				jsonNum(key("RedMultiplier", "RM"), instance.colorRedPercent * 0.01);
-				jsonNum(key("greenMultiplier", "GM"), instance.colorGreenPercent * 0.01);
-				jsonNum(key("blueMultiplier", "BM"), instance.colorBluePercent * 0.01);
-				jsonNum(key("alphaMultiplier", "AM"), instance.colorAlphaPercent * 0.01);
-				jsonVar(key("redOffset", "RO"), instance.colorRedAmount);
-				jsonVar(key("greenOffset", "GO"), instance.colorGreenAmount);
-				jsonVar(key("blueOffset", "BO"), instance.colorBlueAmount);
-				jsonVarEnd(key("AlphaOffset", "AO"), instance.colorAlphaAmount);
+				jsonNum(key("RedMultiplier", "RM"), colorValues.colorRedPercent * 0.01);
+				jsonNum(key("greenMultiplier", "GM"), colorValues.colorGreenPercent * 0.01);
+				jsonNum(key("blueMultiplier", "BM"), colorValues.colorBluePercent * 0.01);
+				jsonNum(key("alphaMultiplier", "AM"), colorValues.colorAlphaPercent * 0.01);
+				jsonVar(key("redOffset", "RO"), colorValues.colorRedAmount);
+				jsonVar(key("greenOffset", "GO"), colorValues.colorGreenAmount);
+				jsonVar(key("blueOffset", "BO"), colorValues.colorBlueAmount);
+				jsonVarEnd(key("AlphaOffset", "AO"), colorValues.colorAlphaAmount);
 			break;
 		}
 
@@ -1796,7 +1815,7 @@ function parseSymbolInstance(instance, itemName)
 	}
 
 	if (instance.is3D)	jsonVar(key("Matrix3D", "M3D"), parseMatrix3D(instance.matrix3D));
-	else				jsonVar(key("Matrix", "MX"), 	parseMatrix(instance.matrix));
+	else				jsonVar(key("Matrix", "MX"), 	parseMatrix(instance.matrix, true));
 
 	if (instance.symbolType != "graphic")
 	{
@@ -1938,12 +1957,16 @@ function parseFilters(filters)
 function makeMatrix(a, b, c, d, tx, ty) { return {a: a, b: b, c: c, d: d, tx: tx, ty: ty} }
 function cloneMatrix(mat) { return makeMatrix(mat.a, mat.b, mat.c, mat.d, mat.tx, mat.ty); }
 
-function parseMatrix(m)
+function parseMatrix(m, doConcat)
 {
-	// Concat the current frame matrix
-	if (curFrameMatrix != null)
+	// Concat the matrix
+	if (doConcat)
 	{
-		m = fl.Math.concatMatrix(m, curFrameMatrix);
+		if (curFrameMatrix != null)
+			m = fl.Math.concatMatrix(m, curFrameMatrix);
+		
+		if (bakedTweens && curTweenMatrix != null)
+			m = fl.Math.concatMatrix(m, curTweenMatrix);
 	}
 	
 	return "[" +

@@ -21,7 +21,7 @@
         </row>
         <row>
             <checkbox label="Bake One Frame Symbols" checked="$BOFS" id="BOFS" />
-            <checkbox label="Bake Tweens" checked="$BTW" id="BTW" oncreate="fl.xmlui.setEnabled('BTW', false);"/>
+            <checkbox label="Bake Tweens" checked="$BTW" id="BTW"/>
         </row>
     </rows>
 </grid>
