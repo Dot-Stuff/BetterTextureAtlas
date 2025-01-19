@@ -768,8 +768,24 @@ function pushOneFrameSymbol(symbolInstance, timeline, layerIndex, frameIndex, el
 	smIndex++;
 }
 
-function isOneFrame(itemTimeline) {
-	return bakeOneFR && (itemTimeline.frameCount == 1) && (itemTimeline.layers.length > 1);
+function isOneFrame(itemTimeline)
+{
+	if (!bakeOneFR)
+		return false;
+
+	if (itemTimeline.frameCount === 1)
+	{
+		if (itemTimeline.layerCount > 1)
+		{
+			return true;
+		}
+		else
+		{
+			return itemTimeline.layers[0].frames[0].elements.length > 1;
+		}
+	}
+
+	return false;
 }
 
 function parseSymbol(symbol)
