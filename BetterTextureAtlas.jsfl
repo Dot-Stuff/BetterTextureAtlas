@@ -201,6 +201,7 @@ var ogSym;
 var flversion;
 
 var oneFrameSymbols;
+var bakedTweenedFilters;
 
 _main();
 
@@ -218,6 +219,7 @@ function initVars()
 	smIndex = 0;
 
 	oneFrameSymbols = {};
+	bakedTweenedFilters = {};
 
 	flversion = parseInt(fl.version.split(" ")[1].split(",")[0]);
 }
@@ -348,26 +350,31 @@ function exportAtlas(exportPath, symbolNames)
 						cleanElement(element);
 						reverseScale(element, matrix);
 
-						var filters = element.filters;
+						var tweenFilters = bakedTweenedFilters[i];
+						var filters = tweenFilters != null ? tweenFilters : element.filters;
+						
 						if (filters != undefined && filters.length > 0)
 						{
 							if (bakedFilters)
 							{
-								if (matrix.a > 1.01 || matrix.d > 1.01)
+								var rescaleFilters = (matrix.a > 1.01 || matrix.d > 1.01);
+								if (rescaleFilters || tweenFilters != null)
 								{
 									doc.selectNone();
 									doc.selection = [element];
 		
-									forEachFilter(filters, function (filter) {
-										switch (filter.name)
-										{
-											case "glowFilter":
-											case "blurFilter":
-												filter.blurX /= matrix.a;
-												filter.blurY /= matrix.d;
-											break;
-										}
-									});
+									if (rescaleFilters) {
+										forEachFilter(filters, function (filter) {
+											switch (filter.name)
+											{
+												case "glowFilter":
+												case "blurFilter":
+													filter.blurX /= matrix.a;
+													filter.blurY /= matrix.d;
+												break;
+											}
+										});
+									}
 		
 									doc.setFilters(filters);
 								}
@@ -909,6 +916,7 @@ function parseFrames(frames, layerIndex, timeline)
 		// setup for baked tweens crap
 		curTweenMatrix = null;
 		curTweenColorTransform = null;
+		curTweenFilters = null;
 
 		if (isKeyframe || (isTweenedFrame && bakedTweens))
 		{
@@ -1090,13 +1098,14 @@ var curFrameMatrix;
 
 var curTweenMatrix;
 var curTweenColorTransform;
-// TODO: implement curTweenFilter
+var curTweenFilters;
 
 function setupBakedTween(frame, frameIndex)
 {
 	var frameOffset = (frameIndex - frame.startFrame);
 	curTweenMatrix = frame.tweenObj.getGeometricTransform(frameOffset);
 	curTweenColorTransform = frame.tweenObj.getColorTransform(frameOffset);
+	curTweenFilters = frame.tweenObj.getFilters(frameOffset);
 }
 
 function parseElements(elements, frameIndex, layerIndex, timeline)
@@ -1351,7 +1360,7 @@ function parseShape(timeline, layerIndex, frameIndex, elementIndices)
 	parseAtlasInstance(mtx, atlasIndex);
 }
 
-function getElementRect(instance, frameFilters)
+function getElementRect(instance, frameFilters, overrideFilters)
 {
 	var minX; var minY; var maxX; var maxY;
 
@@ -1396,8 +1405,9 @@ function getElementRect(instance, frameFilters)
 	if (frameFilters != null && frameFilters.length > 0)
 		instanceFilters = instanceFilters.concat(frameFilters);
 
-	if (instance.filters != null && instance.filters.length > 0)
-		instanceFilters = instanceFilters.concat(instance.filters);
+	var leFilters = overrideFilters != null ? overrideFilters : instance.filters;
+	if (leFilters != null && leFilters.length > 0)
+		instanceFilters = instanceFilters.concat(leFilters);
 	
 	forEachFilter(instanceFilters, function (filter) {
 		switch (filter.name)
@@ -1497,7 +1507,12 @@ function pushElementSpritemap(timeline, layerIndex, frameIndex, elementIndices, 
 	jsonArray(key("LAYERS", "L"));
 
 	var elem = TEMP_LAYER.frames[smIndex].elements[elementIndices[0]];
-	var rect = getElementRect(elem, frameFilters);
+	var elementFilters = curTweenFilters != null ? curTweenFilters : elem.filters;
+	
+	if (curTweenFilters != null)
+		bakedTweenedFilters[smIndex] = curTweenFilters;
+	
+	var rect = getElementRect(elem, frameFilters, elementFilters);
 
 	var matScale = getMatrixScale(rect.width, rect.height);
 	var matScaleX = (elem.scaleX < 1) ? (1 / elem.scaleX) * matScale : matScale;
@@ -1509,7 +1524,7 @@ function pushElementSpritemap(timeline, layerIndex, frameIndex, elementIndices, 
 		var scaleYMult = 1;
 	
 		// Scaling down blurry symbols so antialiasing can do the dirty work later
-		forEachFilter(elem.filters, function (filter) {
+		forEachFilter(elementFilters, function (filter) {
 			switch (filter.name) {
 				case "blurFilter":
 					var qualityScale = 0.5;
@@ -1822,7 +1837,7 @@ function parseSymbolInstance(instance, itemName)
 		if (instance.blendMode != null && instance.blendMode != "normal")
 			jsonVar(key("blend", "B"), parseBlendMode(instance.blendMode));
 
-		var filters = instance.filters;
+		var filters = curTweenFilters != null ? curTweenFilters : instance.filters;
 		var hasFilters = (filters != null && filters.length > 0)
 
 		// Add Filters
