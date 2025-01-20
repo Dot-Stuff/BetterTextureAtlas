@@ -976,7 +976,7 @@ function parseFrames(frames, layerIndex, timeline)
 
 				push("},\n");
 			}
-			else if (canBeBaked)
+			else if (canBeBaked && !isKeyframe)
 			{
 				setupBakedTween(frame, f);
 			}
@@ -1729,6 +1729,8 @@ function getFrameFilters(layer, frameIndex)
 	return new Array(0);
 }
 
+var _lastColorMode;
+
 function parseSymbolInstance(instance, itemName)
 {
 	var bakedInstance = (itemName != undefined);
@@ -1780,13 +1782,23 @@ function parseSymbolInstance(instance, itemName)
 		',"y":' + instance.transformY + "}"
 	);
 
-	if (instance.colorMode != "none")// && !(bakedInstance && bakedFilters))
+	var colorMode = instance.colorMode;
+	if (colorMode != "none")
+	{
+		_lastColorMode = colorMode;
+	}
+	else if (curTweenColorTransform != null)
+	{
+		colorMode = _lastColorMode;
+	}
+
+	if (colorMode != "none")// && !(bakedInstance && bakedFilters))
 	{
 		jsonHeader(key("color", "C"));
 		var modeKey = key("mode", "M");
 		var colorValues = curTweenColorTransform != null ? curTweenColorTransform : instance;
 
-		switch (instance.colorMode) {
+		switch (colorMode) {
 			case "brightness":
 				jsonStr(modeKey, key("Brightness", "CBRT"));
 				jsonVarEnd(key("brightness", "BRT"), instance.brightness);
