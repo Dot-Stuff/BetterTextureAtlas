@@ -1505,8 +1505,6 @@ function pushElementSpritemap(timeline, layerIndex, frameIndex, elementIndices, 
 	push('{\n');
 	
 	var itemName = "_bta_asi_" + smIndex;
-	jsonStr(key("SYMBOL_name", "SN"), itemName);
-	jsonHeader(key("TIMELINE", "TL"));
 	jsonArray(key("LAYERS", "L"));
 
 	var elem = TEMP_LAYER.frames[smIndex].elements[elementIndices[0]];
@@ -1552,8 +1550,6 @@ function pushElementSpritemap(timeline, layerIndex, frameIndex, elementIndices, 
 		parseAtlasInstance(atlasMatrix, smIndex);
 		smIndex++;
 	});
-
-	push('}');
 
 	bakedDictionary.push(closeJson());
 	bakedDictionary.push(itemName);
