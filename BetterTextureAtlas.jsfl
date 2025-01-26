@@ -1346,7 +1346,7 @@ function parseShape(timeline, layerIndex, frameIndex, elementIndices)
 	}
 
 	var scale = getMatrixScale(shapeWidth - shapeX, shapeHeight - shapeY);	
-	var mtx = makeMatrix(scale, 0, 0, scale, Math.round(shapeX), Math.round(shapeY));
+	var mtx = makeMatrix(scale, 0, 0, scale, shapeX, shapeY);
 
 	resizeInstanceMatrix(curSymbol, mtx);
 	parseAtlasInstance(mtx, atlasIndex);
@@ -1612,30 +1612,54 @@ function pushShapeSpritemap(timeline, layerIndex, frameIndex, elementIndices)
 	pushElementsFromFrame(timeline, layerIndex, frameIndex, elementIndices);
 
 	var frameElements = TEMP_LAYER.frames[smIndex].elements;
-	var shapes = [];
+	smIndex++;
 
 	var e = 0;
-	var ei = 0;
+	var l = frameElements.length;
 	var lastWidth = Number.NEGATIVE_INFINITY;
 	var lastHeight = Number.NEGATIVE_INFINITY;
 
-	while (e < frameElements.length)
-	{
-		var frameElement = frameElements[e];
+	var frameBounds = frameElements[0].objectSpaceBounds;
+	var shapes = [];
 
-		if (elementIndices[ei] == e) // Add the actual parts of the array
+	// no cleanup needed here
+	if (frameElements.length === 1)
+	{
+		shapes.push({bounds: frameBounds});
+		return shapes;
+	}
+
+	while (e < l)
+	{
+		if (elementIndices.indexOf(e) !== - 1)
 		{
-			ei++;
-			
-			var elemWidth = Math.round(frameElement.width);
-			var elemHeight = Math.round(frameElement.height);
+			e++;
+			continue;
+		}
+
+		var elem = frameElements[e++];
+		elem.x = frameBounds.right - 1;
+		elem.y = frameBounds.bottom - 1;
+		elem.width = 1;
+		elem.height = 1;
+	}
+
+	e = 0;
+
+	while (e < l)
+	{
+		if (elementIndices.indexOf(e) !== -1) // Add the actual parts of the array
+		{
+			var elem = frameElements[e];
+			var elemWidth = Math.round(elem.width);
+			var elemHeight = Math.round(elem.height);
 			
 			// Checking because its both the same shape instance but also not?? Really weird shit
 			if (elemWidth != lastWidth && elemHeight != lastHeight)
 			{
 				// Gotta do this because jsfl scripts cant keep track well of instances data and will randomly corrupt values
 				shapes.push({
-					bounds: frameElement.objectSpaceBounds
+					bounds: elem.objectSpaceBounds
 				});
 
 				lastWidth = elemWidth;
@@ -1646,7 +1670,6 @@ function pushShapeSpritemap(timeline, layerIndex, frameIndex, elementIndices)
 		e++;
 	}
 
-	smIndex++;
 	return shapes;
 }
 
