@@ -169,9 +169,9 @@ function _main()
 	path = formatPath(fileuri);
 	FLfile.createFolder(path);
 
-	//measure(function() {
+	measure(function() {
 	exportAtlas(symbols);
-	//});
+	});
 
 	for (i = 0; i < familySymbol.length; i++)
 	{
@@ -1324,29 +1324,28 @@ function parseBitmapInstance(bitmap)
 
 function parseShape(timeline, layerIndex, frameIndex, elementIndices)
 {
-	var shapes = pushShapeSpritemap(timeline, layerIndex, frameIndex, elementIndices);
+	var shapeBounds = pushShapeSpritemap(timeline, layerIndex, frameIndex, elementIndices);
 	var atlasIndex = (smIndex - 1);
 	
-	var shapeX = Number.POSITIVE_INFINITY;
-	var shapeY = Number.POSITIVE_INFINITY;
-	var shapeWidth = Number.NEGATIVE_INFINITY;
-	var shapeHeight = Number.NEGATIVE_INFINITY;
+	var shapeLeft = Number.POSITIVE_INFINITY;
+	var shapeTop = Number.POSITIVE_INFINITY;
+	var shapeRight = Number.NEGATIVE_INFINITY;
+	var shapeBottom = Number.NEGATIVE_INFINITY;
 
 	var s = 0;
-	while (s < shapes.length)
+	while (s < shapeBounds.length)
 	{	
-		var shapeBounds = shapes[s++].bounds;
-
-		shapeX = min(shapeX, shapeBounds.left);
-		shapeY = min(shapeY, shapeBounds.top);
-		shapeWidth = max(shapeWidth, shapeBounds.right);
-		shapeHeight = max(shapeHeight, shapeBounds.bottom);
+		var bounds = shapeBounds[s++];
+		shapeLeft = min(shapeLeft, bounds.left);
+		shapeTop = min(shapeTop, bounds.top);
+		shapeRight = max(shapeRight, bounds.right);
+		shapeBottom = max(shapeBottom, bounds.bottom);
 
 		// isRectangle = (shape.isRectangleObject || shape.vertices.length === 4)
 	}
 
-	var scale = getMatrixScale(shapeWidth - shapeX, shapeHeight - shapeY);	
-	var mtx = makeMatrix(scale, 0, 0, scale, shapeX, shapeY);
+	var scale = getMatrixScale(shapeRight - shapeLeft, shapeBottom - shapeTop);
+	var mtx = makeMatrix(scale, 0, 0, scale, shapeLeft, shapeTop);
 
 	resizeInstanceMatrix(curSymbol, mtx);
 	parseAtlasInstance(mtx, atlasIndex);
@@ -1499,7 +1498,7 @@ function pushElementSpritemap(timeline, layerIndex, frameIndex, elementIndices, 
 				case "blurFilter":
 					var qualityScale = 0.5;
 					if (filter.quality == "medium") qualityScale = 0.75;
-					if (filter.quality == "low") 	qualityScale = 1;
+					if (filter.quality == "low") 	qualityScale = 0.95;
 					scaleXMult *= (filter.blurX / (16 * qualityScale));
 					scaleYMult *= (filter.blurY / (16 * qualityScale));
 				break;
@@ -1625,7 +1624,7 @@ function pushShapeSpritemap(timeline, layerIndex, frameIndex, elementIndices)
 	// no cleanup needed here
 	if (frameElements.length === 1)
 	{
-		shapes.push({bounds: frameBounds});
+		shapes.push(frameBounds);
 		return shapes;
 	}
 
@@ -1658,9 +1657,7 @@ function pushShapeSpritemap(timeline, layerIndex, frameIndex, elementIndices)
 			if (elemWidth != lastWidth && elemHeight != lastHeight)
 			{
 				// Gotta do this because jsfl scripts cant keep track well of instances data and will randomly corrupt values
-				shapes.push({
-					bounds: elem.objectSpaceBounds
-				});
+				shapes.push(elem.objectSpaceBounds);
 
 				lastWidth = elemWidth;
 				lastHeight = elemHeight;
@@ -1691,9 +1688,15 @@ function resizeInstanceMatrix(name, matrix)
 	matrix.d /= maxScale[1];
 }
 
-// TODO: make this inheritance based so its a full calculation of all the max sizes of the instance
 function pushInstanceSize(name, scaleX, scaleY)
 {
+	var curInstanceSize = instanceSizes[curSymbol];
+	if (curInstanceSize != null)
+	{
+		scaleX *= curInstanceSize[0];
+		scaleY *= curInstanceSize[1];
+	}
+
 	if (instanceSizes[name] == null)
 	{
 		var list = [scaleX, scaleY];
