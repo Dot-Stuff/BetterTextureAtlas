@@ -1245,21 +1245,20 @@ function parseTextInstance(text)
 
 	if (orientation != null)
 		jsonStr(key("orientation", "ORT"), orientation);
-
-	var linetype = null;
+	
 	if (text.textType != "static")
 	{
+		var lineType = null;
 		switch (text.lineType)
 		{
-			case "single line": 		linetype = key("single line", "SL"); 				break;
-			case "multiline": 			linetype = key("multiline", "ML");			 		break;
-			case "multiline no wrap": 	linetype = key("multiline no wrap", "MLN"); 		break;
-			case "password": 			linetype = key("password", "PSW"); 					break;
+			case "single line": 		lineType = key("single line", "SL"); 				break;
+			case "multiline": 			lineType = key("multiline", "ML");			 		break;
+			case "multiline no wrap": 	lineType = key("multiline no wrap", "MLN"); 		break;
+			case "password": 			lineType = key("password", "PSW"); 					break;
 		}
+		if (lineType != null)
+			jsonStr(key("lineType", "LT"), lineType);	
 	}
-
-	if (lineType != null)
-		jsonStr(key("lineType", "LT"), linetype);	
 	
 	jsonArray(key("attributes", "ATR"));
 	
@@ -1306,6 +1305,7 @@ function parseTextInstance(text)
 
 var cachedMatrices;
 
+// TODO: remove the item type from queue and push the same way as one-frame symbols
 function parseBitmapInstance(bitmap)
 {
 	var item = bitmap.libraryItem;
