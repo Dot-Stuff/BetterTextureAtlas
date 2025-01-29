@@ -354,6 +354,9 @@ function exportAtlas(symbolNames)
 						cleanElement(element);
 						reverseScale(element, matrix);
 
+						if (element.blendMode != null)
+							element.blendMode = "normal";
+
 						var tweenFilters = bakedTweenedFilters[i];
 						var filters = tweenFilters != null ? tweenFilters : element.filters;
 						
@@ -490,9 +493,6 @@ function cleanElement(elem)
 
 	if (!flattenSkewing)
 		elem.skewX = elem.skewY = 0;
-
-	if (elem.blendMode != null)
-		elem.blendMode = "normal";
 
 	if (elem.colorMode != null)
 		elem.colorMode = "none";
