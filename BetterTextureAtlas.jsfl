@@ -357,6 +357,9 @@ function exportAtlas(symbolNames)
 						if (element.blendMode != null)
 							element.blendMode = "normal";
 
+						if (element.colorMode != null)
+							element.colorMode = "none";
+
 						var tweenFilters = bakedTweenedFilters[i];
 						var filters = tweenFilters != null ? tweenFilters : element.filters;
 						
@@ -489,13 +492,12 @@ function exportAtlas(symbolNames)
 function cleanElement(elem)
 {
 	elem.scaleX = elem.scaleY = 1;
+
+	if (flattenSkewing)
+		return;
+
 	elem.rotation = 0;
-
-	if (!flattenSkewing)
-		elem.skewX = elem.skewY = 0;
-
-	if (elem.colorMode != null)
-		elem.colorMode = "none";
+	elem.skewX = elem.skewY = 0;
 }
 
 function initBtaItem(ID)
@@ -1154,8 +1156,8 @@ function parseElements(elements, frameIndex, layerIndex, timeline)
 
 					var hasFilters = element.filters != undefined && element.filters.length > 0;
 					var bakeInstanceFilters = (bakedFilters && (hasFilters || hasFrameFilters));
-					//var bakeInstanceSkew = (flattenSkewing && (element.skewX != 0 || element.skewY != 0));
-					var bakeInstance = (bakeInstanceFilters);// || bakeInstanceSkew);
+					var bakeInstanceSkew = (flattenSkewing && (element.skewX != 0 || element.skewY != 0));
+					var bakeInstance = (bakeInstanceFilters || bakeInstanceSkew);
 					
 					if (bakeInstance)
 					{
@@ -1382,10 +1384,10 @@ function getElementRect(element, frameFilters, overrideFilters)
 				while (e < frameElements.length)
 				{
 					var elem = getElementRect(frameElements[e++]);
-					minX = min(minX, elem.x);
-					minY = min(minY, elem.y);
-					maxX = max(maxX, elem.width);
-					maxY = max(maxY, elem.height);
+					minX = min(minX, elem.left);
+					minY = min(minY, elem.top);
+					maxX = max(maxX, elem.right);
+					maxY = max(maxY, elem.bottom);
 				}
 			}
 		break;
@@ -1420,10 +1422,10 @@ function getElementRect(element, frameFilters, overrideFilters)
 	});
 
 	return {
-		x: minX,
-		y: minY,
-		width: maxX,
-		height: maxY
+		left: minX,
+		top: minY,
+		right: maxX,
+		bottom: maxY
 	}
 }
 
@@ -1483,7 +1485,7 @@ function pushElementSpritemap(timeline, layerIndex, frameIndex, elementIndices, 
 	
 	var rect = getElementRect(elem, frameFilters, elementFilters);
 
-	var matScale = getMatrixScale(rect.width - rect.x, rect.height - rect.y);
+	var matScale = getMatrixScale(rect.right - rect.left, rect.bottom - rect.top);
 	var matScaleX = (elem.scaleX < 1) ? (1 / elem.scaleX) * matScale : matScale;
 	var matScaleY = (elem.scaleY < 1) ? (1 / elem.scaleY) * matScale : matScale;
 
@@ -1509,7 +1511,18 @@ function pushElementSpritemap(timeline, layerIndex, frameIndex, elementIndices, 
 		matScaleY *= max(scaleYMult, 1);
 	}
 
-	var atlasMatrix = makeMatrix(matScaleX, 0, 0, matScaleY, rect.x, rect.y);
+	var atlasMatrix = makeMatrix(matScaleX, 0, 0, matScaleY, rect.left, rect.top);
+
+	if (flattenSkewing)
+	{
+		var m = elem.matrix;
+		var w = (rect.right - rect.left);
+		var h = (rect.bottom - rect.top);
+
+		// TODO: still kinda innacurate, fix it later
+		atlasMatrix.tx += ((w * m.c)) / 2;
+		atlasMatrix.ty += ((h * m.b)) / 2;
+	}
 
 	makeBasicLayer(function () {
 		parseAtlasInstance(atlasMatrix, smIndex);
@@ -1574,10 +1587,10 @@ function getFrameBounds(timeline, frameIndex)
 				break;
 				default:
 					var rect = getElementRect(elem);
-					minX = min(minX, rect.x);
-					minY = min(minY, rect.y);
-					maxX = max(maxX, rect.x + rect.width);
-					maxY = max(maxY, rect.y + rect.height);
+					minX = min(minX, rect.left);
+					minY = min(minY, rect.top);
+					maxX = max(maxX, rect.right);
+					maxY = max(maxY, rect.bottom);
 				break;
 			}
 		}
@@ -1834,7 +1847,19 @@ function parseSymbolInstance(instance, itemName)
 	}
 
 	if (instance.is3D)	jsonVar(key("Matrix3D", "M3D"), parseMatrix3D(instance.matrix3D));
-	else				jsonVar(key("Matrix", "MX"), 	parseMatrix(instance.matrix, true));
+	else
+	{
+		var matrix = instance.matrix;
+
+		if (flattenSkewing)
+		{
+			matrix = cloneMatrix(matrix);
+			matrix.b = 0;
+			matrix.c = 0;
+		}
+
+		jsonVar(key("Matrix", "MX"), parseMatrix(matrix, true));
+	}
 
 	if (instance.symbolType != "graphic")
 	{
@@ -2225,8 +2250,8 @@ function cs4Spritesheet(shapeLength, sheetFrame)
 	var rect;
 
 	var moveElement = function (x, y) {
-		elem.x = x - (rect.x - (rect.width * 0.5)) * elem.scaleX;
-		elem.y = y - (rect.y - (rect.height * 0.5)) * elem.scaleY;
+		elem.x = x - (rect.left - (rect.right * 0.5)) * elem.scaleX;
+		elem.y = y - (rect.top - (rect.bottom * 0.5)) * elem.scaleY;
 	}
 
 	lib.addItemToDocument({x: 0, y: 0}, TEMP_SPRITEMAP);
@@ -2248,8 +2273,8 @@ function cs4Spritesheet(shapeLength, sheetFrame)
 		i++;
 
 		rect = getElementRect(ogElem);
-		var rectWidth = rect.width;
-		var rectHeight = rect.height;
+		var rectWidth = rect.right;
+		var rectHeight = rect.bottom;
 
 		moveElement(curX, curY);
 
