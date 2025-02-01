@@ -46,6 +46,7 @@ var path = "";
 
 var instance = null;
 var resScale = 1.0;
+var pixelOffset = 0.0;
 
 if (SaveData.version[0] <= 12)
 	alert("Even though it's functional, we still recommend using a newer version, such as Adobe Animate!");
@@ -161,6 +162,7 @@ function _main()
 	flattenSkewing = (flatten == "true");
 	resolution = parseFloat(res);
 	resScale =  1 / resolution;
+	pixelOffset = 0.6 * resolution;
 
 	// Reduce if statements
 	key = optimizeJson ? function (a, b) {return b} : function (a, b) {return a};
@@ -395,6 +397,12 @@ function exportAtlas(symbolNames)
 								doc.selection = [element];
 								doc.setFilters(new Array(0));
 							}
+						}
+						else
+						{
+							// antialiasing fix
+							element.width += pixelOffset;
+							element.height += pixelOffset;
 						}
 					}
 					else if (flversion > 12 || element.elementType != "shape") // Half-assed fix for broken shape cleanup on CS6, give it a look later
@@ -1637,7 +1645,13 @@ function pushShapeSpritemap(timeline, layerIndex, frameIndex, elementIndices)
 	// no cleanup needed here
 	if (frameElements.length === 1)
 	{
-		shapes.push(frameBounds);
+		var shape = frameElements[0];
+		shapes.push({
+			left: shape.left,
+			top: shape.top,
+			right: shape.left + shape.width,
+			bottom: shape.top + shape.height
+		});
 		return shapes;
 	}
 
