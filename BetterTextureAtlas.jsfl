@@ -46,7 +46,6 @@ var path = "";
 
 var instance = null;
 var resScale = 1.0;
-var pixelOffset = 0.0;
 
 if (SaveData.version[0] <= 12)
 	alert("Even though it's functional, we still recommend using a newer version, such as Adobe Animate!");
@@ -162,7 +161,6 @@ function _main()
 	flattenSkewing = (flatten == "true");
 	resolution = parseFloat(res);
 	resScale =  1 / resolution;
-	pixelOffset = 0.6 * resolution;
 
 	// Reduce if statements
 	key = optimizeJson ? function (a, b) {return b} : function (a, b) {return a};
@@ -401,8 +399,8 @@ function exportAtlas(symbolNames)
 						else
 						{
 							// antialiasing fix
-							element.width += pixelOffset;
-							element.height += pixelOffset;
+							element.width = Math.round(element.width);
+							element.height = Math.round(element.height);
 						}
 					}
 					else if (flversion > 12 || element.elementType != "shape") // Half-assed fix for broken shape cleanup on CS6, give it a look later
@@ -1355,7 +1353,7 @@ function parseShape(timeline, layerIndex, frameIndex, elementIndices)
 	}
 
 	var scale = getMatrixScale(shapeRight - shapeLeft, shapeBottom - shapeTop);
-	var mtx = makeMatrix(scale, 0, 0, scale, shapeLeft, shapeTop);
+	var mtx = makeMatrix(scale, 0, 0, scale, Math.round(shapeLeft), Math.round(shapeTop));
 
 	resizeInstanceMatrix(curSymbol, mtx);
 	parseAtlasInstance(mtx, atlasIndex);
