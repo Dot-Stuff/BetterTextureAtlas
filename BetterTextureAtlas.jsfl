@@ -927,11 +927,14 @@ function parseFrames(frames, layerIndex, timeline)
 		var canBeBaked = bakedTweens && frame.tweenObj != null;
 		
 		// setup for baked tweens crap
-		curTweenMatrix = null;
-		curTweenColorTransform = null;
-		curTweenFilters = null;
-		curTweenFrame = -1;
-		
+		if (curTweenMatrix != null)
+		{
+			curTweenColorMode = "none";
+			curTweenMatrix = null;
+			curTweenColorTransform = null;
+			curTweenFilters = null;
+			curTweenFrame = -1;
+		}
 
 		if (isKeyframe || (isTweenedFrame && bakedTweens))
 		{
@@ -991,9 +994,9 @@ function parseFrames(frames, layerIndex, timeline)
 
 				push("},\n");
 			}
-			else if (canBeBaked && !isKeyframe)
+			else if (canBeBaked)
 			{
-				setupBakedTween(frame, f);
+				setupBakedTween(frame, frames[frame.startFrame + frame.duration], f);
 			}
 
 			if (includeSnd && frame.soundLibraryItem != null)
@@ -1111,18 +1114,36 @@ function parseMotionObject(motionData)
 
 var curFrameMatrix;
 
+var startTweenElements;
+var curTweenElement;
 var curTweenMatrix;
 var curTweenColorTransform;
 var curTweenFilters;
 var curTweenFrame = -1;
 
-function setupBakedTween(frame, frameIndex)
+function setupBakedTween(frame, endFrame, frameIndex)
 {
 	var frameOffset = (frameIndex - frame.startFrame);
 	curTweenMatrix = frame.tweenObj.getGeometricTransform(frameOffset);
 	curTweenColorTransform = frame.tweenObj.getColorTransform(frameOffset);
 	curTweenFilters = frame.tweenObj.getFilters(frameOffset);
 	curTweenFrame = frameOffset;
+
+	if (frame.elements.length > 0)
+	{
+		var elem = frame.elements[0];
+		if (elem.colorMode == "none" && endFrame != null)
+		{
+			if (endFrame.elements.length > 0)
+				elem = endFrame.elements[0];
+		}
+
+		curTweenElement = elem.colorMode == "none" ? null : elem;
+	}
+	else
+	{
+		curTweenElement = null;
+	}
 }
 
 function parseElements(elements, frameIndex, layerIndex, timeline)
@@ -1373,6 +1394,7 @@ function getElementRect(element, frameFilters, overrideFilters)
 	switch (element.elementType)
 	{
 		case "shape":
+		case "text":
 			var bounds = element.objectSpaceBounds;
 			minX = bounds.left;
 			minY = bounds.top;
@@ -1400,9 +1422,6 @@ function getElementRect(element, frameFilters, overrideFilters)
 					maxY = max(maxY, elem.bottom);
 				}
 			}
-		break;
-		case "text":
-			minX = minY = maxX = maxY = 0;
 		break;
 	}
 
@@ -1469,7 +1488,11 @@ function pushElementsFromFrame(timeline, layerIndex, frameIndex, elementIndices)
 	timeline.setSelectedLayers(layerIndex, true);
 	timeline.copyFrames(frameIndex);
 	TEMP_TIMELINE.pasteFrames(smIndex);
-	TEMP_TIMELINE.layers[0].frames[smIndex].tweenType = "none";
+	
+	var elemFrame = TEMP_TIMELINE.layers[0].frames[smIndex];
+	if (elemFrame.tweenType != "none")
+		elemFrame.tweenType = "none";
+	
 	pushElement(elementIndices);
 }
 
@@ -1536,6 +1559,7 @@ function pushElementSpritemap(timeline, layerIndex, frameIndex, elementIndices, 
 	}
 
 	makeBasicLayer(function () {
+		resizeInstanceMatrix(curSymbol, atlasMatrix);
 		parseAtlasInstance(atlasMatrix, smIndex);
 		smIndex++;
 	});
@@ -1545,6 +1569,7 @@ function pushElementSpritemap(timeline, layerIndex, frameIndex, elementIndices, 
 
 	bakedDictionary.push(closeJson());
 	bakedDictionary.push(itemName);
+
 	parseSymbolInstance(elem, itemName);
 }
 
@@ -1751,8 +1776,6 @@ function getFrameFilters(layer, frameIndex)
 	return new Array(0);
 }
 
-var _lastColorMode;
-
 function parseSymbolInstance(instance, itemName)
 {
 	var bakedInstance = (itemName != undefined);
@@ -1788,19 +1811,18 @@ function parseSymbolInstance(instance, itemName)
 
 	if (instance.firstFrame != undefined)
 	{
-		var FF = 0;
-		if (curTweenFrame != -1)
+		var FF = instance.firstFrame;
+		
+		if (curTweenFrame !== -1)
 		{
 			var length = instance.libraryItem.timeline.frameCount;
 			
 			switch (instance.loop) {
-				case "play once": 		FF =  Math.min(instance.firstFrame + curTweenFrame, length); 		break;
-				case "single frame":	FF = instance.firstFrame;	break;
-				case "loop": 			FF = instance.firstFrame + curTweenFrame % length;			break;
+				case "play once": 		FF = Math.min(FF + curTweenFrame, length); break;
+				case "loop": 			FF = FF + curTweenFrame % length; break;
 			}
 		}
-		else
-			FF = instance.firstFrame;
+		
 		jsonVar(key("firstFrame", "FF"), FF);
 	}
 
@@ -1820,37 +1842,47 @@ function parseSymbolInstance(instance, itemName)
 	);
 
 	var colorMode = instance.colorMode;
-	if (colorMode != "none")
+	var colorInstance = instance;
+	
+	if (bakedTweens && curTweenElement != null)
 	{
-		_lastColorMode = colorMode;
-	}
-	else if (curTweenColorTransform != null)
-	{
-		colorMode = _lastColorMode;
+		colorMode = curTweenElement.colorMode;
 	}
 
 	if (colorMode != "none")// && !(bakedInstance && bakedFilters))
 	{
 		jsonHeader(key("color", "C"));
 		var modeKey = key("mode", "M");
-		var colorValues = curTweenColorTransform != null ? curTweenColorTransform : instance;
 
-		switch (colorMode) {
+		var colorValues = instance;
+		if (bakedTweens && curTweenColorTransform != null)
+		{
+			colorValues = curTweenColorTransform;
+		}
+
+		switch (colorMode)
+		{
 			case "brightness":
 				jsonStr(modeKey, key("Brightness", "CBRT"));
+				
 				var brt = 0;
-				if (colorValues.colorRedPercent != 100)
+				if (bakedTweens)
 				{
-					var flag = (colorValues.colorRedAmount > 0) ? 1 : -1;
-					brt = (100 - colorValues.colorRedPercent) * flag;
+					if (colorValues.colorRedPercent != 100)
+					{
+						var flag = (colorValues.colorRedAmount > 0) ? 1 : -1;
+						brt = (100 - colorValues.colorRedPercent) * flag;
+					}
+				}
+				else
+				{
+					brt = colorValues.brightness;
 				}
 			
 				jsonVarEnd(key("brightness", "BRT"), brt);
-			
 			break;
 			case "tint":
 				jsonStr(modeKey, key("Tint", "T"));
-			fl.trace(instance.colorRedPercent.toString(16));
 				jsonStr(key("tintColor", "TC"), instance.tintColor);
 				jsonNumEnd(key("tintMultiplier", "TM"), (100 - instance.tintPercent) * 0.01);
 			break;
@@ -2173,7 +2205,12 @@ function traceFields(value)
 {
 	var traceCrap = "";
 	for (var field in value)
+	{
+		if (field == "brightness" || field == "tintColor" || field == "tintPercent")
+			continue;
+
 		traceCrap += field + ": " + value[field] + ", ";
+	}
 	trace(traceCrap);
 }
 
