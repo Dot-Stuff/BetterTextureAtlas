@@ -1465,6 +1465,7 @@ function pushElementsFromFrame(timeline, layerIndex, frameIndex, elementIndices)
 	timeline.setSelectedLayers(layerIndex, true);
 	timeline.copyFrames(frameIndex);
 	TEMP_TIMELINE.pasteFrames(smIndex);
+	TEMP_TIMELINE.layers[0].frames[smIndex].tweenType = "none";
 	pushElement(elementIndices);
 }
 
