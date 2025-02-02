@@ -929,7 +929,7 @@ function parseFrames(frames, layerIndex, timeline)
 		// setup for baked tweens crap
 		if (curTweenMatrix != null)
 		{
-			curTweenColorMode = "none";
+			curTweenElement = null;
 			curTweenMatrix = null;
 			curTweenColorTransform = null;
 			curTweenFilters = null;
@@ -1842,8 +1842,6 @@ function parseSymbolInstance(instance, itemName)
 	);
 
 	var colorMode = instance.colorMode;
-	var colorInstance = instance;
-	
 	if (bakedTweens && curTweenElement != null)
 	{
 		colorMode = curTweenElement.colorMode;
