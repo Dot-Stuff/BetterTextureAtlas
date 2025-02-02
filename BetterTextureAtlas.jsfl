@@ -920,6 +920,8 @@ function parseFrames(frames, layerIndex, timeline)
 		curTweenMatrix = null;
 		curTweenColorTransform = null;
 		curTweenFilters = null;
+		curTweenFrame = -1;
+		
 
 		if (isKeyframe || (isTweenedFrame && bakedTweens))
 		{
@@ -1102,6 +1104,7 @@ var curFrameMatrix;
 var curTweenMatrix;
 var curTweenColorTransform;
 var curTweenFilters;
+var curTweenFrame = -1;
 
 function setupBakedTween(frame, frameIndex)
 {
@@ -1109,6 +1112,7 @@ function setupBakedTween(frame, frameIndex)
 	curTweenMatrix = frame.tweenObj.getGeometricTransform(frameOffset);
 	curTweenColorTransform = frame.tweenObj.getColorTransform(frameOffset);
 	curTweenFilters = frame.tweenObj.getFilters(frameOffset);
+	curTweenFrame = frameOffset;
 }
 
 function parseElements(elements, frameIndex, layerIndex, timeline)
@@ -1764,7 +1768,22 @@ function parseSymbolInstance(instance, itemName)
 	}
 
 	if (instance.firstFrame != undefined)
-		jsonVar(key("firstFrame", "FF"), instance.firstFrame);
+	{
+		var FF = 0;
+		if (curTweenFrame != -1)
+		{
+			var length = instance.libraryItem.timeline.frameCount;
+			
+			switch (instance.loop) {
+				case "play once": 		FF =  Math.min(instance.firstFrame + curTweenFrame, length); 		break;
+				case "single frame":	FF = instance.firstFrame;	break;
+				case "loop": 			FF = instance.firstFrame + curTweenFrame % length;			break;
+			}
+		}
+		else
+			FF = instance.firstFrame;
+		jsonVar(key("firstFrame", "FF"), FF);
+	}
 
 	if (instance.symbolType != undefined) {
 		var type;
@@ -1800,12 +1819,21 @@ function parseSymbolInstance(instance, itemName)
 		switch (colorMode) {
 			case "brightness":
 				jsonStr(modeKey, key("Brightness", "CBRT"));
-				jsonVarEnd(key("brightness", "BRT"), instance.brightness);
+				var brt = 0;
+				if (colorValues.colorRedPercent != 100)
+				{
+					var flag = (colorValues.colorRedAmount > 0) ? 1 : -1;
+					brt = (100 - colorValues.colorRedPercent) * flag;
+				}
+			
+				jsonVarEnd(key("brightness", "BRT"), brt);
+			
 			break;
 			case "tint":
 				jsonStr(modeKey, key("Tint", "T"));
+			fl.trace(instance.colorRedPercent.toString(16));
 				jsonStr(key("tintColor", "TC"), instance.tintColor);
-				jsonNumEnd(key("tintMultiplier", "TM"), instance.tintPercent * 0.01);
+				jsonNumEnd(key("tintMultiplier", "TM"), (100 - instance.tintPercent) * 0.01);
 			break;
 			case "alpha":
 				jsonStr(modeKey, key("Alpha", "CA"));
