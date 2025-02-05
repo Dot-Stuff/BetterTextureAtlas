@@ -929,7 +929,6 @@ function parseFrames(frames, layerIndex, timeline)
 		// setup for baked tweens crap
 		if (curTweenMatrix != null)
 		{
-			curTweenElement = null;
 			curTweenMatrix = null;
 			curTweenColorTransform = null;
 			curTweenFilters = null;
@@ -1115,7 +1114,6 @@ function parseMotionObject(motionData)
 var curFrameMatrix;
 
 var startTweenElements;
-var curTweenElement;
 var curTweenMatrix;
 var curTweenColorTransform;
 var curTweenFilters;
@@ -1128,22 +1126,6 @@ function setupBakedTween(frame, endFrame, frameIndex)
 	curTweenColorTransform = frame.tweenObj.getColorTransform(frameOffset);
 	curTweenFilters = frame.tweenObj.getFilters(frameOffset);
 	curTweenFrame = frameOffset;
-
-	if (frame.elements.length > 0)
-	{
-		var elem = frame.elements[0];
-		if (elem.colorMode == "none" && endFrame != null)
-		{
-			if (endFrame.elements.length > 0)
-				elem = endFrame.elements[0];
-		}
-
-		curTweenElement = elem.colorMode == "none" ? null : elem;
-	}
-	else
-	{
-		curTweenElement = null;
-	}
 }
 
 function parseElements(elements, frameIndex, layerIndex, timeline)
@@ -1813,7 +1795,7 @@ function parseSymbolInstance(instance, itemName)
 	{
 		var FF = instance.firstFrame;
 		
-		if (curTweenFrame !== -1)
+		if (bakedTweens && curTweenFrame !== -1)
 		{
 			var length = instance.libraryItem.timeline.frameCount;
 			
@@ -1842,9 +1824,9 @@ function parseSymbolInstance(instance, itemName)
 	);
 
 	var colorMode = instance.colorMode;
-	if (bakedTweens && curTweenElement != null)
+	if (bakedTweens && curTweenColorTransform != null)
 	{
-		colorMode = curTweenElement.colorMode;
+		colorMode = "advanced"; // baking the color mode to advanced because im too tired for this shit
 	}
 
 	if (colorMode != "none")// && !(bakedInstance && bakedFilters))
@@ -1862,22 +1844,7 @@ function parseSymbolInstance(instance, itemName)
 		{
 			case "brightness":
 				jsonStr(modeKey, key("Brightness", "CBRT"));
-				
-				var brt = 0;
-				if (bakedTweens)
-				{
-					if (colorValues.colorRedPercent != 100)
-					{
-						var flag = (colorValues.colorRedAmount > 0) ? 1 : -1;
-						brt = (100 - colorValues.colorRedPercent) * flag;
-					}
-				}
-				else
-				{
-					brt = colorValues.brightness;
-				}
-			
-				jsonVarEnd(key("brightness", "BRT"), brt);
+				jsonVarEnd(key("brightness", "BRT"), colorValues.brightness);
 			break;
 			case "tint":
 				jsonStr(modeKey, key("Tint", "T"));
