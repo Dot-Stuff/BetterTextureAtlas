@@ -7,7 +7,7 @@ function xmlData(symbols)
 
     fl.trace(saveData);
 	
-	var formatSymbolName = String(symbols[0]).split("/").pop();
+	var formatSymbolName = String(symbols[0]).split("/").pop().split(",").pop();
 	var fileuri = (saveData[0] != "") ? saveData[0].split("\\").join("/") + "/" + formatSymbolName : formatSymbolName;
 
 	data = data.split("$CONFIGDIR").join(fl.configDirectory);

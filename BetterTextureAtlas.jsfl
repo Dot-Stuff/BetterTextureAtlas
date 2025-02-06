@@ -995,7 +995,7 @@ function parseFrames(frames, layerIndex, timeline)
 			}
 			else if (canBeBaked)
 			{
-				setupBakedTween(frame, frames[frame.startFrame + frame.duration], f);
+				setupBakedTween(frame, f);
 			}
 
 			if (includeSnd && frame.soundLibraryItem != null)
@@ -1119,7 +1119,7 @@ var curTweenColorTransform;
 var curTweenFilters;
 var curTweenFrame = -1;
 
-function setupBakedTween(frame, endFrame, frameIndex)
+function setupBakedTween(frame, frameIndex)
 {
 	var frameOffset = (frameIndex - frame.startFrame);
 	curTweenMatrix = frame.tweenObj.getGeometricTransform(frameOffset);
@@ -1465,10 +1465,28 @@ function parseAtlasInstance(matrix, index)
 	push('}');
 }
 
+var lastTimeline;
+var lastLayer;
+var lastFrame;
+
 function pushElementsFromFrame(timeline, layerIndex, frameIndex, elementIndices)
 {
-	timeline.setSelectedLayers(layerIndex, true);
-	timeline.copyFrames(frameIndex);
+	if (timeline != lastTimeline) {
+		lastTimeline = timeline;
+		lastLayer = null;
+	}
+
+	if (layerIndex != lastLayer) {
+		timeline.setSelectedLayers(layerIndex, true);
+		lastLayer = layerIndex;
+		lastFrame = null;
+	}
+
+	if (lastFrame != frameIndex) {
+		timeline.copyFrames(frameIndex);
+		lastFrame = frameIndex;
+	}
+
 	TEMP_TIMELINE.pasteFrames(smIndex);
 	
 	var elemFrame = TEMP_TIMELINE.layers[0].frames[smIndex];
@@ -1791,21 +1809,20 @@ function parseSymbolInstance(instance, itemName)
 		}
 	}
 
-	if (instance.firstFrame != undefined)
+	if (instance.firstFrame != undefined && instance.firstFrame != NaN)
 	{
-		var FF = instance.firstFrame;
+		var firstFrame = instance.firstFrame;
 		
 		if (bakedTweens && curTweenFrame !== -1)
 		{
 			var length = instance.libraryItem.timeline.frameCount;
-			
 			switch (instance.loop) {
-				case "play once": 		FF = Math.min(FF + curTweenFrame, length); break;
-				case "loop": 			FF = FF + curTweenFrame % length; break;
+				case "play once": 		firstFrame = Math.min(firstFrame + curTweenFrame, length); break;
+				case "loop": 			firstFrame = firstFrame + curTweenFrame % length;          break;
 			}
 		}
 		
-		jsonVar(key("firstFrame", "FF"), FF);
+		jsonVar(key("firstFrame", "FF"), firstFrame);
 	}
 
 	if (instance.symbolType != undefined) {
