@@ -1591,7 +1591,8 @@ function getFrameBounds(timeline, frameIndex)
 	// TODO: may have to change in the future due to filter bounds tho
 	if (flversion >= 15)
 	{
-		return timeline.getBounds(frameIndex + 1);
+		var bounds = timeline.getBounds(frameIndex + 1);
+		return bounds === 0 ? {left: 0, top: 0, right: 0, bottom: 0} : bounds;
 	}
 
 	var minX = Number.POSITIVE_INFINITY;
