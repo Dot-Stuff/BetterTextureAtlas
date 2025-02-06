@@ -222,6 +222,7 @@ function initVars()
 	dictionary = [];
 	bakedDictionary = [];
 	smIndex = 0;
+	curTweenFrame = -1;
 
 	oneFrameSymbols = {};
 	bakedTweenedFilters = {};
@@ -1117,7 +1118,7 @@ var startTweenElements;
 var curTweenMatrix;
 var curTweenColorTransform;
 var curTweenFilters;
-var curTweenFrame = -1;
+var curTweenFrame;
 
 function setupBakedTween(frame, frameIndex)
 {
@@ -1809,11 +1810,11 @@ function parseSymbolInstance(instance, itemName)
 		}
 	}
 
-	if (instance.firstFrame != undefined && instance.firstFrame != NaN)
+	if (instance.firstFrame != undefined)
 	{
 		var firstFrame = instance.firstFrame;
-		
-		if (bakedTweens && curTweenFrame !== -1)
+
+		if (bakedTweens && curTweenFrame > -1)
 		{
 			var length = instance.libraryItem.timeline.frameCount;
 			switch (instance.loop) {
