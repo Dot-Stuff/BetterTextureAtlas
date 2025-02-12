@@ -217,6 +217,7 @@ function initVars()
 
 	frameQueue = [];
 	cachedMatrices = [];
+	cachedBitmaps = [];
 	instanceSizes = [];
 
 	dictionary = [];
@@ -298,20 +299,13 @@ function exportAtlas(symbolNames)
 	// Write Animation.json
 	FLfile.write(path + "/Animation.json", generateAnimation(symbol));
 
-	// Add items and fix resolutions
-	var pos = {x:0, y:0};
 	lib.editItem(TEMP_SPRITEMAP);
-
-	var reverseScale = function (element, mat) {
-		element.scaleX /= mat.a;
-		element.scaleY /= mat.d;
-	}
 
 	var i = 0;
 	while (i < frameQueue.length)
 	{
-		var queuedFrame = frameQueue[i].split("_");
-		var type = queuedFrame.shift();
+		var queuedFrame = frameQueue[i];
+		var elemIndices = queuedFrame.replace("[","").replace("]","").split(",");
 		var matrix = cachedMatrices[i];
 		var frame = TEMP_LAYER.frames[i];
 		
@@ -321,109 +315,107 @@ function exportAtlas(symbolNames)
 		if (flversion > 12)
 			doc.selectNone();
 
-		switch (type)
+		var selection = new Array();
+
+		// Remove frame filters (only from Animate 2020 upwards)
+		if (flversion >= 20)
 		{
-			case "ITEM":
-				var id = queuedFrame.join("");
-				lib.addItemToDocument(pos, id);
+			if (!bakedFilters && TEMP_LAYER.setFiltersAtFrame != undefined)
+			{
+				TEMP_LAYER.setFiltersAtFrame(i, new Array(0));
+			}
+		}
+
+		var e = 0;
+		var elements = frame.elements;
+		while (e < elements.length)
+		{
+			var element = elements[e];
+			var exportElem = elemIndices.indexOf(String(e)) !== -1;
+
+			if (exportElem)
+			{
+				// TODO: reimplement baked skews
+				element.rotation = 0;
+				element.skewX = 0;
+				element.skewY = 0;
+
+				var targetX = Math.round(element.width / matrix.a) / element.width;
+				var targetY = Math.round(element.height / matrix.d) / element.height;
+
+				element.scaleX = targetX;
+				element.scaleY = targetY;
 				
-				var item = frame.elements[0];
-				reverseScale(item, matrix);
-			break;
-			case "ELEMENT": // TODO: do some lines to fills crap here for changing resolutions
-				var elemIndices = queuedFrame[0].replace("[","").replace("]","").split(",");
-				var selection = new Array();
+				//element.scaleX = 1 / matrix.a;
+				//element.scaleY = 1 / matrix.d;
 
-				// Remove frame filters (only from Animate 2020 upwards)
-				if (flversion >= 20)
-				{
-					if (!bakedFilters && TEMP_LAYER.setFiltersAtFrame != undefined)
-					{
-						TEMP_LAYER.setFiltersAtFrame(i, new Array(0));
-					}
-				}
+				if (element.blendMode != null)
+					element.blendMode = "normal";
 
-				var e = 0;
-				var elements = frame.elements;
-				while (e < elements.length)
-				{
-					var element = elements[e];
-					var exportElem = elemIndices.indexOf(String(e)) !== -1;
+				if (element.colorMode != null)
+					element.colorMode = "none";
 
-					if (exportElem)
-					{
-						cleanElement(element);
-						reverseScale(element, matrix);
-
-						if (element.blendMode != null)
-							element.blendMode = "normal";
-
-						if (element.colorMode != null)
-							element.colorMode = "none";
-
-						var tweenFilters = bakedTweenedFilters[i];
-						var filters = tweenFilters != null ? tweenFilters : element.filters;
+				var tweenFilters = bakedTweenedFilters[i];
+				var filters = tweenFilters != null ? tweenFilters : element.filters;
 						
-						if (filters != undefined && filters.length > 0)
-						{
-							if (bakedFilters)
-							{
-								var rescaleFilters = (matrix.a > 1.01 || matrix.d > 1.01);
-								if (rescaleFilters || tweenFilters != null)
-								{
-									doc.selectNone();
-									doc.selection = [element];
-		
-									if (rescaleFilters) {
-										forEachFilter(filters, function (filter) {
-											switch (filter.name)
-											{
-												case "glowFilter":
-												case "blurFilter":
-													filter.blurX /= matrix.a;
-													filter.blurY /= matrix.d;
-												break;
-											}
-										});
-									}
-		
-									doc.setFilters(filters);
-								}
-							}
-							else
-							{
-								doc.selectNone();
-								doc.selection = [element];
-								doc.setFilters(new Array(0));
-							}
-						}
-						else
-						{
-							// antialiasing fix
-							element.width = Math.round(element.width);
-							element.height = Math.round(element.height);
-						}
-					}
-					else if (flversion > 12 || element.elementType != "shape") // Half-assed fix for broken shape cleanup on CS6, give it a look later
-					{
-						selection[selection.length] = element;
-					}
-
-					e++;
-				}
-
-				if (selection.length > 0)
+				if (filters != undefined && filters.length > 0)
 				{
-					TEMP_TIMELINE.currentFrame = i;
-					
-					if (flversion > 12)
+					if (bakedFilters)
+					{
+						var rescaleFilters = (matrix.a > 1.01 || matrix.d > 1.01);
+						if (rescaleFilters || tweenFilters != null)
+						{
+							doc.selectNone();
+							doc.selection = [element];
+		
+							if (rescaleFilters) {
+								forEachFilter(filters, function (filter) {
+									switch (filter.name)
+									{
+										case "glowFilter":
+										case "blurFilter":
+											filter.blurX /= matrix.a;
+											filter.blurY /= matrix.d;
+										break;
+									}
+								});
+							}
+		
+							doc.setFilters(filters);
+						}
+					}
+					else
+					{
 						doc.selectNone();
-					
-					doc.selection = selection;
-					doc.deleteSelection();
+						doc.selection = [element];
+						doc.setFilters(new Array(0));
+					}
 				}
+				else
+				{
+					// antialiasing fix
+					//element.width = Math.round()
+					//element.width = Math.round(element.width);
+					//element.height = Math.round(element.height);
+				}
+			}
+			else if (flversion > 12 || element.elementType != "shape") // Half-assed fix for broken shape cleanup on CS6, give it a look later
+			{
+				selection[selection.length] = element;
+			}
 
-			break;
+			e++;
+		}
+
+		if (selection.length > 0)
+		{
+			TEMP_TIMELINE.currentFrame = i;
+					
+			if (flversion > 12)
+				doc.selectNone();
+					
+			doc.selection = selection;
+			doc.deleteSelection();
 		}
 
 		i++;
@@ -486,7 +478,7 @@ function exportAtlas(symbolNames)
 			var exportId = (i == 0) ? 1 : Math.abs(i - spritemaps.length - 1);
 
 			exportSpritemap(id, path, spritemaps[i++], exportId);
-			lib.deleteItem(id);
+			//lib.deleteItem(id);
 		}
 	}
 
@@ -924,13 +916,14 @@ function parseFrames(frames, layerIndex, timeline)
 	{
 		var frame = frames[f];
 		var isKeyframe = (f === frame.startFrame);
-		var isTweenedFrame = frame.tweenType != "none";
-		var canBeBaked = bakedTweens && frame.tweenObj != null;
+		var isTweenedFrame = (frame.tweenType != "none"); // TODO: implement shape tweens
+		var canBeBaked = bakedTweens && isTweenedFrame && frame.tweenObj != null;
 		
 		// setup for baked tweens crap
-		if (curTweenMatrix != null)
+		if (curTweenFrame > -1)
 		{
 			curTweenMatrix = null;
+			curTweenShape = null;
 			curTweenColorTransform = null;
 			curTweenFilters = null;
 			curTweenFrame = -1;
@@ -1118,15 +1111,31 @@ var startTweenElements;
 var curTweenMatrix;
 var curTweenColorTransform;
 var curTweenFilters;
+var curTweenShape;
 var curTweenFrame;
 
 function setupBakedTween(frame, frameIndex)
 {
+	var tweenType = frame.tweenType;
 	var frameOffset = (frameIndex - frame.startFrame);
-	curTweenMatrix = frame.tweenObj.getGeometricTransform(frameOffset);
-	curTweenColorTransform = frame.tweenObj.getColorTransform(frameOffset);
-	curTweenFilters = frame.tweenObj.getFilters(frameOffset);
+	
 	curTweenFrame = frameOffset;
+
+	if (tweenType !== "shape")
+	{
+		curTweenMatrix = frame.tweenObj.getGeometricTransform(frameOffset);
+		curTweenColorTransform = frame.tweenObj.getColorTransform(frameOffset);
+		curTweenFilters = frame.tweenObj.getFilters(frameOffset);
+	}
+	else
+	{
+		curTweenShape = frame.tweenObj.getShape(frameOffset);
+	}
+}
+
+function drawShape(shape)
+{
+
 }
 
 function parseElements(elements, frameIndex, layerIndex, timeline)
@@ -1189,7 +1198,7 @@ function parseElements(elements, frameIndex, layerIndex, timeline)
 
 					break;
 					case "bitmap":
-						parseBitmapInstance(element);
+						parseBitmapInstance(element, timeline, layerIndex, frameIndex, e);
 					break;
 					// TODO: add missing element instance types
 					case "embedded video": break;
@@ -1320,11 +1329,13 @@ function parseTextInstance(text)
 }
 
 var cachedMatrices;
+var cachedBitmaps;
 
-// TODO: remove the item type from queue and push the same way as one-frame symbols
-function parseBitmapInstance(bitmap)
+function parseBitmapInstance(bitmap, timeline, layerIndex, frameIndex, elemIndex)
 {
 	var item = bitmap.libraryItem;
+	var name = item.name;
+
 	var matrix = cloneMatrix(bitmap.matrix);
 	var scale = getMatrixScale(item.hPixels, item.vPixels);
 
@@ -1334,8 +1345,17 @@ function parseBitmapInstance(bitmap)
 		matrix.d *= scale;
 	}
 
-	var itemIndex = pushItemSpritemap(item);
-	parseAtlasInstance(matrix, itemIndex);
+	if (cachedBitmaps[name] != null)
+	{
+		parseAtlasInstance(matrix, cachedBitmaps[name]);
+		return;
+	}
+
+	cachedBitmaps[name] = smIndex;
+	pushElementsFromFrame(timeline, layerIndex, frameIndex, [elemIndex]);
+	cleanElement(TEMP_LAYER.frames[smIndex].elements[elemIndex]);
+	parseAtlasInstance(matrix, smIndex);
+	smIndex++;
 }
 
 function parseShape(timeline, layerIndex, frameIndex, elementIndices)
@@ -1595,12 +1615,23 @@ function getFrameBounds(timeline, frameIndex)
 		return bounds === 0 ? {left: 0, top: 0, right: 0, bottom: 0} : bounds;
 	}
 
+	if (timeline.layerCount == 1) {
+		var layer = timeline.layers[0];
+		var frame = layer.frames[frameIndex];
+		if (frame.elements.length == 1)
+		{
+			return frame.elements[0].objectSpaceBounds;
+		}
+	}
+
 	var minX = Number.POSITIVE_INFINITY;
 	var minY = Number.POSITIVE_INFINITY;
 	var maxX = Number.NEGATIVE_INFINITY;
 	var maxY = Number.NEGATIVE_INFINITY;
 
+	var foundElements = 0;
 	var l = 0;
+
 	while (l < timeline.layerCount)
 	{
 		var layer = timeline.layers[l++];	
@@ -1613,6 +1644,7 @@ function getFrameBounds(timeline, frameIndex)
 		while (e < elems.length)
 		{
 			var elem = elems[e++];
+			foundElements++;
 
 			switch (elem.elementType)
 			{
@@ -1634,27 +1666,16 @@ function getFrameBounds(timeline, frameIndex)
 		}
 	}
 
+	if (foundElements <= 0) {
+		return {left: 0, top: 0, right: 0, bottom: 0}
+	}
+
 	return {
 		left: minX,
 		top: minY,
 		right: maxX,
 		bottom: maxY
 	}
-}
-
-function pushItemSpritemap(item)
-{
-	var name = "ITEM_" + item.name;
-	var index = frameQueue.indexOf(name);
-
-	if (index == -1) {
-		TEMP_TIMELINE.insertBlankKeyframe(smIndex);
-		frameQueue.push(name);
-		smIndex++;
-		return frameQueue.length - 1;
-	}
-
-	return index;
 }
 
 function pushShapeSpritemap(timeline, layerIndex, frameIndex, elementIndices)
@@ -1729,7 +1750,7 @@ function pushShapeSpritemap(timeline, layerIndex, frameIndex, elementIndices)
 
 function pushElement(elemIndices)
 {
-	frameQueue.push("ELEMENT_" + String(elemIndices));
+	frameQueue.push(String(elemIndices));
 }
 
 var instanceSizes;
