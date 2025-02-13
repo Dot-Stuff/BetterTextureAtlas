@@ -478,7 +478,7 @@ function exportAtlas(symbolNames)
 			var exportId = (i == 0) ? 1 : Math.abs(i - spritemaps.length - 1);
 
 			exportSpritemap(id, path, spritemaps[i++], exportId);
-			//lib.deleteItem(id);
+			lib.deleteItem(id);
 		}
 	}
 
