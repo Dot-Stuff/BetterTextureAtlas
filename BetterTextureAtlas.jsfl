@@ -817,47 +817,51 @@ function isOneFrame(itemTimeline)
 		}
 	}
 	else // "Advanced" one frame check, maybe should make it a setting because i can see this being a bit costy
-	{	
-		var isBakeableTimeline = function (targetKeyframe, layers)
-		{
-			var l = 0;
-			while (l < layers.length)
-			{
-				var layer = layers[l++];
-				var f = 0;
-				while (f < layer.frames.length)
-				{
-					var frame = layer.frames[f++];
-
-					// Has more than one keyframe
-					if (frame.startFrame !== targetKeyframe)
-						return false;
-
-					var e = 0;
-					while (e < frame.elements.length) {
-						var element = frame.elements[e++];
-						if (element.elementType == "instance" && element.instanceType == "symbol")
-						{
-							// Has changing graphics
-							if (element.symbolType == "graphic" && element.libraryItem.timeline.frameCount > 1)
-								return false;
-
-							// Has blendMode effects
-							if (element.blendMode != "normal")
-								return false;
-						}
-					}
-				}
-			}
-			return true;
-		}
-
+	{
 		var startFrame = layers[0].frames[0].startFrame;
-		result = isBakeableTimeline(startFrame, layers);
+		result = isBakeableTimeline(startFrame, itemTimeline);
 	}
 
 	cachedOneFrames[id] = result;
 	return result;
+}
+
+function isBakeableTimeline(targetKeyframe, timeline)
+{
+	var l = 0;
+	var layers = timeline.layers;
+	while (l < layers.length)
+	{
+		var layer = layers[l++];
+		var f = 0;
+		while (f < layer.frames.length)
+		{
+			var frame = layer.frames[f++];
+
+			// Has more than one keyframe
+			if (frame.startFrame !== targetKeyframe)
+				return false;
+
+			var e = 0;
+			while (e < frame.elements.length) {
+				var element = frame.elements[e++];
+				if (element.elementType == "instance" && element.instanceType == "symbol")
+				{
+					// Has blend mode filter, dont bake
+					if (element.blendMode != "normal")
+						return false;
+					
+					// Check if element can be cached in one frame
+					if (element.symbolType == "graphic") {
+						if (!isOneFrame(element.libraryItem.timeline))
+							return false;
+					}
+				}
+			}
+		}
+	}
+
+	return true;
 }
 
 function parseSymbol(symbol)
