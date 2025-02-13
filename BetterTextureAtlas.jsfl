@@ -219,6 +219,7 @@ function initVars()
 	cachedMatrices = [];
 	cachedBitmaps = [];
 	instanceSizes = [];
+	cachedOneFrames = [];
 
 	dictionary = [];
 	bakedDictionary = [];
@@ -340,14 +341,12 @@ function exportAtlas(symbolNames)
 				element.skewX = 0;
 				element.skewY = 0;
 
-				var targetX = Math.round(element.width / matrix.a) / element.width;
-				var targetY = Math.round(element.height / matrix.d) / element.height;
+				// Round the pixel for antialiasing reasons
+				var targetX = Math.ceil(element.width / matrix.a) / element.width;
+				var targetY = Math.ceil(element.height / matrix.d) / element.height;
 
 				element.scaleX = targetX;
 				element.scaleY = targetY;
-				
-				//element.scaleX = 1 / matrix.a;
-				//element.scaleY = 1 / matrix.d;
 
 				if (element.blendMode != null)
 					element.blendMode = "normal";
@@ -390,13 +389,6 @@ function exportAtlas(symbolNames)
 						doc.selection = [element];
 						doc.setFilters(new Array(0));
 					}
-				}
-				else
-				{
-					// antialiasing fix
-					//element.width = Math.round()
-					//element.width = Math.round(element.width);
-					//element.height = Math.round(element.height);
 				}
 			}
 			else if (flversion > 12 || element.elementType != "shape") // Half-assed fix for broken shape cleanup on CS6, give it a look later
@@ -794,19 +786,78 @@ function pushOneFrameSymbol(symbolInstance, timeline, layerIndex, frameIndex, el
 	smIndex++;
 }
 
+var cachedOneFrames;
+
 function isOneFrame(itemTimeline)
 {
 	if (!bakeOneFR)
 		return false;
+
+	var id = itemTimeline.name;
+
+	if (cachedOneFrames[id] != null)
+		return cachedOneFrames[id];
+
+	var result = false;
+	var layers = itemTimeline.layers;
 	
-	if (itemTimeline.frameCount === 1)
+	if (itemTimeline.frameCount === 1) // Basic one frame check
 	{
-		return true;
+		result = true;
+
+		// Check for blends
+		var l = 0;
+		while (l < layers.length) {
+			var elem = layers[l++].frames[0].elements[0];
+			if (elem != null && elem.elementType == "instance" && elem.instanceType == "symbol" && elem.blendMode != "normal")
+			{
+				result = false;
+				break;
+			}
+		}
+	}
+	else // "Advanced" one frame check, maybe should make it a setting because i can see this being a bit costy
+	{	
+		var isBakeableTimeline = function (targetKeyframe, layers)
+		{
+			var l = 0;
+			while (l < layers.length)
+			{
+				var layer = layers[l++];
+				var f = 0;
+				while (f < layer.frames.length)
+				{
+					var frame = layer.frames[f++];
+
+					// Has more than one keyframe
+					if (frame.startFrame !== targetKeyframe)
+						return false;
+
+					var e = 0;
+					while (e < frame.elements.length) {
+						var element = frame.elements[e++];
+						if (element.elementType == "instance" && element.instanceType == "symbol")
+						{
+							// Has changing graphics
+							if (element.symbolType == "graphic" && element.libraryItem.timeline.frameCount > 1)
+								return false;
+
+							// Has blendMode effects
+							if (element.blendMode != "normal")
+								return false;
+						}
+					}
+				}
+			}
+			return true;
+		}
+
+		var startFrame = layers[0].frames[0].startFrame;
+		result = isBakeableTimeline(startFrame, layers);
 	}
 
-	// TODO: also bake based on one keyframe + all being shapes
-
-	return false;
+	cachedOneFrames[id] = result;
+	return result;
 }
 
 function parseSymbol(symbol)
@@ -1381,7 +1432,7 @@ function parseShape(timeline, layerIndex, frameIndex, elementIndices)
 	}
 
 	var scale = getMatrixScale(shapeRight - shapeLeft, shapeBottom - shapeTop);
-	var mtx = makeMatrix(scale, 0, 0, scale, Math.round(shapeLeft), Math.round(shapeTop));
+	var mtx = makeMatrix(scale, 0, 0, scale, shapeLeft, shapeTop);
 
 	resizeInstanceMatrix(curSymbol, mtx);
 	parseAtlasInstance(mtx, atlasIndex);
