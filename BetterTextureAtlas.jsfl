@@ -805,7 +805,16 @@ function isOneFrame(itemTimeline)
 	{
 		result = true;
 
-		// Check for blends
+		// Check for blends if the symbol is composed of only one layer
+		if (itemTimeline.layerCount === 1) {
+			var elem = layers[0].frames[0].elements[0];
+			if (elem != null && elem.elementType == "instance" && elem.instanceType == "symbol" && elem.blendMode != "normal")
+			{
+				result = false;
+			}
+		}
+		
+		/* // Im not entirely sure 
 		var l = 0;
 		while (l < layers.length) {
 			var elem = layers[l++].frames[0].elements[0];
@@ -814,7 +823,7 @@ function isOneFrame(itemTimeline)
 				result = false;
 				break;
 			}
-		}
+		}*/
 	}
 	else // "Advanced" one frame check, maybe should make it a setting because i can see this being a bit costy
 	{
