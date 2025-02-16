@@ -357,7 +357,7 @@ function exportAtlas(symbolNames)
 
 					if (bakedFilters)
 					{
-						var rescaleFilters = (matrix.a > 1.01 || matrix.d > 1.01);
+						var rescaleFilters = (Math.floor(matrix.a * 100) != 100) || (Math.floor(matrix.d * 100) != 100);
 						if (rescaleFilters || tweenFilters != null)
 						{
 							doc.selectNone();
@@ -389,8 +389,8 @@ function exportAtlas(symbolNames)
 				else
 				{
 					// Round the pixel for antialiasing reasons
-					var targetX = Math.ceil(element.width / matrix.a) / element.width;
-					var targetY = Math.ceil(element.height / matrix.d) / element.height;
+					var targetX = Math.floor(element.width / matrix.a) / element.width;
+					var targetY = Math.floor(element.height / matrix.d) / element.height;
 
 					element.scaleX = targetX;
 					element.scaleY = targetY;
@@ -1608,7 +1608,6 @@ function pushElementSpritemap(timeline, layerIndex, frameIndex, elementIndices, 
 		bakedTweenedFilters[smIndex] = curTweenFilters;
 	
 	var rect = getElementRect(elem, frameFilters, elementFilters);
-
 	var matScale = getMatrixScale(rect.right - rect.left, rect.bottom - rect.top);
 	var matScaleX = (elem.scaleX < 1) ? (1 / elem.scaleX) * matScale : matScale;
 	var matScaleY = (elem.scaleY < 1) ? (1 / elem.scaleY) * matScale : matScale;
