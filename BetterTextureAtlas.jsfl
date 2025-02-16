@@ -299,14 +299,14 @@ function exportAtlas(symbolNames)
 
 	// Write Animation.json
 	FLfile.write(path + "/Animation.json", generateAnimation(symbol));
+	TEMP_LAYER.layerType = "normal";
 
 	lib.editItem(TEMP_SPRITEMAP);
 
 	var i = 0;
 	while (i < frameQueue.length)
 	{
-		var queuedFrame = frameQueue[i];
-		var elemIndices = queuedFrame.replace("[","").replace("]","").split(",");
+		var elemIndices = frameQueue[i];
 		var matrix = cachedMatrices[i];
 		var frame = TEMP_LAYER.frames[i];
 		
@@ -332,7 +332,7 @@ function exportAtlas(symbolNames)
 		while (e < elements.length)
 		{
 			var element = elements[e];
-			var exportElem = elemIndices.indexOf(String(e)) !== -1;
+			var exportElem = elemIndices.indexOf(e) !== -1;
 
 			if (exportElem)
 			{
@@ -340,13 +340,6 @@ function exportAtlas(symbolNames)
 				element.rotation = 0;
 				element.skewX = 0;
 				element.skewY = 0;
-
-				// Round the pixel for antialiasing reasons
-				var targetX = Math.ceil(element.width / matrix.a) / element.width;
-				var targetY = Math.ceil(element.height / matrix.d) / element.height;
-
-				element.scaleX = targetX;
-				element.scaleY = targetY;
 
 				if (element.blendMode != null)
 					element.blendMode = "normal";
@@ -359,6 +352,9 @@ function exportAtlas(symbolNames)
 						
 				if (filters != undefined && filters.length > 0)
 				{
+					element.scaleX = 1 / matrix.a;
+					element.scaleY = 1 / matrix.d;
+
 					if (bakedFilters)
 					{
 						var rescaleFilters = (matrix.a > 1.01 || matrix.d > 1.01);
@@ -389,6 +385,15 @@ function exportAtlas(symbolNames)
 						doc.selection = [element];
 						doc.setFilters(new Array(0));
 					}
+				}
+				else
+				{
+					// Round the pixel for antialiasing reasons
+					var targetX = Math.ceil(element.width / matrix.a) / element.width;
+					var targetY = Math.ceil(element.height / matrix.d) / element.height;
+
+					element.scaleX = targetX;
+					element.scaleY = targetY;
 				}
 			}
 			else if (flversion > 12 || element.elementType != "shape") // Half-assed fix for broken shape cleanup on CS6, give it a look later
@@ -1578,7 +1583,7 @@ function pushElementsFromFrame(timeline, layerIndex, frameIndex, elementIndices)
 	if (elemFrame.tweenType != "none")
 		elemFrame.tweenType = "none";
 	
-	pushElement(elementIndices);
+	frameQueue.push(elementIndices);
 }
 
 function pushElementSpritemap(timeline, layerIndex, frameIndex, elementIndices, frameFilters)
@@ -1810,11 +1815,6 @@ function pushShapeSpritemap(timeline, layerIndex, frameIndex, elementIndices)
 	}
 
 	return shapes;
-}
-
-function pushElement(elemIndices)
-{
-	frameQueue.push(String(elemIndices));
 }
 
 var instanceSizes;
