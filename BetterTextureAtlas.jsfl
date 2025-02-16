@@ -30,6 +30,7 @@ var resolution = 1.0;
 var version = SaveData.prototype.version;
 var ShpPad = 0;
 var BrdPad = 0;
+var bitDepth = 32;
 var AllRot = true;
 ///// ADDITIONAL BIZZ
 var inlineSym = false;
@@ -138,6 +139,7 @@ function _main()
 	optAn = xPan.OptAn;
 	flatten = xPan.FlatSke;
 	AllRot = xPan.Rotate;
+	bitDepth = (xPan.imgFormat == "PNG 8 bits") ? 8 : 32;
 
 	var dataAdd = FLfile.read(fl.configURI + "Commands/bta_src/saveADDBTA.txt").split("\n");
 	inlineSym = dataAdd[0] == "true";
@@ -313,7 +315,7 @@ function exportAtlas(symbolNames)
 		TEMP_TIMELINE.currentLayer = 0;
 		TEMP_TIMELINE.currentFrame = i;
 
-		if (flversion > 12)
+		if (flversion > 12 && doc.selection.length > 0)
 			doc.selectNone();
 
 		var selection = new Array();
@@ -550,7 +552,7 @@ function divideSpritemap(smData, symbol)
 function exportSpritemap(id, exportPath, smData, index)
 {
 	var smPath = exportPath + "/spritemap" + index;
-	var smSettings = {format:"png", bitDepth:32, backgroundColor:"#00000000"};
+	var smSettings = {format: "png", bitDepth: bitDepth, backgroundColor: "#00000000"};
 	var sm = smData.sm;
 
 	sm.exportSpriteSheet(smPath, smSettings, true);
