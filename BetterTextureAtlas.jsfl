@@ -140,6 +140,7 @@ function _main()
 	flatten = xPan.FlatSke;
 	AllRot = xPan.Rotate;
 	bitDepth = (xPan.imgFormat == "PNG 8 bits") ? 8 : 32;
+	algorithm = (xPan.algorithm == "Basic") ? "basic" : "maxRects";
 
 	var dataAdd = FLfile.read(fl.configURI + "Commands/bta_src/saveADDBTA.txt").split("\n");
 	inlineSym = dataAdd[0] == "true";
