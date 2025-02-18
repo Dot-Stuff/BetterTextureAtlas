@@ -1,4 +1,4 @@
-﻿﻿var included = {};
+﻿var included = {};
 fl.include = function(file) {
 	if (included[file]) { return; }
 		included[file] = true;
@@ -279,14 +279,13 @@ function exportAtlas(symbolNames)
 	}
 
 	TEMP_ITEM = initBtaItem(TEMP_SPRITEMAP);
-
 	TEMP_TIMELINE = TEMP_ITEM.timeline;
 	TEMP_LAYER = TEMP_TIMELINE.layers[0];
 	TEMP_TIMELINE.removeFrames(0,0);
 
 	ogSym = symbol;
 
-	// This is a temp fix for CS6 until i figure out why the file text box is broken
+	// Failsafe for invalid export paths
 	if (path.indexOf("unknown|") !== -1)
 	{
 		var defaultOutputFolder = fl.configURI + "Commands/bta_output";
@@ -697,8 +696,7 @@ function generateAnimation(symbol)
 			dictIndex = 0;
 			while (dictIndex < bakedDictionary.length)
 			{
-				push(bakedDictionary[dictIndex]);
-				dictIndex += 2;
+				push(bakedDictionary[dictIndex++].json);
 				push(',');
 			}
 
@@ -746,8 +744,8 @@ function generateAnimation(symbol)
 			dictIndex = 0;
 			while (dictIndex < bakedDictionary.length)
 			{
-				pushSymbolLibrary(bakedDictionary[dictIndex + 1], bakedDictionary[dictIndex]);
-				dictIndex += 2;
+				var symbol = bakedDictionary[dictIndex++];
+				pushSymbolLibrary(symbol.name, symbol.json);
 			}
 		}
 	}
@@ -1037,7 +1035,7 @@ function parseFrames(frames, layerIndex, timeline)
 				{
 					jsonVar(key("ease", "ES"), frame.tweenEasing);
 				}
-				
+
 				switch (frame.tweenType)
 				{
 					case "motion": // "classic"
@@ -1054,6 +1052,9 @@ function parseFrames(frames, layerIndex, timeline)
 					break;
 					case "shape":
 					jsonStrEnd(key("type", "T"), key("shape", "SHP"));
+					break;
+					case "IK pose":
+						removeTrail(2); // TODO: look where the IK pose tween variables are stored
 					break;
 				}	
 
@@ -1216,9 +1217,14 @@ function parseElements(elements, frameIndex, layerIndex, timeline)
 
 	var e = 0;
 	var shapeQueue = [];
+	var layer = timeline.layers[layerIndex];
 
-	var frameFilters = getFrameFilters(timeline.layers[layerIndex], frameIndex);
+	var frameFilters = getFrameFilters(layer, frameIndex);
 	var hasFrameFilters = (bakedFilters && frameFilters.length > 0);
+	
+	var animType = layer.animationType;
+	if (animType == null)
+		animType = "none"; // IK pose
 
 	while (e < elements.length)
 	{
@@ -1260,7 +1266,7 @@ function parseElements(elements, frameIndex, layerIndex, timeline)
 					}
 					else
 					{
-						if (isOneFrame(element.libraryItem.timeline))
+						if (isOneFrame(element.libraryItem.timeline) && animType == "none")
 						{
 							pushOneFrameSymbol(element, timeline, layerIndex, frameIndex, e);
 						}
@@ -1659,9 +1665,7 @@ function pushElementSpritemap(timeline, layerIndex, frameIndex, elementIndices, 
 	if (inlineSym)
 		push('}');
 
-	bakedDictionary.push(closeJson());
-	bakedDictionary.push(itemName);
-
+	bakedDictionary.push({name: itemName, json: closeJson()});
 	parseSymbolInstance(elem, itemName);
 }
 
@@ -1930,21 +1934,30 @@ function parseSymbolInstance(instance, itemName)
 	);
 
 	var colorMode = instance.colorMode;
+	var colorValues = instance;
 	if (bakedTweens && curTweenColorTransform != null)
 	{
 		colorMode = "advanced"; // baking the color mode to advanced because im too tired for this shit
 	}
 
-	if (colorMode != "none")// && !(bakedInstance && bakedFilters))
+	var validColor = colorMode != "none";
+	if (validColor)
+	{
+		if (bakedTweens && curTweenColorTransform != null)
+			colorValues = curTweenColorTransform;
+
+		if (colorMode == "advanced")
+		{
+			validColor =
+			(colorValues.colorRedPercent != 100) || (colorValues.colorGreenPercent != 100) || (colorValues.colorBluePercent != 100) || (colorValues.colorAlphaPercent != 100) ||
+			(colorValues.colorRedAmount != 0) || (colorValues.colorGreenAmount != 0) || (colorValues.colorBlueAmount != 0) || (colorValues.colorAlphaAmount != 0);
+		}
+	}
+
+	if (validColor)// && !(bakedInstance && bakedFilters))
 	{
 		jsonHeader(key("color", "C"));
 		var modeKey = key("mode", "M");
-
-		var colorValues = instance;
-		if (bakedTweens && curTweenColorTransform != null)
-		{
-			colorValues = curTweenColorTransform;
-		}
 
 		switch (colorMode)
 		{
@@ -2272,7 +2285,7 @@ function traceArray(array)
 	trace(array.join(", "));
 }
 
-function traceFields(value)
+function traceFields(value, makeNewLines)
 {
 	var traceCrap = "";
 	for (var field in value)
@@ -2281,6 +2294,8 @@ function traceFields(value)
 			continue;
 
 		traceCrap += field + ": " + value[field] + ", ";
+		if (makeNewLines)
+			traceCrap += "\n";
 	}
 	trace(traceCrap);
 }
