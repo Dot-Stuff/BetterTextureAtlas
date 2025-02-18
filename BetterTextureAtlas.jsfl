@@ -93,10 +93,9 @@ function _main()
 	var optAn = "true";
 	var flatten = "false";
 
-	//fl.runScript(fl.configURI + "Commands/bta_src/save.scr", "setupSaves");
 	SaveData.setupSaves();
 
-	var rawXML = fl.runScript(fl.configURI + "Commands/bta_src/save.scr", "xmlData", [symbols]);
+	var rawXML = fl.runScript(fl.configURI + "Commands/bta_src/save.sjs", "xmlData", [symbols]);
 
 	var xPan = SaveData.openXMLFromString(rawXML);
 
@@ -809,27 +808,8 @@ function isOneFrame(itemTimeline)
 	
 	if (itemTimeline.frameCount === 1) // Basic one frame check
 	{
-		result = true;
-
-		// Check for blends if the symbol is composed of only one layer
-		if (itemTimeline.layerCount === 1) {
-			var elem = layers[0].frames[0].elements[0];
-			if (elem != null && elem.elementType == "instance" && elem.instanceType == "symbol" && elem.blendMode != "normal")
-			{
-				result = false;
-			}
-		}
-		
-		/* // Im not entirely sure 
-		var l = 0;
-		while (l < layers.length) {
-			var elem = layers[l++].frames[0].elements[0];
-			if (elem != null && elem.elementType == "instance" && elem.instanceType == "symbol" && elem.blendMode != "normal")
-			{
-				result = false;
-				break;
-			}
-		}*/
+		// TODO: maybe should make it a bit more advanced and check for blend mode usage
+		result = (itemTimeline.layerCount == 1) ? layers[0].frames[0].elements.length > 1 : true;
 	}
 	else // "Advanced" one frame check, maybe should make it a setting because i can see this being a bit costy
 	{
