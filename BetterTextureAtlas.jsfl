@@ -2440,13 +2440,38 @@ function legacySpritesheet(shapeLength, sheetFrame)
 			elem.y = Math.floor(curY - ogElem.top);
 		}
 	}
+
+	var sortedIndices = [];
+
+	i = 0;
+	while (i < shapeLength) {
+		var elem = TEMP_LAYER.frames[i].elements[0];
+		sortedIndices.push({index: i, width: elem.width, height: elem.height});
+		i++;
+	}
+
+	sortedIndices.sort(function(a, b) {
+		if (a.height === b.height) {
+			return a.width - b.width;
+		}
+		return a.height - b.height;
+	});
     
     i = 0;
     while (i < shapeLength)
 	{   
-		var ogElem = TEMP_LAYER.frames[i].elements[0];
-		elem = sheetFrame.elements[i];
-		elem.firstFrame = i;
+		var elemIndex = sortedIndices[i].index;
+		var ogElem = TEMP_LAYER.frames[elemIndex].elements[0];
+
+		//var ogElem = TEMP_LAYER.frames[i].elements[0];
+		if (ogElem == null) {
+			packedRectangles[elemIndex] = {x:0,y:0,width:1,height:1};
+			i++;
+			continue;
+		}
+		
+		elem = sheetFrame.elements[elemIndex];
+		elem.firstFrame = elemIndex;
 		i++;
 
 		isFiltered = (ogElem.filters != null && ogElem.filters.length > 0);
@@ -2460,18 +2485,19 @@ function legacySpritesheet(shapeLength, sheetFrame)
 		var packedRect = {
             x: Math.floor(curX),
             y: Math.floor(curY),
-            width: Math.floor(rectWidth) + 1,
-            height: Math.floor(rectHeight) + 1
+            width: Math.floor(rectWidth),
+            height: Math.floor(rectHeight)
         }
 
-		packedRectangles.push(packedRect);
+		packedRectangles[elemIndex] = packedRect;
 
 		curX += Math.floor(rectWidth + ShpPad + 1);
 		
 		if (curX > 2880) {
-			curX = 0;
-			curY += maxHeight;
+			curX = BrdPad;
+			curY += maxHeight + ShpPad;
 			sheetWidth = 2880;
+			maxHeight = rectHeight;
 
 			updateElemPos(ogElem, elem);
 			packedRect.x = Math.floor(curX);
