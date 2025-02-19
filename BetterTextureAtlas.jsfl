@@ -439,7 +439,7 @@ function exportAtlas(symbolNames)
 		var ogWidth = doc.width;
 		var ogHeight = doc.height;
 
-		var sheet = cs4Spritesheet(shapeLength, sheetFrame);
+		var sheet = legacySpritesheet(shapeLength, sheetFrame);
 		doc.width = Math.floor(sheet.width);
 		doc.height = Math.floor(sheet.height);
 
@@ -2376,7 +2376,7 @@ function renameFile(path, newPath)
 	FLfile.remove(path);
 }
 
-function cs4Spritesheet(shapeLength, sheetFrame)
+function legacySpritesheet(shapeLength, sheetFrame)
 {
     var curX = BrdPad;
     var curY = BrdPad;
@@ -2385,23 +2385,59 @@ function cs4Spritesheet(shapeLength, sheetFrame)
     var maxSheetWidth = 0;
     var maxSheetHeight = 0;
     var packedRectangles = [];
-
 	var elem;
-	var rect;
-
-	var moveElement = function (x, y) {
-		elem.x = x - (rect.left - (rect.right * 0.5)) * elem.scaleX;
-		elem.y = y - (rect.top - (rect.bottom * 0.5)) * elem.scaleY;
-	}
 
 	lib.addItemToDocument({x: 0, y: 0}, TEMP_SPRITEMAP);
+	var tl = doc.getTimeline();
+
+	var maxCrap = 0;
 
     while (sheetFrame.elements.length < shapeLength)
 	{
-		doc.selectNone();
-		doc.selection = sheetFrame.elements;
-		doc.clipCopy();
-		doc.clipPaste();
+		if (maxCrap >= 4)
+		{
+			doc.clipPaste();
+		}
+		else
+		{
+			tl.currentLayer = 0;
+			tl.currentFrame = 0;
+	
+			var elems = tl.layers[0].frames[0].elements;
+			var selection = new Array();
+	
+			while (selection.length < elems.length)
+				selection[selection.length] = elems[selection.length];
+	
+			doc.selectNone();
+			doc.selection = selection;
+
+			doc.clipCopy();
+			doc.clipPaste();
+			doc.selectAll();
+			maxCrap = doc.selection.length;
+		}
+	}
+
+	var updateElemPos = function(ogElem, elem) {
+		if (ogElem.elementType != "shape") {
+			
+			var ogElemPos = {x: ogElem.x, y: ogElem.y};
+
+			if (ogElem.symbolType == "movie clip") {
+				if (ogElem.filters != null && ogElem.filters.length > 0) {
+					ogElemPos.x = rect.left * ogElem.scaleX;
+					ogElemPos.y = rect.top * ogElem.scaleY;
+				}
+			}
+			
+			elem.x = Math.floor(curX - ogElemPos.x);
+			elem.y = Math.floor(curY - ogElemPos.y);
+		}
+		else {
+			elem.x = Math.floor(curX - rect.left);
+			elem.y = Math.floor(curY - rect.top);
+		}
 	}
     
     i = 0;
@@ -2412,40 +2448,41 @@ function cs4Spritesheet(shapeLength, sheetFrame)
 		elem.firstFrame = i;
 		i++;
 
-		rect = getElementRect(ogElem);
-		var rectWidth = rect.right;
-		var rectHeight = rect.bottom;
+		rect = getElementRect(ogElem);//ogElem.objectSpaceBounds;
+		
+		var rectWidth = rect.right - rect.left;
+		var rectHeight = rect.bottom - rect.top;
 
-		moveElement(curX, curY);
+		updateElemPos(ogElem, elem);
 
 		var packedRect = {
             x: Math.floor(curX),
             y: Math.floor(curY),
-            width: Math.floor(rectWidth),
-            height: Math.floor(rectHeight)
+            width: Math.floor(rectWidth) + 1,
+            height: Math.floor(rectHeight) + 1
         }
 
 		packedRectangles.push(packedRect);
-        
-        if (curX + rectWidth + ShpPad > 2880)
-		{
-            curX = BrdPad;
-            curY += maxHeight + ShpPad;
-            maxHeight = 0;
 
+		curX += Math.floor(rectWidth + ShpPad + 1);
+		
+		if (curX > 2880) {
+			curX = 0;
+			curY += maxHeight;
+			sheetWidth = 2880;
+
+			updateElemPos(ogElem, elem);
 			packedRect.x = Math.floor(curX);
 			packedRect.y = Math.floor(curY);
+			curX += Math.floor(rectWidth + ShpPad + 1);
+		}
+		else
+		{
+			maxHeight = Math.max(maxHeight, rectHeight);
+			sheetWidth = Math.max(sheetWidth, curX);
+		}
 
-			moveElement(curX, curY);
-			curX += rectWidth + ShpPad;
-        }
-		else {
-            curX += rectWidth + ShpPad;
-            maxHeight = Math.max(maxHeight, rectHeight);
-            sheetWidth = Math.max(sheetWidth, curX);
-        }
-
-        maxSheetWidth = Math.max(maxSheetWidth, sheetWidth);
+		maxSheetWidth = Math.max(maxSheetWidth, sheetWidth);
         maxSheetHeight = Math.max(maxSheetHeight, curY + maxHeight);
     }
 
@@ -2460,7 +2497,8 @@ function cs4Spritesheet(shapeLength, sheetFrame)
 			sheetFrame.elements[i++].selected = true;
 		}
 
-		doc.deleteSelection();
+		if (doc.selection.length > 0)
+			doc.deleteSelection();
 	}
 
 	initJson();
