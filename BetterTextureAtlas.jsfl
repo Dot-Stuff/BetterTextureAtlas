@@ -350,21 +350,23 @@ function exportAtlas(symbolNames)
 
 				var tweenFilters = bakedTweenedFilters[i];
 				var filters = tweenFilters != null ? tweenFilters : element.filters;
+				var isScaled = (Math.floor(matrix.a * 100) != 100) || (Math.floor(matrix.d * 100) != 100);
 						
 				if (filters != undefined && filters.length > 0)
 				{
-					element.scaleX = 1 / matrix.a;
-					element.scaleY = 1 / matrix.d;
+					if (isScaled) {
+						element.scaleX = 1 / matrix.a;
+						element.scaleY = 1 / matrix.d;
+					}
 
 					if (bakedFilters)
 					{
-						var rescaleFilters = (Math.floor(matrix.a * 100) != 100) || (Math.floor(matrix.d * 100) != 100);
-						if (rescaleFilters || tweenFilters != null)
+						if (isScaled || tweenFilters != null)
 						{
 							doc.selectNone();
 							doc.selection = [element];
 		
-							if (rescaleFilters) {
+							if (isScaled) {
 								forEachFilter(filters, function (filter) {
 									switch (filter.name)
 									{
@@ -387,7 +389,7 @@ function exportAtlas(symbolNames)
 						doc.setFilters(new Array(0));
 					}
 				}
-				else
+				else if (isScaled)
 				{
 					// Round the pixel for antialiasing reasons
 					var targetX = Math.floor(element.width / matrix.a) / element.width;
@@ -2137,18 +2139,6 @@ function parseFilters(filters)
 
 function makeMatrix(a, b, c, d, tx, ty) { return {a: a, b: b, c: c, d: d, tx: tx, ty: ty} }
 function cloneMatrix(mat) { return makeMatrix(mat.a, mat.b, mat.c, mat.d, mat.tx, mat.ty); }
-
-function concatMatrix(mat1, mat2)
-{
-	var concat = fl.Math.concatMatrix(mat1, mat2);
-	copyMatrix(mat1, concat);
-}
-
-function scaleMatrix(mat, scaleX, scaleY)
-{
-	concatMatrix(mat, makeMatrix(scaleX, 0, 0, scaleY, 0, 0));
-}
-
 function copyMatrix(m1, m2) {
 	m1.a = m2.a;
 	m1.b = m2.b;
