@@ -49,13 +49,13 @@ var instance = null;
 var resScale = 1.0;
 
 if (SaveData.version[0] <= 12)
-	alert("Even though it's functional, we still recommend using a newer version, such as Adobe Animate!");
+	alert("WARNING: Even though it's functional, we still recommend using a newer version, such as Adobe Animate!");
 
 function _main()
 {
 	if (doc == null)
 	{
-		alert("you need to be in an document in order to export the atlas");
+		alert("You need to be in an document in order to export the atlas");
 		return;
 	}
 
@@ -148,6 +148,12 @@ function _main()
 	bakeOneFR = dataAdd[3] == "true";
 	bakedFilters = dataAdd[4] == "true";
 	bakedTweens = dataAdd[5] == "true";
+
+	if (bakedTweens && flversion < 13)
+	{
+		bakedTweens = false;
+		trace("WARNING: Baked tweens is not supported on this flash version.\nTry using Flash Pro CC or newer.");
+	}
 	
 	var fileuri = xPan.saveBox.split("/").join("\\");
 	if (doc.path != null)
@@ -521,7 +527,7 @@ function divideSpritemap(smData, symbol)
 
 	if (framesLength === 1)
 	{
-		alert("ERROR: a shape couldnt fit inside the spritemap");
+		alert("ERROR: A shape couldn't fit inside the spritemap");
 		return;
 	}
 
