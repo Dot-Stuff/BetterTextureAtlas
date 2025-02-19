@@ -2385,7 +2385,9 @@ function legacySpritesheet(shapeLength, sheetFrame)
     var maxSheetWidth = 0;
     var maxSheetHeight = 0;
     var packedRectangles = [];
+	
 	var elem;
+	var isFiltered;
 
 	lib.addItemToDocument({x: 0, y: 0}, TEMP_SPRITEMAP);
 	var tl = doc.getTimeline();
@@ -2419,24 +2421,23 @@ function legacySpritesheet(shapeLength, sheetFrame)
 		}
 	}
 
-	var updateElemPos = function(ogElem, elem) {
+	var updateElemPos = function(ogElem, elem)
+	{
 		if (ogElem.elementType != "shape") {
 			
 			var ogElemPos = {x: ogElem.x, y: ogElem.y};
 
-			if (ogElem.symbolType == "movie clip") {
-				if (ogElem.filters != null && ogElem.filters.length > 0) {
-					ogElemPos.x = rect.left * ogElem.scaleX;
-					ogElemPos.y = rect.top * ogElem.scaleY;
-				}
+			if (isFiltered) {
+				ogElemPos.x = rect.left * ogElem.scaleX;
+				ogElemPos.y = rect.top * ogElem.scaleY;
 			}
 			
 			elem.x = Math.floor(curX - ogElemPos.x);
 			elem.y = Math.floor(curY - ogElemPos.y);
 		}
 		else {
-			elem.x = Math.floor(curX - rect.left);
-			elem.y = Math.floor(curY - rect.top);
+			elem.x = Math.floor(curX - ogElem.left);
+			elem.y = Math.floor(curY - ogElem.top);
 		}
 	}
     
@@ -2448,10 +2449,11 @@ function legacySpritesheet(shapeLength, sheetFrame)
 		elem.firstFrame = i;
 		i++;
 
-		rect = getElementRect(ogElem);//ogElem.objectSpaceBounds;
+		isFiltered = (ogElem.filters != null && ogElem.filters.length > 0);
+		rect = isFiltered ? getElementRect(ogElem) : ogElem.objectSpaceBounds;
 		
-		var rectWidth = rect.right - rect.left;
-		var rectHeight = rect.bottom - rect.top;
+		var rectWidth = isFiltered ? (rect.right - rect.left) : ogElem.width;
+		var rectHeight = isFiltered ? (rect.bottom - rect.top) : ogElem.height;
 
 		updateElemPos(ogElem, elem);
 
