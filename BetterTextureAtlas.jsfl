@@ -416,10 +416,7 @@ function exportAtlas(symbolNames)
 		if (selection.length > 0)
 		{
 			TEMP_TIMELINE.currentFrame = i;
-					
-			if (flversion > 12)
-				doc.selectNone();
-					
+			doc.selectNone();
 			doc.selection = selection;
 			doc.deleteSelection();
 		}
@@ -2388,6 +2385,7 @@ function legacySpritesheet(shapeLength, sheetFrame)
 	
 	var elem;
 	var isFiltered;
+	var isRotated;
 
 	lib.addItemToDocument({x: 0, y: 0}, TEMP_SPRITEMAP);
 	var tl = doc.getTimeline();
@@ -2431,6 +2429,10 @@ function legacySpritesheet(shapeLength, sheetFrame)
 				ogElemPos.x = rect.left * ogElem.scaleX;
 				ogElemPos.y = rect.top * ogElem.scaleY;
 			}
+
+			if (isRotated) {
+				ogElemPos.x -= ogElem.width;
+			}
 			
 			elem.x = Math.floor(curX - ogElemPos.x);
 			elem.y = Math.floor(curY - ogElemPos.y);
@@ -2444,9 +2446,27 @@ function legacySpritesheet(shapeLength, sheetFrame)
 	var sortedIndices = [];
 
 	i = 0;
-	while (i < shapeLength) {
+	while (i < shapeLength)
+	{
 		var elem = TEMP_LAYER.frames[i].elements[0];
-		sortedIndices.push({index: i, width: elem.width, height: elem.height});
+		if (elem == null)
+		{
+			sortedIndices.push({index: i, width: 1, height: 1, rotated: false});
+			i++;
+			continue;
+		}
+		
+		var rect = {index: i, width: elem.width, height: elem.height, rotated: false};
+
+		if (rect.height > rect.width)
+		{
+			var w = rect.width;
+			rect.width = rect.height;
+			rect.height = w;
+			rect.rotated = true;
+		}
+
+		sortedIndices.push(rect);
 		i++;
 	}
 
@@ -2456,16 +2476,20 @@ function legacySpritesheet(shapeLength, sheetFrame)
 		}
 		return a.height - b.height;
 	});
+
+	var maxSize = 8192; // CS6 upwards
+	if (flversion < 12) // 2880 limit on older versions
+		maxSize = 2880;
     
     i = 0;
     while (i < shapeLength)
 	{   
-		var elemIndex = sortedIndices[i].index;
+		var sortedElem = sortedIndices[i];
+		var elemIndex = sortedElem.index;
 		var ogElem = TEMP_LAYER.frames[elemIndex].elements[0];
 
-		//var ogElem = TEMP_LAYER.frames[i].elements[0];
 		if (ogElem == null) {
-			packedRectangles[elemIndex] = {x:0,y:0,width:1,height:1};
+			packedRectangles[elemIndex] = {x:0,y:0,width:1,height:1,rotated:false};
 			i++;
 			continue;
 		}
@@ -2474,8 +2498,13 @@ function legacySpritesheet(shapeLength, sheetFrame)
 		elem.firstFrame = elemIndex;
 		i++;
 
+		isRotated = sortedElem.rotated;
+		if (isRotated) {
+			ogElem.rotation += 90;
+		}
+
 		isFiltered = (ogElem.filters != null && ogElem.filters.length > 0);
-		rect = isFiltered ? getElementRect(ogElem) : ogElem.objectSpaceBounds;
+		rect = isFiltered ? getElementRect(ogElem) : (ogElem.objectSpaceBounds);
 		
 		var rectWidth = isFiltered ? (rect.right - rect.left) : ogElem.width;
 		var rectHeight = isFiltered ? (rect.bottom - rect.top) : ogElem.height;
@@ -2483,20 +2512,22 @@ function legacySpritesheet(shapeLength, sheetFrame)
 		updateElemPos(ogElem, elem);
 
 		var packedRect = {
-            x: Math.floor(curX),
-            y: Math.floor(curY),
-            width: Math.floor(rectWidth),
-            height: Math.floor(rectHeight)
-        }
+			x: Math.floor(curX-1),
+			y: Math.floor(curY-1),
+			width: Math.floor(rectWidth+1),
+			height: Math.floor(rectHeight+1),
+			rotated: sortedElem.rotated
+		}
 
 		packedRectangles[elemIndex] = packedRect;
 
 		curX += Math.floor(rectWidth + ShpPad + 1);
 		
-		if (curX > 2880) {
+		if (curX > maxSize)
+		{
 			curX = BrdPad;
 			curY += maxHeight + ShpPad;
-			sheetWidth = 2880;
+			sheetWidth = maxSize;
 			maxHeight = rectHeight;
 
 			updateElemPos(ogElem, elem);
@@ -2537,8 +2568,9 @@ function legacySpritesheet(shapeLength, sheetFrame)
 	{	
 		var rect = packedRectangles[i];
 		push('{"SPRITE":{"name":"' + i +
-			'","x":' + rect.x + ',"y":' + rect.y + ',"w":' + rect.width + ',"h":' + rect.height +
-			',"rotated":' + false +
+			'","x":' + rect.x + ',"y":' + rect.y +
+			',"w":' + rect.width + ',"h":' + rect.height +
+			',"rotated":' + rect.rotated +
 		'}},\n');
 		i++;
 	}
