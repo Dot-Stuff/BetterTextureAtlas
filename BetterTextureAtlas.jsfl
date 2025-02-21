@@ -309,6 +309,7 @@ function exportAtlas(symbolNames)
 	TEMP_LAYER.layerType = "normal";
 
 	lib.editItem(TEMP_SPRITEMAP);
+	TEMP_TIMELINE.currentLayer = 0;
 
 	var i = 0;
 	while (i < frameQueue.length)
@@ -317,7 +318,6 @@ function exportAtlas(symbolNames)
 		var matrix = cachedMatrices[i];
 		var frame = TEMP_LAYER.frames[i];
 		
-		TEMP_TIMELINE.currentLayer = 0;
 		TEMP_TIMELINE.currentFrame = i;
 
 		if (flversion > 12 && doc.selection.length > 0)
@@ -356,10 +356,13 @@ function exportAtlas(symbolNames)
 
 				var tweenFilters = bakedTweenedFilters[i];
 				var filters = tweenFilters != null ? tweenFilters : element.filters;
-				var isScaled = (Math.floor(matrix.a * 100) != 100) || (Math.floor(matrix.d * 100) != 100);
 						
 				if (filters != undefined && filters.length > 0)
 				{
+					var isScaled =
+						(Math.floor(matrix.a * 100) != Math.floor(element.matrix.a * 100)) ||
+						(Math.floor(matrix.d * 100) != Math.floor(element.matrix.d * 100));
+
 					if (isScaled) {
 						element.scaleX = 1 / matrix.a;
 						element.scaleY = 1 / matrix.d;
@@ -369,7 +372,6 @@ function exportAtlas(symbolNames)
 					{
 						if (isScaled || tweenFilters != null)
 						{
-							doc.selectNone();
 							doc.selection = [element];
 		
 							if (isScaled) {
@@ -390,12 +392,11 @@ function exportAtlas(symbolNames)
 					}
 					else
 					{
-						doc.selectNone();
 						doc.selection = [element];
 						doc.setFilters(new Array(0));
 					}
 				}
-				else if (isScaled)
+				else
 				{
 					// Round the pixel for antialiasing reasons
 					var targetX = Math.floor(element.width / matrix.a) / element.width;
@@ -405,7 +406,7 @@ function exportAtlas(symbolNames)
 					element.scaleY = targetY;
 				}
 			}
-			else if (flversion > 12 || element.elementType != "shape") // Half-assed fix for broken shape cleanup on CS6, give it a look later
+			else
 			{
 				selection[selection.length] = element;
 			}
@@ -415,10 +416,19 @@ function exportAtlas(symbolNames)
 
 		if (selection.length > 0)
 		{
-			TEMP_TIMELINE.currentFrame = i;
-			doc.selectNone();
-			doc.selection = selection;
-			doc.deleteSelection();
+			if (flversion > 12)
+			{
+				doc.selection = selection;
+				doc.deleteSelection();
+			}
+			else
+			{
+				doc.selectNone();
+				var s = 0;
+				while (s < selection.length)
+					selection[s++].selected = true;
+				doc.deleteSelection();
+			}
 		}
 
 		i++;
@@ -1573,7 +1583,7 @@ function pushElementsFromFrame(timeline, layerIndex, frameIndex, elementIndices)
 
 	TEMP_TIMELINE.pasteFrames(smIndex);
 	
-	var elemFrame = TEMP_TIMELINE.layers[0].frames[smIndex];
+	var elemFrame = TEMP_LAYER.frames[smIndex];
 	if (elemFrame.tweenType != "none")
 		elemFrame.tweenType = "none";
 	
@@ -2387,36 +2397,20 @@ function legacySpritesheet(shapeLength, sheetFrame)
 	var isFiltered;
 	var isRotated;
 
-	lib.addItemToDocument({x: 0, y: 0}, TEMP_SPRITEMAP);
+	for (i = 0; i < 4; i++)
+		lib.addItemToDocument({x: 0, y: 0}, TEMP_SPRITEMAP);
+	
 	var tl = doc.getTimeline();
+	tl.currentLayer = 0;
+	tl.currentFrame = 0;
 
-	var maxCrap = 0;
+	doc.selectNone();
+	doc.selectAll();
+	doc.clipCopy();
 
     while (sheetFrame.elements.length < shapeLength)
 	{
-		if (maxCrap >= 4)
-		{
-			doc.clipPaste();
-		}
-		else
-		{
-			tl.currentLayer = 0;
-			tl.currentFrame = 0;
-	
-			var elems = tl.layers[0].frames[0].elements;
-			var selection = new Array();
-	
-			while (selection.length < elems.length)
-				selection[selection.length] = elems[selection.length];
-	
-			doc.selectNone();
-			doc.selection = selection;
-
-			doc.clipCopy();
-			doc.clipPaste();
-			doc.selectAll();
-			maxCrap = doc.selection.length;
-		}
+		doc.clipPaste();
 	}
 
 	var updateElemPos = function(ogElem, elem)
@@ -2426,9 +2420,14 @@ function legacySpritesheet(shapeLength, sheetFrame)
 			var ogElemPos = {x: ogElem.x, y: ogElem.y};
 
 			if (isFiltered) {
+				ogElemPos.x += rect.left * ogElem.scaleX;
+				ogElemPos.y += rect.top * ogElem.scaleY;
+			}
+
+			/*if (isFiltered) {
 				ogElemPos.x = rect.left * ogElem.scaleX;
 				ogElemPos.y = rect.top * ogElem.scaleY;
-			}
+			}*/
 
 			if (isRotated) {
 				ogElemPos.x -= ogElem.width;
