@@ -281,6 +281,9 @@ function exportAtlas(symbolNames)
 			if (i <= symbolNames.length)
 				symbol.timeline.insertBlankKeyframe(startIndex);
 		}
+
+		if (symbol.timeline.frameCount > 1)
+			symbol.timeline.removeFrames(symbol.timeline.frameCount - 1);
 	}
 
 	TEMP_ITEM = initBtaItem(TEMP_SPRITEMAP);
