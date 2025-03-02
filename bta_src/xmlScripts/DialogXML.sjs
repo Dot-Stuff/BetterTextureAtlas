@@ -89,6 +89,8 @@ function formatPath(path)
 	
 	actP += path;
 
+    actP = actP.split("%20").join(" ");
+
 	return actP;
 }
 
