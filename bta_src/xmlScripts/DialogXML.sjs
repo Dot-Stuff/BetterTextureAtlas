@@ -31,7 +31,7 @@ function addParams()
 
     var config = fl.configURI;
 
-	var rawXML = fl.runScript(fl.configURI + "Commands/bta_src/save.scr", "xmlAddData");
+	var rawXML = fl.runScript(fl.configURI + "Commands/bta_src/save.sjs", "xmlAddData");
 
 	var xPan = SaveData.openXMLFromString(rawXML);
 
@@ -92,7 +92,7 @@ function formatPath(path)
 	return actP;
 }
 
-fl.runScript(fl.configURI + "Commands/bta_src/save.scr", "theme");
+fl.runScript(fl.configURI + "Commands/bta_src/save.sjs", "theme");
 
 function imgFormatSet()
 {

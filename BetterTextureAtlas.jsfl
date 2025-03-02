@@ -1,4 +1,4 @@
-﻿﻿var included = {};
+﻿var included = {};
 fl.include = function(file) {
 	if (included[file]) { return; }
 		included[file] = true;
@@ -30,6 +30,7 @@ var resolution = 1.0;
 var version = SaveData.prototype.version;
 var ShpPad = 0;
 var BrdPad = 0;
+var bitDepth = 32;
 var AllRot = true;
 ///// ADDITIONAL BIZZ
 var inlineSym = false;
@@ -48,13 +49,13 @@ var instance = null;
 var resScale = 1.0;
 
 if (SaveData.version[0] <= 12)
-	alert("Even though it's functional, we still recommend using a newer version, such as Adobe Animate!");
+	alert("WARNING: Even though it's functional, we still recommend using a newer version, such as Adobe Animate!");
 
 function _main()
 {
 	if (doc == null)
 	{
-		alert("you need to be in an document in order to export the atlas");
+		alert("You need to be in an document in order to export the atlas");
 		return;
 	}
 
@@ -92,10 +93,9 @@ function _main()
 	var optAn = "true";
 	var flatten = "false";
 
-	//fl.runScript(fl.configURI + "Commands/bta_src/save.scr", "setupSaves");
 	SaveData.setupSaves();
 
-	var rawXML = fl.runScript(fl.configURI + "Commands/bta_src/save.scr", "xmlData", [symbols]);
+	var rawXML = fl.runScript(fl.configURI + "Commands/bta_src/save.sjs", "xmlData", [symbols]);
 
 	var xPan = SaveData.openXMLFromString(rawXML);
 
@@ -138,6 +138,8 @@ function _main()
 	optAn = xPan.OptAn;
 	flatten = xPan.FlatSke;
 	AllRot = xPan.Rotate;
+	bitDepth = (xPan.imgFormat == "PNG 8 bits") ? 8 : 32;
+	algorithm = (xPan.algorithm == "Basic") ? "basic" : "maxRects";
 
 	var dataAdd = FLfile.read(fl.configURI + "Commands/bta_src/saveADDBTA.txt").split("\n");
 	inlineSym = dataAdd[0] == "true";
@@ -146,6 +148,12 @@ function _main()
 	bakeOneFR = dataAdd[3] == "true";
 	bakedFilters = dataAdd[4] == "true";
 	bakedTweens = dataAdd[5] == "true";
+
+	if (bakedTweens && flversion < 13)
+	{
+		bakedTweens = false;
+		trace("WARNING: Baked tweens is not supported on this flash version.\nTry using Flash Pro CC or newer.");
+	}
 	
 	var fileuri = xPan.saveBox.split("/").join("\\");
 	if (doc.path != null)
@@ -217,11 +225,14 @@ function initVars()
 
 	frameQueue = [];
 	cachedMatrices = [];
+	cachedBitmaps = [];
 	instanceSizes = [];
+	cachedOneFrames = [];
 
 	dictionary = [];
 	bakedDictionary = [];
 	smIndex = 0;
+	curTweenFrame = -1;
 
 	oneFrameSymbols = {};
 	bakedTweenedFilters = {};
@@ -270,17 +281,19 @@ function exportAtlas(symbolNames)
 			if (i <= symbolNames.length)
 				symbol.timeline.insertBlankKeyframe(startIndex);
 		}
+
+		if (symbol.timeline.frameCount > 1)
+			symbol.timeline.removeFrames(symbol.timeline.frameCount - 1);
 	}
 
 	TEMP_ITEM = initBtaItem(TEMP_SPRITEMAP);
-
 	TEMP_TIMELINE = TEMP_ITEM.timeline;
 	TEMP_LAYER = TEMP_TIMELINE.layers[0];
 	TEMP_TIMELINE.removeFrames(0,0);
 
 	ogSym = symbol;
 
-	// This is a temp fix for CS6 until i figure out why the file text box is broken
+	// Failsafe for invalid export paths
 	if (path.indexOf("unknown|") !== -1)
 	{
 		var defaultOutputFolder = fl.configURI + "Commands/bta_output";
@@ -296,133 +309,129 @@ function exportAtlas(symbolNames)
 
 	// Write Animation.json
 	FLfile.write(path + "/Animation.json", generateAnimation(symbol));
+	TEMP_LAYER.layerType = "normal";
 
-	// Add items and fix resolutions
-	var pos = {x:0, y:0};
 	lib.editItem(TEMP_SPRITEMAP);
-
-	var reverseScale = function (element, mat) {
-		element.scaleX /= mat.a;
-		element.scaleY /= mat.d;
-	}
+	TEMP_TIMELINE.currentLayer = 0;
 
 	var i = 0;
 	while (i < frameQueue.length)
 	{
-		var queuedFrame = frameQueue[i].split("_");
-		var type = queuedFrame.shift();
+		var elemIndices = frameQueue[i];
 		var matrix = cachedMatrices[i];
 		var frame = TEMP_LAYER.frames[i];
 		
-		TEMP_TIMELINE.currentLayer = 0;
 		TEMP_TIMELINE.currentFrame = i;
 
-		if (flversion > 12)
+		if (flversion > 12 && doc.selection.length > 0)
 			doc.selectNone();
 
-		switch (type)
+		var selection = new Array();
+
+		// Remove frame filters (only from Animate 2020 upwards)
+		if (flversion >= 20)
 		{
-			case "ITEM":
-				var id = queuedFrame.join("");
-				lib.addItemToDocument(pos, id);
-				
-				var item = frame.elements[0];
-				reverseScale(item, matrix);
-			break;
-			case "ELEMENT": // TODO: do some lines to fills crap here for changing resolutions
-				var elemIndices = queuedFrame[0].replace("[","").replace("]","").split(",");
-				var selection = new Array();
+			if (!bakedFilters && TEMP_LAYER.setFiltersAtFrame != undefined)
+			{
+				TEMP_LAYER.setFiltersAtFrame(i, new Array(0));
+			}
+		}
 
-				// Remove frame filters (only from Animate 2020 upwards)
-				if (flversion >= 20)
-				{
-					if (!bakedFilters && TEMP_LAYER.setFiltersAtFrame != undefined)
-					{
-						TEMP_LAYER.setFiltersAtFrame(i, new Array(0));
-					}
-				}
+		var e = 0;
+		var elements = frame.elements;
+		while (e < elements.length)
+		{
+			var element = elements[e];
+			var exportElem = elemIndices.indexOf(e) !== -1;
 
-				var e = 0;
-				var elements = frame.elements;
-				while (e < elements.length)
-				{
-					var element = elements[e];
-					var exportElem = elemIndices.indexOf(String(e)) !== -1;
+			if (exportElem)
+			{
+				// TODO: reimplement baked skews
+				element.rotation = 0;
+				element.skewX = 0;
+				element.skewY = 0;
 
-					if (exportElem)
-					{
-						cleanElement(element);
-						reverseScale(element, matrix);
+				if (element.blendMode != null)
+					element.blendMode = "normal";
 
-						if (element.blendMode != null)
-							element.blendMode = "normal";
+				if (element.colorMode != null)
+					element.colorMode = "none";
 
-						if (element.colorMode != null)
-							element.colorMode = "none";
-
-						var tweenFilters = bakedTweenedFilters[i];
-						var filters = tweenFilters != null ? tweenFilters : element.filters;
+				var tweenFilters = bakedTweenedFilters[i];
+				var filters = tweenFilters != null ? tweenFilters : element.filters;
 						
-						if (filters != undefined && filters.length > 0)
-						{
-							if (bakedFilters)
-							{
-								var rescaleFilters = (matrix.a > 1.01 || matrix.d > 1.01);
-								if (rescaleFilters || tweenFilters != null)
-								{
-									doc.selectNone();
-									doc.selection = [element];
-		
-									if (rescaleFilters) {
-										forEachFilter(filters, function (filter) {
-											switch (filter.name)
-											{
-												case "glowFilter":
-												case "blurFilter":
-													filter.blurX /= matrix.a;
-													filter.blurY /= matrix.d;
-												break;
-											}
-										});
-									}
-		
-									doc.setFilters(filters);
-								}
-							}
-							else
-							{
-								doc.selectNone();
-								doc.selection = [element];
-								doc.setFilters(new Array(0));
-							}
-						}
-						else
-						{
-							// antialiasing fix
-							element.width = Math.round(element.width);
-							element.height = Math.round(element.height);
-						}
-					}
-					else if (flversion > 12 || element.elementType != "shape") // Half-assed fix for broken shape cleanup on CS6, give it a look later
-					{
-						selection[selection.length] = element;
-					}
-
-					e++;
-				}
-
-				if (selection.length > 0)
+				if (filters != undefined && filters.length > 0)
 				{
-					TEMP_TIMELINE.currentFrame = i;
-					
-					if (flversion > 12)
-						doc.selectNone();
-					
-					doc.selection = selection;
-					doc.deleteSelection();
-				}
+					var isScaled =
+						(Math.floor(matrix.a * 100) != Math.floor(element.matrix.a * 100)) ||
+						(Math.floor(matrix.d * 100) != Math.floor(element.matrix.d * 100));
 
-			break;
+					if (isScaled) {
+						element.scaleX = 1 / matrix.a;
+						element.scaleY = 1 / matrix.d;
+					}
+
+					if (bakedFilters)
+					{
+						if (isScaled || tweenFilters != null)
+						{
+							doc.selection = [element];
+		
+							if (isScaled) {
+								forEachFilter(filters, function (filter) {
+									switch (filter.name)
+									{
+										case "glowFilter":
+										case "blurFilter":
+											filter.blurX /= matrix.a;
+											filter.blurY /= matrix.d;
+										break;
+									}
+								});
+							}
+		
+							doc.setFilters(filters);
+						}
+					}
+					else
+					{
+						doc.selection = [element];
+						doc.setFilters(new Array(0));
+					}
+				}
+				else
+				{
+					// Round the pixel for antialiasing reasons
+					var targetX = Math.floor(element.width / matrix.a) / element.width;
+					var targetY = Math.floor(element.height / matrix.d) / element.height;
+
+					element.scaleX = targetX;
+					element.scaleY = targetY;
+				}
+			}
+			else
+			{
+				selection[selection.length] = element;
+			}
+
+			e++;
+		}
+
+		if (selection.length > 0)
+		{
+			if (flversion > 12)
+			{
+				doc.selection = selection;
+				doc.deleteSelection();
+			}
+			else
+			{
+				doc.selectNone();
+				var s = 0;
+				while (s < selection.length)
+					selection[s++].selected = true;
+				doc.deleteSelection();
+			}
 		}
 
 		i++;
@@ -440,7 +449,7 @@ function exportAtlas(symbolNames)
 		var ogWidth = doc.width;
 		var ogHeight = doc.height;
 
-		var sheet = cs4Spritesheet(shapeLength, sheetFrame);
+		var sheet = legacySpritesheet(shapeLength, sheetFrame);
 		doc.width = Math.floor(sheet.width);
 		doc.height = Math.floor(sheet.height);
 
@@ -528,7 +537,7 @@ function divideSpritemap(smData, symbol)
 
 	if (framesLength === 1)
 	{
-		alert("ERROR: a shape couldnt fit inside the spritemap");
+		alert("ERROR: A shape couldn't fit inside the spritemap");
 		return;
 	}
 
@@ -560,7 +569,7 @@ function divideSpritemap(smData, symbol)
 function exportSpritemap(id, exportPath, smData, index)
 {
 	var smPath = exportPath + "/spritemap" + index;
-	var smSettings = {format:"png", bitDepth:32, backgroundColor:"#00000000"};
+	var smSettings = {format: "png", bitDepth: bitDepth, backgroundColor: "#00000000"};
 	var sm = smData.sm;
 
 	sm.exportSpriteSheet(smPath, smSettings, true);
@@ -706,8 +715,7 @@ function generateAnimation(symbol)
 			dictIndex = 0;
 			while (dictIndex < bakedDictionary.length)
 			{
-				push(bakedDictionary[dictIndex]);
-				dictIndex += 2;
+				push(bakedDictionary[dictIndex++].json);
 				push(',');
 			}
 
@@ -755,8 +763,8 @@ function generateAnimation(symbol)
 			dictIndex = 0;
 			while (dictIndex < bakedDictionary.length)
 			{
-				pushSymbolLibrary(bakedDictionary[dictIndex + 1], bakedDictionary[dictIndex]);
-				dictIndex += 2;
+				var symbol = bakedDictionary[dictIndex++];
+				pushSymbolLibrary(symbol.name, symbol.json);
 			}
 		}
 	}
@@ -803,19 +811,72 @@ function pushOneFrameSymbol(symbolInstance, timeline, layerIndex, frameIndex, el
 	smIndex++;
 }
 
+var cachedOneFrames;
+
 function isOneFrame(itemTimeline)
 {
 	if (!bakeOneFR)
 		return false;
+
+	var id = itemTimeline.name;
+
+	if (cachedOneFrames[id] != null)
+		return cachedOneFrames[id];
+
+	var result = false;
+	var layers = itemTimeline.layers;
 	
-	if (itemTimeline.frameCount === 1)
+	if (itemTimeline.frameCount === 1) // Basic one frame check
 	{
-		return true;
+		// TODO: maybe should make it a bit more advanced and check for blend mode usage
+		result = (itemTimeline.layerCount == 1) ? layers[0].frames[0].elements.length > 1 : true;
+	}
+	else // "Advanced" one frame check, maybe should make it a setting because i can see this being a bit costy
+	{
+		var startFrame = layers[0].frames[0].startFrame;
+		result = isBakeableTimeline(startFrame, itemTimeline);
 	}
 
-	// TODO: also bake based on one keyframe + all being shapes
+	cachedOneFrames[id] = result;
+	return result;
+}
 
-	return false;
+function isBakeableTimeline(targetKeyframe, timeline)
+{
+	var l = 0;
+	var layers = timeline.layers;
+	while (l < layers.length)
+	{
+		var layer = layers[l++];
+		var f = 0;
+		while (f < layer.frames.length)
+		{
+			var frame = layer.frames[f++];
+
+			// Has more than one keyframe
+			if (frame.startFrame !== targetKeyframe)
+				return false;
+
+			var e = 0;
+			while (e < frame.elements.length) {
+				var element = frame.elements[e++];
+				if (element.elementType == "instance" && element.instanceType == "symbol")
+				{
+					// Has blend mode filter, dont bake
+					if (element.blendMode != "normal")
+						return false;
+					
+					// Check if element can be cached in one frame
+					if (element.symbolType == "graphic") {
+						if (!isOneFrame(element.libraryItem.timeline))
+							return false;
+					}
+				}
+			}
+		}
+	}
+
+	return true;
 }
 
 function parseSymbol(symbol)
@@ -925,14 +986,14 @@ function parseFrames(frames, layerIndex, timeline)
 	{
 		var frame = frames[f];
 		var isKeyframe = (f === frame.startFrame);
-		var isTweenedFrame = frame.tweenType != "none";
-		var canBeBaked = bakedTweens && frame.tweenObj != null;
+		var isTweenedFrame = (frame.tweenType != "none"); // TODO: implement shape tweens
+		var canBeBaked = bakedTweens && isTweenedFrame && frame.tweenObj != null;
 		
 		// setup for baked tweens crap
-		if (curTweenMatrix != null)
+		if (curTweenFrame > -1)
 		{
-			curTweenElement = null;
 			curTweenMatrix = null;
+			curTweenShape = null;
 			curTweenColorTransform = null;
 			curTweenFilters = null;
 			curTweenFrame = -1;
@@ -974,7 +1035,7 @@ function parseFrames(frames, layerIndex, timeline)
 				{
 					jsonVar(key("ease", "ES"), frame.tweenEasing);
 				}
-				
+
 				switch (frame.tweenType)
 				{
 					case "motion": // "classic"
@@ -992,13 +1053,16 @@ function parseFrames(frames, layerIndex, timeline)
 					case "shape":
 					jsonStrEnd(key("type", "T"), key("shape", "SHP"));
 					break;
+					case "IK pose":
+						removeTrail(2); // TODO: look where the IK pose tween variables are stored
+					break;
 				}	
 
 				push("},\n");
 			}
 			else if (canBeBaked)
 			{
-				setupBakedTween(frame, frames[frame.startFrame + frame.duration], f);
+				setupBakedTween(frame, f);
 			}
 
 			if (includeSnd && frame.soundLibraryItem != null)
@@ -1117,35 +1181,34 @@ function parseMotionObject(motionData)
 var curFrameMatrix;
 
 var startTweenElements;
-var curTweenElement;
 var curTweenMatrix;
 var curTweenColorTransform;
 var curTweenFilters;
-var curTweenFrame = -1;
+var curTweenShape;
+var curTweenFrame;
 
-function setupBakedTween(frame, endFrame, frameIndex)
+function setupBakedTween(frame, frameIndex)
 {
+	var tweenType = frame.tweenType;
 	var frameOffset = (frameIndex - frame.startFrame);
-	curTweenMatrix = frame.tweenObj.getGeometricTransform(frameOffset);
-	curTweenColorTransform = frame.tweenObj.getColorTransform(frameOffset);
-	curTweenFilters = frame.tweenObj.getFilters(frameOffset);
+	
 	curTweenFrame = frameOffset;
 
-	if (frame.elements.length > 0)
+	if (tweenType !== "shape")
 	{
-		var elem = frame.elements[0];
-		if (elem.colorMode == "none" && endFrame != null)
-		{
-			if (endFrame.elements.length > 0)
-				elem = endFrame.elements[0];
-		}
-
-		curTweenElement = elem.colorMode == "none" ? null : elem;
+		curTweenMatrix = frame.tweenObj.getGeometricTransform(frameOffset);
+		curTweenColorTransform = frame.tweenObj.getColorTransform(frameOffset);
+		curTweenFilters = frame.tweenObj.getFilters(frameOffset);
 	}
 	else
 	{
-		curTweenElement = null;
+		curTweenShape = frame.tweenObj.getShape(frameOffset);
 	}
+}
+
+function drawShape(shape)
+{
+
 }
 
 function parseElements(elements, frameIndex, layerIndex, timeline)
@@ -1154,9 +1217,14 @@ function parseElements(elements, frameIndex, layerIndex, timeline)
 
 	var e = 0;
 	var shapeQueue = [];
+	var layer = timeline.layers[layerIndex];
 
-	var frameFilters = getFrameFilters(timeline.layers[layerIndex], frameIndex);
+	var frameFilters = getFrameFilters(layer, frameIndex);
 	var hasFrameFilters = (bakedFilters && frameFilters.length > 0);
+	
+	var animType = layer.animationType;
+	if (animType == null)
+		animType = "none"; // IK pose
 
 	while (e < elements.length)
 	{
@@ -1198,7 +1266,7 @@ function parseElements(elements, frameIndex, layerIndex, timeline)
 					}
 					else
 					{
-						if (isOneFrame(element.libraryItem.timeline))
+						if (isOneFrame(element.libraryItem.timeline) && animType == "none")
 						{
 							pushOneFrameSymbol(element, timeline, layerIndex, frameIndex, e);
 						}
@@ -1208,7 +1276,7 @@ function parseElements(elements, frameIndex, layerIndex, timeline)
 
 					break;
 					case "bitmap":
-						parseBitmapInstance(element);
+						parseBitmapInstance(element, timeline, layerIndex, frameIndex, e);
 					break;
 					// TODO: add missing element instance types
 					case "embedded video": break;
@@ -1339,11 +1407,13 @@ function parseTextInstance(text)
 }
 
 var cachedMatrices;
+var cachedBitmaps;
 
-// TODO: remove the item type from queue and push the same way as one-frame symbols
-function parseBitmapInstance(bitmap)
+function parseBitmapInstance(bitmap, timeline, layerIndex, frameIndex, elemIndex)
 {
 	var item = bitmap.libraryItem;
+	var name = item.name;
+
 	var matrix = cloneMatrix(bitmap.matrix);
 	var scale = getMatrixScale(item.hPixels, item.vPixels);
 
@@ -1353,8 +1423,17 @@ function parseBitmapInstance(bitmap)
 		matrix.d *= scale;
 	}
 
-	var itemIndex = pushItemSpritemap(item);
-	parseAtlasInstance(matrix, itemIndex);
+	if (cachedBitmaps[name] != null)
+	{
+		parseAtlasInstance(matrix, cachedBitmaps[name]);
+		return;
+	}
+
+	cachedBitmaps[name] = smIndex;
+	pushElementsFromFrame(timeline, layerIndex, frameIndex, [elemIndex]);
+	cleanElement(TEMP_LAYER.frames[smIndex].elements[elemIndex]);
+	parseAtlasInstance(matrix, smIndex);
+	smIndex++;
 }
 
 function parseShape(timeline, layerIndex, frameIndex, elementIndices)
@@ -1380,7 +1459,7 @@ function parseShape(timeline, layerIndex, frameIndex, elementIndices)
 	}
 
 	var scale = getMatrixScale(shapeRight - shapeLeft, shapeBottom - shapeTop);
-	var mtx = makeMatrix(scale, 0, 0, scale, Math.round(shapeLeft), Math.round(shapeTop));
+	var mtx = makeMatrix(scale, 0, 0, scale, shapeLeft, shapeTop);
 
 	resizeInstanceMatrix(curSymbol, mtx);
 	parseAtlasInstance(mtx, atlasIndex);
@@ -1485,17 +1564,35 @@ function parseAtlasInstance(matrix, index)
 	push('}');
 }
 
+var lastTimeline;
+var lastLayer;
+var lastFrame;
+
 function pushElementsFromFrame(timeline, layerIndex, frameIndex, elementIndices)
 {
-	timeline.setSelectedLayers(layerIndex, true);
-	timeline.copyFrames(frameIndex);
+	if (timeline != lastTimeline) {
+		lastTimeline = timeline;
+		lastLayer = null;
+	}
+
+	if (layerIndex != lastLayer) {
+		timeline.setSelectedLayers(layerIndex, true);
+		lastLayer = layerIndex;
+		lastFrame = null;
+	}
+
+	if (lastFrame != frameIndex) {
+		timeline.copyFrames(frameIndex);
+		lastFrame = frameIndex;
+	}
+
 	TEMP_TIMELINE.pasteFrames(smIndex);
 	
-	var elemFrame = TEMP_TIMELINE.layers[0].frames[smIndex];
+	var elemFrame = TEMP_LAYER.frames[smIndex];
 	if (elemFrame.tweenType != "none")
 		elemFrame.tweenType = "none";
 	
-	pushElement(elementIndices);
+	frameQueue.push(elementIndices);
 }
 
 function pushElementSpritemap(timeline, layerIndex, frameIndex, elementIndices, frameFilters)
@@ -1520,7 +1617,6 @@ function pushElementSpritemap(timeline, layerIndex, frameIndex, elementIndices, 
 		bakedTweenedFilters[smIndex] = curTweenFilters;
 	
 	var rect = getElementRect(elem, frameFilters, elementFilters);
-
 	var matScale = getMatrixScale(rect.right - rect.left, rect.bottom - rect.top);
 	var matScaleX = (elem.scaleX < 1) ? (1 / elem.scaleX) * matScale : matScale;
 	var matScaleY = (elem.scaleY < 1) ? (1 / elem.scaleY) * matScale : matScale;
@@ -1569,9 +1665,7 @@ function pushElementSpritemap(timeline, layerIndex, frameIndex, elementIndices, 
 	if (inlineSym)
 		push('}');
 
-	bakedDictionary.push(closeJson());
-	bakedDictionary.push(itemName);
-
+	bakedDictionary.push({name: itemName, json: closeJson()});
 	parseSymbolInstance(elem, itemName);
 }
 
@@ -1592,7 +1686,17 @@ function getFrameBounds(timeline, frameIndex)
 	// TODO: may have to change in the future due to filter bounds tho
 	if (flversion >= 15)
 	{
-		return timeline.getBounds(frameIndex + 1);
+		var bounds = timeline.getBounds(frameIndex + 1);
+		return bounds === 0 ? {left: 0, top: 0, right: 0, bottom: 0} : bounds;
+	}
+
+	if (timeline.layerCount == 1) {
+		var layer = timeline.layers[0];
+		var frame = layer.frames[frameIndex];
+		if (frame.elements.length == 1)
+		{
+			return frame.elements[0].objectSpaceBounds;
+		}
 	}
 
 	var minX = Number.POSITIVE_INFINITY;
@@ -1600,7 +1704,9 @@ function getFrameBounds(timeline, frameIndex)
 	var maxX = Number.NEGATIVE_INFINITY;
 	var maxY = Number.NEGATIVE_INFINITY;
 
+	var foundElements = 0;
 	var l = 0;
+
 	while (l < timeline.layerCount)
 	{
 		var layer = timeline.layers[l++];	
@@ -1613,6 +1719,7 @@ function getFrameBounds(timeline, frameIndex)
 		while (e < elems.length)
 		{
 			var elem = elems[e++];
+			foundElements++;
 
 			switch (elem.elementType)
 			{
@@ -1634,27 +1741,16 @@ function getFrameBounds(timeline, frameIndex)
 		}
 	}
 
+	if (foundElements <= 0) {
+		return {left: 0, top: 0, right: 0, bottom: 0}
+	}
+
 	return {
 		left: minX,
 		top: minY,
 		right: maxX,
 		bottom: maxY
 	}
-}
-
-function pushItemSpritemap(item)
-{
-	var name = "ITEM_" + item.name;
-	var index = frameQueue.indexOf(name);
-
-	if (index == -1) {
-		TEMP_TIMELINE.insertBlankKeyframe(smIndex);
-		frameQueue.push(name);
-		smIndex++;
-		return frameQueue.length - 1;
-	}
-
-	return index;
 }
 
 function pushShapeSpritemap(timeline, layerIndex, frameIndex, elementIndices)
@@ -1725,11 +1821,6 @@ function pushShapeSpritemap(timeline, layerIndex, frameIndex, elementIndices)
 	}
 
 	return shapes;
-}
-
-function pushElement(elemIndices)
-{
-	frameQueue.push("ELEMENT_" + String(elemIndices));
 }
 
 var instanceSizes;
@@ -1813,19 +1904,18 @@ function parseSymbolInstance(instance, itemName)
 
 	if (instance.firstFrame != undefined)
 	{
-		var FF = instance.firstFrame;
-		
-		if (curTweenFrame !== -1)
+		var firstFrame = instance.firstFrame;
+
+		if (bakedTweens && curTweenFrame > -1)
 		{
 			var length = instance.libraryItem.timeline.frameCount;
-			
 			switch (instance.loop) {
-				case "play once": 		FF = Math.min(FF + curTweenFrame, length); break;
-				case "loop": 			FF = FF + curTweenFrame % length; break;
+				case "play once": 		firstFrame = Math.min(firstFrame + curTweenFrame, length); break;
+				case "loop": 			firstFrame = firstFrame + curTweenFrame % length;          break;
 			}
 		}
 		
-		jsonVar(key("firstFrame", "FF"), FF);
+		jsonVar(key("firstFrame", "FF"), firstFrame);
 	}
 
 	if (instance.symbolType != undefined) {
@@ -1844,42 +1934,36 @@ function parseSymbolInstance(instance, itemName)
 	);
 
 	var colorMode = instance.colorMode;
-	if (bakedTweens && curTweenElement != null)
+	var colorValues = instance;
+	if (bakedTweens && curTweenColorTransform != null)
 	{
-		colorMode = curTweenElement.colorMode;
+		colorMode = "advanced"; // baking the color mode to advanced because im too tired for this shit
 	}
 
-	if (colorMode != "none")// && !(bakedInstance && bakedFilters))
+	var validColor = colorMode != "none";
+	if (validColor)
+	{
+		if (bakedTweens && curTweenColorTransform != null)
+			colorValues = curTweenColorTransform;
+
+		if (colorMode == "advanced")
+		{
+			validColor =
+			(colorValues.colorRedPercent != 100) || (colorValues.colorGreenPercent != 100) || (colorValues.colorBluePercent != 100) || (colorValues.colorAlphaPercent != 100) ||
+			(colorValues.colorRedAmount != 0) || (colorValues.colorGreenAmount != 0) || (colorValues.colorBlueAmount != 0) || (colorValues.colorAlphaAmount != 0);
+		}
+	}
+
+	if (validColor)// && !(bakedInstance && bakedFilters))
 	{
 		jsonHeader(key("color", "C"));
 		var modeKey = key("mode", "M");
-
-		var colorValues = instance;
-		if (bakedTweens && curTweenColorTransform != null)
-		{
-			colorValues = curTweenColorTransform;
-		}
 
 		switch (colorMode)
 		{
 			case "brightness":
 				jsonStr(modeKey, key("Brightness", "CBRT"));
-				
-				var brt = 0;
-				if (bakedTweens)
-				{
-					if (colorValues.colorRedPercent != 100)
-					{
-						var flag = (colorValues.colorRedAmount > 0) ? 1 : -1;
-						brt = (100 - colorValues.colorRedPercent) * flag;
-					}
-				}
-				else
-				{
-					brt = colorValues.brightness;
-				}
-			
-				jsonVarEnd(key("brightness", "BRT"), brt);
+				jsonVarEnd(key("brightness", "BRT"), colorValues.brightness);
 			break;
 			case "tint":
 				jsonStr(modeKey, key("Tint", "T"));
@@ -2073,18 +2157,6 @@ function parseFilters(filters)
 
 function makeMatrix(a, b, c, d, tx, ty) { return {a: a, b: b, c: c, d: d, tx: tx, ty: ty} }
 function cloneMatrix(mat) { return makeMatrix(mat.a, mat.b, mat.c, mat.d, mat.tx, mat.ty); }
-
-function concatMatrix(mat1, mat2)
-{
-	var concat = fl.Math.concatMatrix(mat1, mat2);
-	copyMatrix(mat1, concat);
-}
-
-function scaleMatrix(mat, scaleX, scaleY)
-{
-	concatMatrix(mat, makeMatrix(scaleX, 0, 0, scaleY, 0, 0));
-}
-
 function copyMatrix(m1, m2) {
 	m1.a = m2.a;
 	m1.b = m2.b;
@@ -2201,7 +2273,7 @@ function traceArray(array)
 	trace(array.join(", "));
 }
 
-function traceFields(value)
+function traceFields(value, makeNewLines)
 {
 	var traceCrap = "";
 	for (var field in value)
@@ -2210,6 +2282,8 @@ function traceFields(value)
 			continue;
 
 		traceCrap += field + ": " + value[field] + ", ";
+		if (makeNewLines)
+			traceCrap += "\n";
 	}
 	trace(traceCrap);
 }
@@ -2314,7 +2388,7 @@ function renameFile(path, newPath)
 	FLfile.remove(path);
 }
 
-function cs4Spritesheet(shapeLength, sheetFrame)
+function legacySpritesheet(shapeLength, sheetFrame)
 {
     var curX = BrdPad;
     var curY = BrdPad;
@@ -2323,67 +2397,155 @@ function cs4Spritesheet(shapeLength, sheetFrame)
     var maxSheetWidth = 0;
     var maxSheetHeight = 0;
     var packedRectangles = [];
-
+	
 	var elem;
-	var rect;
+	var isFiltered;
+	var isRotated;
 
-	var moveElement = function (x, y) {
-		elem.x = x - (rect.left - (rect.right * 0.5)) * elem.scaleX;
-		elem.y = y - (rect.top - (rect.bottom * 0.5)) * elem.scaleY;
-	}
+	for (i = 0; i < 4; i++)
+		lib.addItemToDocument({x: 0, y: 0}, TEMP_SPRITEMAP);
+	
+	var tl = doc.getTimeline();
+	tl.currentLayer = 0;
+	tl.currentFrame = 0;
 
-	lib.addItemToDocument({x: 0, y: 0}, TEMP_SPRITEMAP);
+	doc.selectNone();
+	doc.selectAll();
+	doc.clipCopy();
 
     while (sheetFrame.elements.length < shapeLength)
 	{
-		doc.selectNone();
-		doc.selection = sheetFrame.elements;
-		doc.clipCopy();
 		doc.clipPaste();
 	}
+
+	var updateElemPos = function(ogElem, elem)
+	{
+		if (ogElem.elementType != "shape") {
+			
+			var ogElemPos = {x: ogElem.x, y: ogElem.y};
+
+			if (isFiltered) {
+				ogElemPos.x += rect.left * ogElem.scaleX;
+				ogElemPos.y += rect.top * ogElem.scaleY;
+			}
+
+			/*if (isFiltered) {
+				ogElemPos.x = rect.left * ogElem.scaleX;
+				ogElemPos.y = rect.top * ogElem.scaleY;
+			}*/
+
+			if (isRotated) {
+				ogElemPos.x -= ogElem.width;
+			}
+			
+			elem.x = Math.floor(curX - ogElemPos.x);
+			elem.y = Math.floor(curY - ogElemPos.y);
+		}
+		else {
+			elem.x = Math.floor(curX - ogElem.left);
+			elem.y = Math.floor(curY - ogElem.top);
+		}
+	}
+
+	var sortedIndices = [];
+
+	i = 0;
+	while (i < shapeLength)
+	{
+		var elem = TEMP_LAYER.frames[i].elements[0];
+		if (elem == null)
+		{
+			sortedIndices.push({index: i, width: 1, height: 1, rotated: false});
+			i++;
+			continue;
+		}
+		
+		var rect = {index: i, width: elem.width, height: elem.height, rotated: false};
+
+		if (rect.height > rect.width)
+		{
+			var w = rect.width;
+			rect.width = rect.height;
+			rect.height = w;
+			rect.rotated = true;
+		}
+
+		sortedIndices.push(rect);
+		i++;
+	}
+
+	sortedIndices.sort(function(a, b) {
+		if (a.height === b.height) {
+			return a.width - b.width;
+		}
+		return a.height - b.height;
+	});
+
+	var maxSize = 8192; // CS6 upwards
+	if (flversion < 12) // 2880 limit on older versions
+		maxSize = 2880;
     
     i = 0;
     while (i < shapeLength)
 	{   
-		var ogElem = TEMP_LAYER.frames[i].elements[0];
-		elem = sheetFrame.elements[i];
-		elem.firstFrame = i;
+		var sortedElem = sortedIndices[i];
+		var elemIndex = sortedElem.index;
+		var ogElem = TEMP_LAYER.frames[elemIndex].elements[0];
+
+		if (ogElem == null) {
+			packedRectangles[elemIndex] = {x:0,y:0,width:1,height:1,rotated:false};
+			i++;
+			continue;
+		}
+		
+		elem = sheetFrame.elements[elemIndex];
+		elem.firstFrame = elemIndex;
 		i++;
 
-		rect = getElementRect(ogElem);
-		var rectWidth = rect.right;
-		var rectHeight = rect.bottom;
+		isRotated = sortedElem.rotated;
+		if (isRotated) {
+			ogElem.rotation += 90;
+		}
 
-		moveElement(curX, curY);
+		isFiltered = (ogElem.filters != null && ogElem.filters.length > 0);
+		rect = isFiltered ? getElementRect(ogElem) : (ogElem.objectSpaceBounds);
+		
+		var rectWidth = isFiltered ? (rect.right - rect.left) : ogElem.width;
+		var rectHeight = isFiltered ? (rect.bottom - rect.top) : ogElem.height;
+
+		updateElemPos(ogElem, elem);
 
 		var packedRect = {
-            x: Math.floor(curX),
-            y: Math.floor(curY),
-            width: Math.floor(rectWidth),
-            height: Math.floor(rectHeight)
-        }
+			x: Math.floor(curX-1),
+			y: Math.floor(curY-1),
+			width: Math.floor(rectWidth+1),
+			height: Math.floor(rectHeight+1),
+			rotated: sortedElem.rotated
+		}
 
-		packedRectangles.push(packedRect);
-        
-        if (curX + rectWidth + ShpPad > 2880)
+		packedRectangles[elemIndex] = packedRect;
+
+		curX += Math.floor(rectWidth + ShpPad + 1);
+		
+		if (curX > maxSize)
 		{
-            curX = BrdPad;
-            curY += maxHeight + ShpPad;
-            maxHeight = 0;
+			curX = BrdPad;
+			curY += maxHeight + ShpPad;
+			sheetWidth = maxSize;
+			maxHeight = rectHeight;
 
+			updateElemPos(ogElem, elem);
 			packedRect.x = Math.floor(curX);
 			packedRect.y = Math.floor(curY);
+			curX += Math.floor(rectWidth + ShpPad + 1);
+		}
+		else
+		{
+			maxHeight = Math.max(maxHeight, rectHeight);
+			sheetWidth = Math.max(sheetWidth, curX);
+		}
 
-			moveElement(curX, curY);
-			curX += rectWidth + ShpPad;
-        }
-		else {
-            curX += rectWidth + ShpPad;
-            maxHeight = Math.max(maxHeight, rectHeight);
-            sheetWidth = Math.max(sheetWidth, curX);
-        }
-
-        maxSheetWidth = Math.max(maxSheetWidth, sheetWidth);
+		maxSheetWidth = Math.max(maxSheetWidth, sheetWidth);
         maxSheetHeight = Math.max(maxSheetHeight, curY + maxHeight);
     }
 
@@ -2398,7 +2560,8 @@ function cs4Spritesheet(shapeLength, sheetFrame)
 			sheetFrame.elements[i++].selected = true;
 		}
 
-		doc.deleteSelection();
+		if (doc.selection.length > 0)
+			doc.deleteSelection();
 	}
 
 	initJson();
@@ -2409,8 +2572,9 @@ function cs4Spritesheet(shapeLength, sheetFrame)
 	{	
 		var rect = packedRectangles[i];
 		push('{"SPRITE":{"name":"' + i +
-			'","x":' + rect.x + ',"y":' + rect.y + ',"w":' + rect.width + ',"h":' + rect.height +
-			',"rotated":' + false +
+			'","x":' + rect.x + ',"y":' + rect.y +
+			',"w":' + rect.width + ',"h":' + rect.height +
+			',"rotated":' + rect.rotated +
 		'}},\n');
 		i++;
 	}
