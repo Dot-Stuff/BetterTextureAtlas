@@ -665,8 +665,10 @@ function generateAnimation(symbol)
 	jsonStr(key("name", "N"), doc.name.split(".fla").join(""));
 
 	if (instance != null) {
+		curTweenFrame = 0;
 		jsonHeader(key("StageInstance", "STI"));
 		parseSymbolInstance(instance);
+		curTweenFrame = -1;
 		push('},\n');
 	}
 
