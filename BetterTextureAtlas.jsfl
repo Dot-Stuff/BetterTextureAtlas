@@ -827,9 +827,28 @@ function isOneFrame(itemTimeline)
 	var layers = itemTimeline.layers;
 	
 	if (itemTimeline.frameCount === 1) // Basic one frame check
-	{
-		// TODO: maybe should make it a bit more advanced and check for blend mode usage
-		result = (itemTimeline.layerCount == 1) ? layers[0].frames[0].elements.length > 1 : true;
+	{	
+		if (itemTimeline.layerCount == 1)
+		{
+			var frame = layers[0].frames[0];
+			result = (frame.elements.length > 1);
+			
+			if (!result && (frame.elements.length == 1))
+			{
+				var elem = frame.elements[0];
+				if (elem.elementType == "instance")
+				{
+					if (elem.instanceType == "symbol")
+						result = (elem.blendMode == "normal");
+					else if (elem.instanceType == "bitmap") // skip bitmaps getting upscaled / duplicated
+						result = false;
+				}
+			}
+		}
+		else
+		{
+			result = true;
+		}
 	}
 	else // "Advanced" one frame check, maybe should make it a setting because i can see this being a bit costy
 	{
