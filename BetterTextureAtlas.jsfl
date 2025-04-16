@@ -226,6 +226,7 @@ function initVars()
 	frameQueue = [];
 	cachedMatrices = [];
 	cachedBitmaps = [];
+	cachedBitmapsList = new Array();
 	instanceSizes = [];
 	cachedOneFrames = [];
 
@@ -405,25 +406,12 @@ function exportAtlas(symbolNames)
 				}
 				else
 				{
-					var isBitmap = element.libraryItem != null ? cachedBitmaps[element.libraryItem.name] != null : false;
+					// Round the pixel for antialiasing reasons
+					var targetX = Math.floor(element.width / matrix.a) / element.width;
+					var targetY = Math.floor(element.height / matrix.d) / element.height;
 
-					if (!isBitmap)
-					{
-						// Round the pixel for antialiasing reasons
-						var targetX = Math.floor(element.width / matrix.a) / element.width;
-						var targetY = Math.floor(element.height / matrix.d) / element.height;
-
-						element.scaleX = targetX;
-						element.scaleY = targetY;
-					}
-					else
-					{
-						// Resize bitmaps
-						var item = element.libraryItem;
-						var scale = 1 / getMatrixScale(item.hPixels, item.vPixels);
-						element.scaleX = scale;
-						element.scaleY = scale;
-					}
+					element.scaleX = targetX;
+					element.scaleY = targetY;
 				}
 			}
 			else
@@ -705,6 +693,13 @@ function generateAnimation(symbol)
 
 	var animJson;
 
+	var makeBitmaps = function () {
+		var i = 0;
+		while (i < cachedBitmapsList.length) {
+			makeBitmapItem(cachedBitmapsList[i++]);
+		}
+	}
+
 	// Add Symbol Dictionary
 	if (dictionary.length > 0 || bakedDictionary.length > 0)
 	{
@@ -728,11 +723,15 @@ function generateAnimation(symbol)
 				parseSymbol(symbol);
 				push('},');
 			}
+
+			makeBitmaps();
 			
 			dictIndex = 0;
 			while (dictIndex < bakedDictionary.length)
 			{
-				push(bakedDictionary[dictIndex++].json);
+				var bakedSymbol = bakedDictionary[dictIndex++];
+				curSymbol = bakedSymbol.name;
+				push(bakedSymbol.json);
 				push(',');
 			}
 
@@ -776,6 +775,8 @@ function generateAnimation(symbol)
 				push(parseSymbol(symbol));
 				pushSymbolLibrary(curSymbol, closeJson());
 			}
+
+			makeBitmaps();
 
 			dictIndex = 0;
 			while (dictIndex < bakedDictionary.length)
@@ -1444,24 +1445,54 @@ function parseTextInstance(text)
 
 var cachedMatrices;
 var cachedBitmaps;
+var cachedBitmapsList;
+
+function makeBitmapItem(name)
+{
+	var bitmapIndex = cachedBitmaps[name];
+	var bitmapMatrix = cachedMatrices[bitmapIndex];
+	resizeInstanceMatrix(name, bitmapMatrix);
+
+	initJson();
+	push('{\n');
+
+	if (inlineSym) {
+		jsonStr(key("SYMBOL_name", "SN"), name);
+		jsonHeader(key("TIMELINE", "TL"));
+	}
+
+	jsonArray(key("LAYERS", "L"));	
+
+	makeBasicLayer(function () {
+		parseAtlasInstance(bitmapMatrix, bitmapIndex, true);
+	}, 1);
+
+	if (inlineSym)
+		push('}');
+
+	bakedDictionary.push({name: name, json: closeJson()});
+}
 
 function parseBitmapInstance(bitmap, timeline, layerIndex, frameIndex, elemIndex)
 {
 	var item = bitmap.libraryItem;
 	var name = item.name;
-	var matrix = cloneMatrix(bitmap.matrix);
+	var matrix = bitmap.matrix;
 
-	if (cachedBitmaps[name] != null)
+	parseSymbolInstance(bitmap, name);
+	pushInstanceSize(name, min(matrix.a, 1), min(matrix.d, 1));
+
+	if (cachedBitmapsList.indexOf(name) == -1)
 	{
-		parseAtlasInstance(matrix, cachedBitmaps[name]);
-		return;
-	}
+		pushElementsFromFrame(timeline, layerIndex, frameIndex, [elemIndex]);
+		cleanElement(TEMP_LAYER.frames[smIndex].elements[elemIndex]);
 
-	cachedBitmaps[name] = smIndex;
-	pushElementsFromFrame(timeline, layerIndex, frameIndex, [elemIndex]);
-	cleanElement(TEMP_LAYER.frames[smIndex].elements[elemIndex]);
-	parseAtlasInstance(matrix, smIndex);
-	smIndex++;
+		cachedBitmapsList.push(name);
+		cachedMatrices[smIndex] = makeMatrix(1, 0, 0, 1, 0, 0);
+		cachedBitmaps[name] = smIndex;
+
+		smIndex++;
+	}
 }
 
 function parseShape(timeline, layerIndex, frameIndex, elementIndices)
@@ -1598,9 +1629,13 @@ function getMatrixScale(width, height)
 	return mxScale;
 }
 
-function parseAtlasInstance(matrix, index)
+function parseAtlasInstance(matrix, index, skipPush)
 {
-	cachedMatrices[index] = matrix;
+	//cachedMatrices[index] = matrix;
+	if (skipPush == null)
+		cachedMatrices[index] = matrix;
+	//	cachedMatrices.splice(index, 0, matrix);
+	
 	jsonHeader(key("ATLAS_SPRITE_instance", "ASI"));
 	jsonVar(key("Matrix", "MX"), parseMatrix(matrix, false));
 	jsonStrEnd(key("name", "N"), index);
@@ -1633,7 +1668,6 @@ function pushElementsFromFrame(timeline, layerIndex, frameIndex, elementIndices)
 
 	if (TEMP_LAYER.frames[smIndex].elements.length <= 0)
 		return;
-	
 	
 	var elemFrame = TEMP_LAYER.frames[smIndex];
 	if (elemFrame.tweenType != "none")
@@ -1902,12 +1936,13 @@ function pushInstanceSize(name, scaleX, scaleY)
 	{
 		var list = [scaleX, scaleY];
 		instanceSizes[name] = list;
-		return;
 	}
-
-	var list = instanceSizes[name];
-	list[0] = max(list[0], scaleX);
-	list[1] = max(list[1], scaleY);
+	else
+	{
+		var list = instanceSizes[name];
+		list[0] = max(list[0], scaleX);
+		list[1] = max(list[1], scaleY);
+	}
 }
 
 function getFrameFilters(layer, frameIndex)
@@ -1993,7 +2028,7 @@ function parseSymbolInstance(instance, itemName)
 		colorMode = "advanced"; // baking the color mode to advanced because im too tired for this shit
 	}
 
-	var validColor = colorMode != "none";
+	var validColor = colorMode != undefined && colorMode != "none";
 	if (validColor)
 	{
 		if (bakedTweens && curTweenColorTransform != null)
@@ -2043,7 +2078,7 @@ function parseSymbolInstance(instance, itemName)
 		push('},\n');
 	}
 
-	if (instance.name.length > 0)
+	if (instance.name != undefined && instance.name.length > 0)
 		jsonStr(key("Instance_Name", "IN"), instance.name);
 
 	if (instance.loop != undefined) {
