@@ -229,6 +229,10 @@ function initVars()
 	instanceSizes = [];
 	cachedOneFrames = [];
 
+	lastTimeline = null;
+	lastLayer = null;
+	lastFrame = null;
+
 	dictionary = [];
 	bakedDictionary = [];
 	smIndex = 0;
@@ -401,12 +405,25 @@ function exportAtlas(symbolNames)
 				}
 				else
 				{
-					// Round the pixel for antialiasing reasons
-					var targetX = Math.floor(element.width / matrix.a) / element.width;
-					var targetY = Math.floor(element.height / matrix.d) / element.height;
+					var isBitmap = element.libraryItem != null ? cachedBitmaps[element.libraryItem.name] != null : false;
 
-					element.scaleX = targetX;
-					element.scaleY = targetY;
+					if (!isBitmap)
+					{
+						// Round the pixel for antialiasing reasons
+						var targetX = Math.floor(element.width / matrix.a) / element.width;
+						var targetY = Math.floor(element.height / matrix.d) / element.height;
+
+						element.scaleX = targetX;
+						element.scaleY = targetY;
+					}
+					else
+					{
+						// Resize bitmaps
+						var item = element.libraryItem;
+						var scale = 1 / getMatrixScale(item.hPixels, item.vPixels);
+						element.scaleX = scale;
+						element.scaleY = scale;
+					}
 				}
 			}
 			else
@@ -915,7 +932,7 @@ function parseSymbol(symbol)
 
 			resizeInstanceMatrix(curSymbol, matrix);
 			parseAtlasInstance(matrix, index);
-		});
+		}, timeline.frameCount);
 		return;
 	}
 
@@ -979,13 +996,13 @@ function parseSymbol(symbol)
 	push(']}');
 }
 
-function makeBasicLayer(elementCallback) {
+function makeBasicLayer(elementCallback, duration) {
 	push('{');
 	jsonStr(key("Layer_name", "LN"), "Layer 1");
 	jsonArray(key("Frames", "FR"));
 	push('{');
 	jsonVar(key("index", "I"), 0);
-	jsonVar(key("duration", "DU"), 1);
+	jsonVar(key("duration", "DU"), duration);
 	jsonArray(key("elements", "E"));
 	push('{');
 	if (elementCallback != null)
@@ -1432,15 +1449,7 @@ function parseBitmapInstance(bitmap, timeline, layerIndex, frameIndex, elemIndex
 {
 	var item = bitmap.libraryItem;
 	var name = item.name;
-
 	var matrix = cloneMatrix(bitmap.matrix);
-	var scale = getMatrixScale(item.hPixels, item.vPixels);
-
-	if (scale > 1)
-	{
-		matrix.a *= scale;
-		matrix.d *= scale;
-	}
 
 	if (cachedBitmaps[name] != null)
 	{
@@ -1459,6 +1468,9 @@ function parseShape(timeline, layerIndex, frameIndex, elementIndices)
 {
 	var shapeBounds = pushShapeSpritemap(timeline, layerIndex, frameIndex, elementIndices);
 	var atlasIndex = (smIndex - 1);
+
+	if (shapeBounds == null)
+		return;
 	
 	var shapeLeft = Number.POSITIVE_INFINITY;
 	var shapeTop = Number.POSITIVE_INFINITY;
@@ -1502,25 +1514,37 @@ function getElementRect(element, frameFilters, overrideFilters)
 			maxY = bounds.bottom;
 		break;
 		case "instance":	
-			var timeline = element.libraryItem.timeline;
-			var frameIndex = (element.firstFrame != undefined) ? element.firstFrame : 0;
-
-			minX = minY = Number.POSITIVE_INFINITY;
-			maxX = maxY = Number.NEGATIVE_INFINITY;	
-		
-			var l = 0;
-			while (l < timeline.layers.length)
+			switch(element.instanceType)
 			{
-				var frameElements = timeline.layers[l++].frames[frameIndex].elements;
-				var e = 0;
-				while (e < frameElements.length)
-				{
-					var elem = getElementRect(frameElements[e++]);
-					minX = min(minX, elem.left);
-					minY = min(minY, elem.top);
-					maxX = max(maxX, elem.right);
-					maxY = max(maxY, elem.bottom);
-				}
+				case "symbol":
+					var timeline = element.libraryItem.timeline;
+					var frameIndex = (element.firstFrame != undefined) ? element.firstFrame : 0;
+		
+					minX = minY = Number.POSITIVE_INFINITY;
+					maxX = maxY = Number.NEGATIVE_INFINITY;	
+				
+					var l = 0;
+					while (l < timeline.layers.length)
+					{
+						var frameElements = timeline.layers[l++].frames[frameIndex].elements;
+						var e = 0;
+						while (e < frameElements.length)
+						{
+							var elem = getElementRect(frameElements[e++]);
+							minX = min(minX, elem.left);
+							minY = min(minY, elem.top);
+							maxX = max(maxX, elem.right);
+							maxY = max(maxY, elem.bottom);
+						}
+					}
+				break;
+				/*case "bitmap":
+					var bounds = element.objectSpaceBounds;
+					minX = bounds.left;
+					minY = bounds.top;
+					maxX = bounds.right;
+					maxY = bounds.bottom;
+				break;*/
 			}
 		break;
 	}
@@ -1589,8 +1613,8 @@ var lastFrame;
 
 function pushElementsFromFrame(timeline, layerIndex, frameIndex, elementIndices)
 {
-	if (timeline != lastTimeline) {
-		lastTimeline = timeline;
+	if (timeline.name != lastTimeline) {
+		lastTimeline = timeline.name;
 		lastLayer = null;
 	}
 
@@ -1606,6 +1630,10 @@ function pushElementsFromFrame(timeline, layerIndex, frameIndex, elementIndices)
 	}
 
 	TEMP_TIMELINE.pasteFrames(smIndex);
+
+	if (TEMP_LAYER.frames[smIndex].elements.length <= 0)
+		return;
+	
 	
 	var elemFrame = TEMP_LAYER.frames[smIndex];
 	if (elemFrame.tweenType != "none")
@@ -1679,7 +1707,7 @@ function pushElementSpritemap(timeline, layerIndex, frameIndex, elementIndices, 
 		resizeInstanceMatrix(curSymbol, atlasMatrix);
 		parseAtlasInstance(atlasMatrix, smIndex);
 		smIndex++;
-	});
+	}, 1);
 
 	if (inlineSym)
 		push('}');
@@ -1777,6 +1805,9 @@ function pushShapeSpritemap(timeline, layerIndex, frameIndex, elementIndices)
 	pushElementsFromFrame(timeline, layerIndex, frameIndex, elementIndices);
 
 	var frameElements = TEMP_LAYER.frames[smIndex].elements;
+	if (frameElements.length <= 0)
+		return null;
+	
 	smIndex++;
 
 	var e = 0;
@@ -1857,6 +1888,9 @@ function resizeInstanceMatrix(name, matrix)
 
 function pushInstanceSize(name, scaleX, scaleY)
 {
+	var scaleX = Math.abs(scaleX);
+	var scaleY = Math.abs(scaleY);
+
 	var curInstanceSize = instanceSizes[curSymbol];
 	if (curInstanceSize != null)
 	{
@@ -1987,7 +2021,7 @@ function parseSymbolInstance(instance, itemName)
 			case "tint":
 				jsonStr(modeKey, key("Tint", "T"));
 				jsonStr(key("tintColor", "TC"), instance.tintColor);
-				jsonNumEnd(key("tintMultiplier", "TM"), (100 - instance.tintPercent) * 0.01);
+				jsonNumEnd(key("tintMultiplier", "TM"), instance.tintPercent * 0.01);
 			break;
 			case "alpha":
 				jsonStr(modeKey, key("Alpha", "CA"));
