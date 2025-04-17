@@ -730,7 +730,6 @@ function generateAnimation(symbol)
 			while (dictIndex < bakedDictionary.length)
 			{
 				var bakedSymbol = bakedDictionary[dictIndex++];
-				curSymbol = bakedSymbol.name;
 				push(bakedSymbol.json);
 				push(',');
 			}
@@ -870,8 +869,26 @@ function isOneFrame(itemTimeline)
 	}
 	else // "Advanced" one frame check, maybe should make it a setting because i can see this being a bit costy
 	{
-		var startFrame = layers[0].frames[0].startFrame;
-		result = isBakeableTimeline(startFrame, itemTimeline);
+		var firstNormalLayer = null;
+		var i = 0;
+		while (i < layers.length) {
+			var layer = layers[i++];
+			if (layer.layerType == "normal")
+			{
+				firstNormalLayer = layer;
+				break;
+			}
+		}
+
+		if (firstNormalLayer == null)
+		{
+			result = false;
+		}
+		else
+		{
+			var startFrame = firstNormalLayer.frames[0].startFrame;
+			result = isBakeableTimeline(startFrame, itemTimeline);
+		}
 	}
 
 	cachedOneFrames[id] = result;
@@ -1477,10 +1494,9 @@ function parseBitmapInstance(bitmap, timeline, layerIndex, frameIndex, elemIndex
 {
 	var item = bitmap.libraryItem;
 	var name = item.name;
-	var matrix = bitmap.matrix;
 
 	parseSymbolInstance(bitmap, name);
-	pushInstanceSize(name, min(matrix.a, 1), min(matrix.d, 1));
+	pushInstanceSize(name, min(Math.abs(bitmap.scaleX), 1), min(Math.abs(bitmap.scaleY), 1));
 
 	if (cachedBitmapsList.indexOf(name) == -1)
 	{
