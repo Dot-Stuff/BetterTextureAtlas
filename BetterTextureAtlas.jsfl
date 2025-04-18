@@ -227,6 +227,7 @@ function initVars()
 	cachedMatrices = [];
 	cachedBitmaps = [];
 	cachedBitmapsList = new Array();
+	cachedTimelineRects = [];
 	instanceSizes = [];
 	cachedOneFrames = [];
 
@@ -1543,6 +1544,8 @@ function parseShape(timeline, layerIndex, frameIndex, elementIndices)
 	parseAtlasInstance(mtx, atlasIndex);
 }
 
+var cachedTimelineRects;
+
 function getElementRect(element, frameFilters, overrideFilters)
 {
 	var minX;
@@ -1566,6 +1569,17 @@ function getElementRect(element, frameFilters, overrideFilters)
 				case "symbol":
 					var timeline = element.libraryItem.timeline;
 					var frameIndex = (element.firstFrame != undefined) ? element.firstFrame : 0;
+
+					var cachedRect = cachedTimelineRects[timeline.name];
+					if (cachedRect != null && cachedRect[frameIndex] != null)
+					{
+						var frameRect = cachedRect[frameIndex];
+						minX = frameRect.left;
+						minY = frameRect.top;
+						maxX = frameRect.right;
+						maxY = frameRect.bottom;
+						break;
+					}
 		
 					minX = minY = Number.POSITIVE_INFINITY;
 					maxX = maxY = Number.NEGATIVE_INFINITY;	
@@ -1573,7 +1587,15 @@ function getElementRect(element, frameFilters, overrideFilters)
 					var l = 0;
 					while (l < timeline.layers.length)
 					{
-						var frameElements = timeline.layers[l++].frames[frameIndex].elements;
+						var layer =  timeline.layers[l++];
+						if (!isValidLayer(layer))
+							continue;
+
+						var frame = layer.frames[frameIndex];
+						if (frame == null)
+							continue;
+						
+						var frameElements = frame.elements;
 						var e = 0;
 						while (e < frameElements.length)
 						{
@@ -1584,6 +1606,18 @@ function getElementRect(element, frameFilters, overrideFilters)
 							maxY = max(maxY, elem.bottom);
 						}
 					}
+
+					if (cachedTimelineRects[timeline.name] == null)
+						cachedTimelineRects[timeline.name] = [];
+
+					// cache the rect for later
+					cachedTimelineRects[timeline.name][frameIndex] = {
+						left: minX,
+						top: minY,
+						right: maxX,
+						bottom: maxY
+					}
+
 				break;
 				/*case "bitmap":
 					var bounds = element.objectSpaceBounds;
@@ -1604,7 +1638,7 @@ function getElementRect(element, frameFilters, overrideFilters)
 	var leFilters = overrideFilters != null ? overrideFilters : element.filters;
 	if (leFilters != null && leFilters.length > 0)
 		instanceFilters = instanceFilters.concat(leFilters);
-	
+
 	forEachFilter(instanceFilters, function (filter) {
 		switch (filter.name)
 		{
@@ -1627,6 +1661,12 @@ function getElementRect(element, frameFilters, overrideFilters)
 		right: maxX,
 		bottom: maxY
 	}
+}
+
+function isValidLayer(layer) {
+	if ((layer.layerType == "folder") || (layer.layerType == "guide") || (layer.layerType == "guided"))
+		return false;
+	return true;
 }
 
 var resizedContain = false;
@@ -2369,7 +2409,7 @@ function measure(func)
 {
 	var last = Date.now();
 	func();
-	trace("" + (Date.now() - last) + "ms");
+	trace("" + ((Date.now() - last) / 1000) + "s");
 }
 
 function traceArray(array)
