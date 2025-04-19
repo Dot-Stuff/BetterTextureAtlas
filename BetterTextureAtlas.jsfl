@@ -1115,7 +1115,7 @@ function parseFrames(frames, layerIndex, timeline)
 
 				push("},\n");
 			}
-			else if (canBeBaked)
+			else if (canBeBaked && frame.startFrame !== f)
 			{
 				setupBakedTween(frame, f);
 			}
@@ -1259,11 +1259,6 @@ function setupBakedTween(frame, frameIndex)
 	{
 		curTweenShape = frame.tweenObj.getShape(frameOffset);
 	}
-}
-
-function drawShape(shape)
-{
-
 }
 
 function parseElements(elements, frameIndex, layerIndex, timeline)
@@ -1512,8 +1507,83 @@ function parseBitmapInstance(bitmap, timeline, layerIndex, frameIndex, elemIndex
 	}
 }
 
+function drawShape(shape)
+{
+	// TODO: edit the item only once, keep it open
+	// gotta edit this fucker
+	lib.editItem(TEMP_SPRITEMAP);
+
+	// prepare da keyframe
+	TEMP_TIMELINE.currentFrame = smIndex;
+	TEMP_TIMELINE.convertToBlankKeyframes(smIndex);
+	doc.selectNone();
+
+	// prepare the render shape path
+	fl.drawingLayer.beginDraw();
+	fl.drawingLayer.beginFrame();
+	var ogFill =  doc.getCustomFill("toolbar");
+
+	var path = fl.drawingLayer.newPath();
+	var contours = shape.contours;
+	var c = 0;
+
+	while (c < contours.length)
+	{
+		var contour = contours[c++];
+		var color = contour.fill.color;
+
+		if (color == null)
+			continue;
+
+		doc.setCustomFill(contour.fill);
+
+		var halfEdge = contour.getHalfEdge();
+		var startEdgeID = halfEdge.id;
+		var firstVertex = halfEdge.getVertex();
+		var started = false;
+
+		while (halfEdge.id != startEdgeID || !started)
+		{
+			var vertex = halfEdge.getVertex();
+			path.addPoint(vertex.x, vertex.y); // TODO: use addCurve instead?
+
+			halfEdge = halfEdge.getNext();
+			started = true;
+		}
+
+		path.addPoint(firstVertex.x, firstVertex.y)
+	}
+
+	// render the crap
+	path.close();
+	path.makeShape(false, true);
+
+	fl.drawingLayer.endFrame();
+	fl.drawingLayer.endDraw();
+
+	// exit the crap
+	doc.exitEditMode();
+	doc.setCustomFill(ogFill);
+
+	// ok we're done with that ugly stuff
+	var resultShape = TEMP_LAYER.frames[smIndex].elements[0];
+	var mtx = makeMatrix(1, 0, 0, 1, resultShape.left, resultShape.top);
+	resizeInstanceMatrix(curSymbol, mtx);
+	parseAtlasInstance(mtx, smIndex);
+	
+	frameQueue.push([0]);
+	smIndex++;
+}
+
 function parseShape(timeline, layerIndex, frameIndex, elementIndices)
 {
+	if (curTweenShape != null)
+	{
+		drawShape(curTweenShape);
+		curTweenShape = null;
+		return;
+	}
+
 	var shapeBounds = pushShapeSpritemap(timeline, layerIndex, frameIndex, elementIndices);
 	var atlasIndex = (smIndex - 1);
 
