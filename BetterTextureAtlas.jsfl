@@ -1042,8 +1042,11 @@ function parseFrames(frames, layerIndex, timeline)
 	{
 		var frame = frames[f];
 		var isKeyframe = (f === frame.startFrame);
-		var isTweenedFrame = (frame.tweenType != "none"); // TODO: implement shape tweens
-		var canBeBaked = bakedTweens && isTweenedFrame && frame.tweenObj != null;
+		
+		var tweenType = frame.tweenType;
+		var isTweenedFrame = (tweenType != "none");
+		var canBeTween = isTweenedFrame && (frame.tweenObj != null);
+		var bakeTween = canBeTween ? ((tweenType == "shape") || bakedTweens) : false; // force bake shape tweens
 		
 		// setup for baked tweens crap
 		if (curTweenFrame > -1)
@@ -1055,70 +1058,71 @@ function parseFrames(frames, layerIndex, timeline)
 			curTweenFrame = -1;
 		}
 
-		if (isKeyframe || (isTweenedFrame && bakedTweens))
+		if (isKeyframe || bakeTween)
 		{
 			push('{\n');
 
 			if (frame.name.length > 0)
 				jsonStr(key("name", "N"), frame.name);
 
-			if (isTweenedFrame && !bakedTweens)
+			if (canBeTween)
 			{
-				jsonHeader(key("tween", "TWN"));
-
-				var isCubic = frame.getCustomEase() != null;
-
-				if (isCubic)
+				if (bakeTween)
 				{
-					jsonArray(key("curve", "CV"));
-					var e = 0;
-					var eases = frame.getCustomEase();
-					while (e < eases.length)
-					{
-						var field = eases[e++];
-						push("{");
-						jsonVar("x", field.x);
-						jsonVarEnd("y", field.y);
-						push("},\n");
-					}
-
-					if (eases.length > 0)
-						removeTrail(2);
-					
-					push("],\n");
+					if (!isKeyframe)
+						setupBakedTween(frame, f);
 				}
 				else
 				{
-					jsonVar(key("ease", "ES"), frame.tweenEasing);
+					jsonHeader(key("tween", "TWN"));
+					
+					var isCubic = frame.getCustomEase() != null;
+					if (isCubic)
+					{
+						jsonArray(key("curve", "CV"));
+						var e = 0;
+						var eases = frame.getCustomEase();
+						while (e < eases.length)
+						{
+							var field = eases[e++];
+							push("{");
+							jsonVar("x", field.x);
+							jsonVarEnd("y", field.y);
+							push("},\n");
+						}
+	
+						if (eases.length > 0)
+							removeTrail(2);
+						
+						push("],\n");
+					}
+					else
+					{
+						jsonVar(key("ease", "ES"), frame.tweenEasing);
+					}
+	
+					switch (frame.tweenType)
+					{
+						case "motion": // "classic"
+						jsonStr(key("type", "T"), key("motion", "MT"));
+						jsonStr(key("rotate", "RT"), frame.motionTweenRotate);
+						jsonVar(key("rotateTimes", "RTT"), frame.motionTweenRotateTimes);
+						jsonVar(key("scale", "SL"), frame.motionTweenScale);
+						jsonVar(key("snap", "SP"), frame.motionTweenSnap);
+						jsonVarEnd(key("sync", "SC"), frame.motionTweenSync);
+						break;
+						case "motion object":
+						jsonStr(key("type", "T"), key("motion_OBJECT", "MTO"));
+						parseMotionObject(xmlToObject(frame.getMotionObjectXML()));
+						break;
+						case "IK pose":
+							removeTrail(2); // TODO: look where the IK pose tween variables are stored
+						break;
+						case "shape": break; // unused, shape tweens are force baked
+					}	
+	
+					push("},\n");
 				}
-
-				switch (frame.tweenType)
-				{
-					case "motion": // "classic"
-					jsonStr(key("type", "T"), key("motion", "MT"));
-					jsonStr(key("rotate", "RT"), frame.motionTweenRotate);
-					jsonVar(key("rotateTimes", "RTT"), frame.motionTweenRotateTimes);
-					jsonVar(key("scale", "SL"), frame.motionTweenScale);
-					jsonVar(key("snap", "SP"), frame.motionTweenSnap);
-					jsonVarEnd(key("sync", "SC"), frame.motionTweenSync);
-					break;
-					case "motion object":
-					jsonStr(key("type", "T"), key("motion_OBJECT", "MTO"));
-					parseMotionObject(xmlToObject(frame.getMotionObjectXML()));
-					break;
-					case "shape":
-					jsonStrEnd(key("type", "T"), key("shape", "SHP"));
-					break;
-					case "IK pose":
-						removeTrail(2); // TODO: look where the IK pose tween variables are stored
-					break;
-				}	
-
-				push("},\n");
-			}
-			else if (canBeBaked && frame.startFrame !== f)
-			{
-				setupBakedTween(frame, f);
 			}
 
 			if (includeSnd && frame.soundLibraryItem != null)
@@ -1147,7 +1151,7 @@ function parseFrames(frames, layerIndex, timeline)
 			}
 
 			jsonVar(key("index", "I"), f);
-			jsonVar(key("duration", "DU"), canBeBaked ? 1 : frame.duration);
+			jsonVar(key("duration", "DU"), bakeTween ? 1 : frame.duration);
 			
 			if (!bakedFilters)
 			{
