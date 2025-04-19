@@ -36,8 +36,8 @@ var AllRot = true;
 var inlineSym = false;
 var includeSnd = true;
 
-var bakedFilters = false; // TODO
-var bakedTweens = false; // TODO
+var bakedFilters = false;
+var bakedTweens = false;
 var bakeOneFR = true;
 var bakeTexts = false;
 /////
@@ -1075,7 +1075,7 @@ function parseFrames(frames, layerIndex, timeline)
 				else
 				{
 					jsonHeader(key("tween", "TWN"));
-					
+
 					var isCubic = frame.getCustomEase() != null;
 					if (isCubic)
 					{
@@ -1565,7 +1565,7 @@ function drawShape(shape)
 				var p0 = e.getControl(0);
 				var p1 = e.getControl(1);
 				var p2 = e.getControl(2);
-				path.addCurve(p0.x, p0.y, p1.x, p1.y, p2.x, p2.y);
+				path.addCurve(p0.x, p0.y, p1.x, p1.y, p2.x, p2.y); // TODO: this is still kinda innacurate
 			}
 			
 			path.addPoint(vertex.x, vertex.y);
