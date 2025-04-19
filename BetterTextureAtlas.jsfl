@@ -234,6 +234,7 @@ function initVars()
 	lastTimeline = null;
 	lastLayer = null;
 	lastFrame = null;
+	openedSpritemap = false;
 
 	dictionary = [];
 	bakedDictionary = [];
@@ -317,7 +318,7 @@ function exportAtlas(symbolNames)
 	FLfile.write(path + "/Animation.json", generateAnimation(symbol));
 	TEMP_LAYER.layerType = "normal";
 
-	lib.editItem(TEMP_SPRITEMAP);
+	queueEditSpritemap();
 	TEMP_TIMELINE.currentLayer = 0;
 
 	var i = 0;
@@ -1507,11 +1508,19 @@ function parseBitmapInstance(bitmap, timeline, layerIndex, frameIndex, elemIndex
 	}
 }
 
+var openedSpritemap;
+
+function queueEditSpritemap() {
+	if (openedSpritemap)
+		return;
+
+	openedSpritemap = true;
+	lib.editItem(TEMP_SPRITEMAP);
+}
+
 function drawShape(shape)
 {
-	// TODO: edit the item only once, keep it open
-	// gotta edit this fucker
-	lib.editItem(TEMP_SPRITEMAP);
+	queueEditSpritemap();
 
 	// prepare da keyframe
 	TEMP_TIMELINE.currentFrame = smIndex;
@@ -1523,7 +1532,6 @@ function drawShape(shape)
 	fl.drawingLayer.beginFrame();
 	var ogFill =  doc.getCustomFill("toolbar");
 
-	var path = fl.drawingLayer.newPath();
 	var contours = shape.contours;
 	var c = 0;
 
@@ -1535,6 +1543,7 @@ function drawShape(shape)
 		if (color == null)
 			continue;
 
+		var path = fl.drawingLayer.newPath();
 		doc.setCustomFill(contour.fill);
 
 		var halfEdge = contour.getHalfEdge();
@@ -1544,25 +1553,34 @@ function drawShape(shape)
 
 		while (halfEdge.id != startEdgeID || !started)
 		{
-			var vertex = halfEdge.getVertex();
-			path.addPoint(vertex.x, vertex.y); // TODO: use addCurve instead?
+			var vertex = halfEdge.getVertex();	
+			var e = halfEdge.getEdge();		
+
+			if (!e.isLine)
+			{	
+				var p0 = e.getControl(0);
+				var p1 = e.getControl(1);
+				var p2 = e.getControl(2);
+				path.addCurve(p0.x, p0.y, p1.x, p1.y, p2.x, p2.y);
+			}
+			
+			path.addPoint(vertex.x, vertex.y);
 
 			halfEdge = halfEdge.getNext();
 			started = true;
 		}
 
-		path.addPoint(firstVertex.x, firstVertex.y)
-	}
+		path.addPoint(firstVertex.x, firstVertex.y);
 
-	// render the crap
-	path.close();
-	path.makeShape(false, true);
+		// render the crap
+		path.close();
+		path.makeShape(false, true);
+	}
 
 	fl.drawingLayer.endFrame();
 	fl.drawingLayer.endDraw();
 
-	// exit the crap
-	doc.exitEditMode();
+	// add back the old fill
 	doc.setCustomFill(ogFill);
 
 	// ok we're done with that ugly stuff
