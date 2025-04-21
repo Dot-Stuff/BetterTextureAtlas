@@ -14,13 +14,13 @@ fl.showIdleMessage(false);
 
 var symbols = [];
 var meshExport = false; // If to use a spritemap or mesh vertex data
-var BTA_version = "BTA "; // cur bta release version
 
+// cur bta release version
+var BTA_version = "BTA ";
 var _mxi = FLfile.read(fl.configURI + "Commands/BetterTextureAtlas.mxi");
-
 BTA_version += _mxi.split('version="')[2].split('"')[0];
 
-fl.trace(BTA_version);
+trace(BTA_version);
 var algorithm = "maxRects";
 var onlyVisibleLayers = true;
 var optimizeDimensions = true;
@@ -2504,11 +2504,6 @@ function measure(func)
 	trace("" + ((Date.now() - last) / 1000) + "s");
 }
 
-function traceArray(array)
-{
-	trace(array.join(", "));
-}
-
 function traceFields(value, makeNewLines)
 {
 	var traceCrap = "";
@@ -2524,8 +2519,12 @@ function traceFields(value, makeNewLines)
 	trace(traceCrap);
 }
 
-function trace(msg) {
-	fl.trace(String(msg));
+function trace() {
+	var items = [];
+	var i = 0;
+	while (i < arguments.length)
+		items.push(String(arguments[i++]));
+	fl.trace(items.join(", "));
 }
 
 function isArray(value)
