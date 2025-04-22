@@ -282,6 +282,9 @@ function exportAtlas(symbolNames)
 			symbol.timeline.currentFrame = startIndex;
 			lib.addItemToDocument({x: 0, y: 0}, tempName);
 
+			var element = startFrame.elements[0];
+			element.symbolType = "graphic"; // make sure all frames get exported
+
 			startIndex += frameCount;
 			i++;
 
