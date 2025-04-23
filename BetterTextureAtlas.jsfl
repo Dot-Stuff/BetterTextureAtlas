@@ -369,45 +369,33 @@ function exportAtlas(symbolNames)
 
 				var tweenFilters = bakedTweenedFilters[i];
 				var filters = tweenFilters != null ? tweenFilters : element.filters;
-						
+
 				if (filters != undefined && filters.length > 0)
 				{
-					var isScaled =
-						(Math.floor(matrix.a * 100) != Math.floor(element.matrix.a * 100)) ||
-						(Math.floor(matrix.d * 100) != Math.floor(element.matrix.d * 100));
-
-					if (isScaled) {
-						element.scaleX = 1 / matrix.a;
-						element.scaleY = 1 / matrix.d;
-					}
-
-					if (bakedFilters)
-					{
-						if (isScaled || tweenFilters != null)
-						{
-							doc.selection = [element];
+					element.scaleX /= matrix.a;
+					element.scaleY /= matrix.d;
+					element.selected = true;
 		
-							if (isScaled) {
-								forEachFilter(filters, function (filter) {
-									switch (filter.name)
-									{
-										case "glowFilter":
-										case "blurFilter":
-											filter.blurX /= matrix.a;
-											filter.blurY /= matrix.d;
-										break;
-									}
-								});
+					if (bakedFilters) {
+						forEachFilter(filters, function (filter) {
+							switch (filter.name)
+							{
+								case "glowFilter":
+								case "blurFilter":
+									filter.blurX  /= matrix.a;
+									filter.blurY  /= matrix.d;
+								break;
 							}
-		
-							doc.setFilters(filters);
-						}
+						});
+	
+						doc.setFilters(filters);
 					}
 					else
 					{
-						doc.selection = [element];
 						doc.setFilters(new Array(0));
 					}
+					
+					element.selected = false;
 				}
 				else
 				{
@@ -1592,6 +1580,9 @@ function drawShape(shape)
 
 	// ok we're done with that ugly stuff
 	var resultShape = TEMP_LAYER.frames[smIndex].elements[0];
+	if (resultShape == null)
+		return;
+	
 	var mtx = makeMatrix(1, 0, 0, 1, resultShape.left, resultShape.top);
 	resizeInstanceMatrix(curSymbol, mtx);
 	parseAtlasInstance(mtx, smIndex);
@@ -1714,25 +1705,33 @@ function getElementRect(element, frameFilters, overrideFilters)
 					}
 
 				break;
-				/*case "bitmap":
-					var bounds = element.objectSpaceBounds;
-					minX = bounds.left;
-					minY = bounds.top;
-					maxX = bounds.right;
-					maxY = bounds.bottom;
-				break;*/
+				case "bitmap":
+					minX = element.left;
+					minY = element.top;
+					maxX = minX + element.width;
+					maxY = minY + element.height;
+				break;
 			}
 		break;
 	}
 
+	var bounds = {
+		left: minX,
+		top: minY,
+		right: maxX,
+		bottom: maxY
+	}
+
+	expandBounds(bounds, overrideFilters != null ? overrideFilters : element.filters, frameFilters);
+
+	return bounds;
+}
+
+function expandBounds(bounds, filters, frameFilters)
+{
 	var instanceFilters = new Array();
-
-	if (frameFilters != null && frameFilters.length > 0)
-		instanceFilters = instanceFilters.concat(frameFilters);
-
-	var leFilters = overrideFilters != null ? overrideFilters : element.filters;
-	if (leFilters != null && leFilters.length > 0)
-		instanceFilters = instanceFilters.concat(leFilters);
+	if (frameFilters != null && frameFilters.length > 0) 	instanceFilters = instanceFilters.concat(frameFilters);
+	if (filters != null && filters.length > 0) 				instanceFilters = instanceFilters.concat(filters);
 
 	forEachFilter(instanceFilters, function (filter) {
 		switch (filter.name)
@@ -1741,21 +1740,16 @@ function getElementRect(element, frameFilters, overrideFilters)
 				if (filter.inner)
 					break;
 			case "blurFilter":
-				var blurMult = getQualityScale(filter.quality) * 1.5;
-				minX -= filter.blurX * blurMult;
-				minY -= filter.blurY * blurMult;
-				maxX += filter.blurX * blurMult;
-				maxY += filter.blurY * blurMult;
+				var blurMult = getQualityScale(filter.quality) * 1.375; // hear me out here
+				bounds.left -= filter.blurX * blurMult;
+				bounds.top -= filter.blurY * blurMult;
+				bounds.right += filter.blurX * blurMult;
+				bounds.bottom += filter.blurY * blurMult;
 			break;
 		}
 	});
 
-	return {
-		left: minX,
-		top: minY,
-		right: maxX,
-		bottom: maxY
-	}
+	return bounds;
 }
 
 function isValidLayer(layer) {
@@ -1849,9 +1843,12 @@ function pushElementSpritemap(timeline, layerIndex, frameIndex, elementIndices, 
 		bakedTweenedFilters[smIndex] = curTweenFilters;
 	
 	var rect = getElementRect(elem, frameFilters, elementFilters);
-	var matScale = getMatrixScale(rect.right - rect.left, rect.bottom - rect.top);
-	var matScaleX = (elem.scaleX < 1) ? (1 / elem.scaleX) * matScale : matScale;
-	var matScaleY = (elem.scaleY < 1) ? (1 / elem.scaleY) * matScale : matScale;
+	var w = rect.right - rect.left;
+	var h = rect.bottom - rect.top;
+	
+	var matScale = getMatrixScale(w, h);
+	var matScaleX = matScale;
+	var matScaleY = matScale;
 
 	if (bakedFilters)
 	{
@@ -1862,11 +1859,11 @@ function pushElementSpritemap(timeline, layerIndex, frameIndex, elementIndices, 
 		forEachFilter(elementFilters, function (filter) {
 			switch (filter.name) {
 				case "blurFilter":
-					var qualityScale = 0.5;
-					if (filter.quality == "medium") qualityScale = 0.75;
-					if (filter.quality == "low") 	qualityScale = 0.95;
-					scaleXMult *= (filter.blurX / (16 * qualityScale));
-					scaleYMult *= (filter.blurY / (16 * qualityScale));
+					var qualityScale = 0.25;
+					if (filter.quality == "medium") qualityScale = 0.375;
+					if (filter.quality == "low") 	qualityScale = 0.50;
+					scaleXMult *= (filter.blurX / (30 * qualityScale));
+					scaleYMult *= (filter.blurY / (30 * qualityScale));
 				break;
 			}
 		});
@@ -1875,18 +1872,18 @@ function pushElementSpritemap(timeline, layerIndex, frameIndex, elementIndices, 
 		matScaleY *= max(scaleYMult, 1);
 	}
 
-	var atlasMatrix = makeMatrix(matScaleX, 0, 0, matScaleY, rect.left, rect.top);
+	var atlasMatrix = makeMatrix(matScaleX, 0, 0, matScaleY, rect.left - matScaleX, rect.top - matScaleY);
 
-	if (flattenSkewing)
-	{
-		var m = elem.matrix;
-		var w = (rect.right - rect.left);
-		var h = (rect.bottom - rect.top);
+	//if (flattenSkewing)
+	//{
+	//	var m = elem.matrix;
+		//var w = (rect.right - rect.left);
+		//var h = (rect.bottom - rect.top);
 
 		// TODO: still kinda innacurate, fix it later
-		atlasMatrix.tx += ((w * m.c)) / 2;
-		atlasMatrix.ty += ((h * m.b)) / 2;
-	}
+		//atlasMatrix.tx += ((w * m.c)) / 2;
+		//atlasMatrix.ty += ((h * m.b)) / 2;
+	//}
 
 	makeBasicLayer(function () {
 		resizeInstanceMatrix(curSymbol, atlasMatrix);
@@ -1897,8 +1894,22 @@ function pushElementSpritemap(timeline, layerIndex, frameIndex, elementIndices, 
 	if (inlineSym)
 		push('}');
 
+	var matrix = cloneMatrix(elem.matrix);
+	var scaleX = Math.sqrt(matrix.a * matrix.a + matrix.b * matrix.b);
+    var scaleY = Math.sqrt(matrix.c * matrix.c + matrix.d * matrix.d);
+
+    if (scaleX !== 0) {
+        matrix.a /= scaleX;
+        matrix.b /= scaleX;
+    }
+
+    if (scaleY !== 0) {
+        matrix.c /= scaleY;
+        matrix.d /= scaleY;
+    }
+
 	bakedDictionary.push({name: itemName, json: closeJson()});
-	parseSymbolInstance(elem, itemName);
+	parseSymbolInstance(elem, itemName, matrix);
 }
 
 function forEachFilter(filters, callback)
@@ -2108,7 +2119,7 @@ function getFrameFilters(layer, frameIndex)
 	return new Array(0);
 }
 
-function parseSymbolInstance(instance, itemName)
+function parseSymbolInstance(instance, itemName, overrideMatrix)
 {
 	var bakedInstance = (itemName != undefined);
 	jsonHeader(key("SYMBOL_Instance", "SI"));
@@ -2166,6 +2177,7 @@ function parseSymbolInstance(instance, itemName)
 		}
 		jsonStr(key("symbolType", "ST"), type);
 	}
+	else if (bakedInstance) jsonStr(key("symbolType", "ST"), key("movieclip", "MC"));
 
 	jsonVar(key("transformationPoint", "TRP"),
 		'{"x":' + instance.transformX +
@@ -2245,7 +2257,7 @@ function parseSymbolInstance(instance, itemName)
 	if (instance.is3D)	jsonVar(key("Matrix3D", "M3D"), parseMatrix3D(instance.matrix3D));
 	else
 	{
-		var matrix = instance.matrix;
+		var matrix = overrideMatrix != null ? overrideMatrix : instance.matrix;
 
 		if (flattenSkewing)
 		{
