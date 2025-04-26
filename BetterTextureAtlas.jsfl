@@ -1841,8 +1841,9 @@ function pushElementSpritemap(timeline, layerIndex, frameIndex, elementIndices, 
 	
 	if (curTweenFilters != null)
 		bakedTweenedFilters[smIndex] = curTweenFilters;
-	
-	var rect = getElementRect(elem, frameFilters, elementFilters);
+
+	var rect = expandBounds(getFrameBounds(elem.libraryItem.timeline, 0), elementFilters, frameFilters);
+
 	var w = rect.right - rect.left;
 	var h = rect.bottom - rect.top;
 	
@@ -1896,17 +1897,17 @@ function pushElementSpritemap(timeline, layerIndex, frameIndex, elementIndices, 
 
 	var matrix = cloneMatrix(elem.matrix);
 	var scaleX = Math.sqrt(matrix.a * matrix.a + matrix.b * matrix.b);
-    var scaleY = Math.sqrt(matrix.c * matrix.c + matrix.d * matrix.d);
+	var scaleY = Math.sqrt(matrix.c * matrix.c + matrix.d * matrix.d);
 
-    if (scaleX !== 0) {
-        matrix.a /= scaleX;
-        matrix.b /= scaleX;
-    }
+	if (scaleX !== 0) {
+		matrix.a /= scaleX;
+		matrix.b /= scaleX;
+	}
 
-    if (scaleY !== 0) {
-        matrix.c /= scaleY;
-        matrix.d /= scaleY;
-    }
+	if (scaleY !== 0) {
+		matrix.c /= scaleY;
+		matrix.d /= scaleY;
+	}
 
 	bakedDictionary.push({name: itemName, json: closeJson()});
 	parseSymbolInstance(elem, itemName, matrix);
@@ -1985,7 +1986,10 @@ function getFrameBounds(timeline, frameIndex)
 	}
 
 	if (foundElements <= 0) {
-		return {left: 0, top: 0, right: 0, bottom: 0}
+		minX = 0;
+		minY = 0;
+		maxX = 0;
+		maxY = 0;
 	}
 
 	return {
@@ -2258,14 +2262,6 @@ function parseSymbolInstance(instance, itemName, overrideMatrix)
 	else
 	{
 		var matrix = overrideMatrix != null ? overrideMatrix : instance.matrix;
-
-		if (flattenSkewing)
-		{
-			matrix = cloneMatrix(matrix);
-			matrix.b = 0;
-			matrix.c = 0;
-		}
-
 		jsonVar(key("Matrix", "MX"), parseMatrix(matrix, true));
 	}
 
