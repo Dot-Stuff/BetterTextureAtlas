@@ -230,6 +230,7 @@ function initVars()
 	cachedTimelineRects = [];
 	instanceSizes = [];
 	cachedOneFrames = [];
+	cachedShapes = [];
 
 	lastTimeline = null;
 	lastLayer = null;
@@ -1593,11 +1594,12 @@ function parseShape(timeline, layerIndex, frameIndex, elementIndices)
 		return;
 	}
 
-	var shapeBounds = pushShapeSpritemap(timeline, layerIndex, frameIndex, elementIndices);
-	if (shapeBounds == null)
+	var shapeData = pushShapeSpritemap(timeline, layerIndex, frameIndex, elementIndices);
+	if (shapeData == null)
 		return;
 	
-	var atlasIndex = smIndex - 1;
+	var shapeBounds = shapeData[1];
+	var atlasIndex = shapeData[2];
 	
 	var shapeLeft = Number.POSITIVE_INFINITY;
 	var shapeTop = Number.POSITIVE_INFINITY;
@@ -1620,7 +1622,17 @@ function parseShape(timeline, layerIndex, frameIndex, elementIndices)
 	var mtx = makeMatrix(scale, 0, 0, scale, shapeLeft, shapeTop);
 
 	resizeInstanceMatrix(curSymbol, mtx);
-	parseAtlasInstance(mtx, atlasIndex);
+	parseAtlasInstance(mtx, atlasIndex, true);
+	
+	// Replace current matrix
+	var mat = cachedMatrices[atlasIndex];
+	if (mat == null) {
+		mat = mtx;
+		cachedMatrices[atlasIndex] = mtx;
+	}
+
+	mat.a = max(mat.a, mtx.a);
+	mat.d = max(mat.d, mtx.d);
 }
 
 var cachedTimelineRects;
@@ -1993,8 +2005,28 @@ function getFrameBounds(timeline, frameIndex)
 	}
 }
 
+// 39.585s
+
+var cachedShapes;
+
+function getShapeID(shape)
+{
+	return [shape.vertices.length,shape.contours.length,shape.edges.length,Math.round(shape.width),Math.round(shape.height)].join("-");
+}
+
 function pushShapeSpritemap(timeline, layerIndex, frameIndex, elementIndices)
 {
+	if (elementIndices.length == 1)
+	{
+		var shape = timeline.layers[layerIndex].frames[frameIndex].elements[elementIndices[0]];
+		var duplicate = cachedShapes[getShapeID(shape)];
+		if (duplicate != null)
+		{
+			trace('ADDED DUPLICATE AT INDEX',duplicate[2]);
+			return duplicate;
+		}
+	}
+
 	pushElementsFromFrame(timeline, layerIndex, frameIndex, elementIndices);
 
 	var frameElements = TEMP_LAYER.frames[smIndex].elements;
@@ -2021,7 +2053,9 @@ function pushShapeSpritemap(timeline, layerIndex, frameIndex, elementIndices)
 			right: shape.left + shape.width,
 			bottom: shape.top + shape.height
 		});
-		return shapes;
+		var output = [shape, shapes, smIndex - 1];
+		cachedShapes[getShapeID(shape)] = output;
+		return output;
 	}
 
 	while (e < l)
@@ -2063,7 +2097,7 @@ function pushShapeSpritemap(timeline, layerIndex, frameIndex, elementIndices)
 		e++;
 	}
 
-	return shapes;
+	return [null, shapes, smIndex - 1];
 }
 
 var instanceSizes;
