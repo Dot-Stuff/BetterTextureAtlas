@@ -1265,8 +1265,8 @@ function parseElements(elements, frameIndex, layerIndex, timeline)
 	var shapeQueue = [];
 	var layer = timeline.layers[layerIndex];
 
-	var frameFilters = getFrameFilters(layer, frameIndex);
-	var hasFrameFilters = (bakedFilters && frameFilters.length > 0);
+	//var frameFilters = getFrameFilters(layer, frameIndex);
+	//var hasFrameFilters = (bakedFilters && frameFilters.length > 0);
 	
 	var animType = layer.animationType;
 	if (animType == null)
@@ -1302,13 +1302,13 @@ function parseElements(elements, frameIndex, layerIndex, timeline)
 					case "symbol":
 
 					var hasFilters = element.filters != undefined && element.filters.length > 0;
-					var bakeInstanceFilters = (bakedFilters && (hasFilters || hasFrameFilters));
+					var bakeInstanceFilters = (bakedFilters && hasFilters);
 					var bakeInstanceSkew = (flattenSkewing && (element.skewX != 0 || element.skewY != 0));
 					var bakeInstance = (bakeInstanceFilters || bakeInstanceSkew);
 					
 					if (bakeInstance)
 					{
-						pushElementSpritemap(timeline, layerIndex, frameIndex, [e], frameFilters);
+						pushElementSpritemap(timeline, layerIndex, frameIndex, [e]);
 					}
 					else
 					{
@@ -1339,7 +1339,7 @@ function parseElements(elements, frameIndex, layerIndex, timeline)
 					case "input":
 						if (!element.useDeviceFonts || bakeTexts)
 						{
-							pushElementSpritemap(timeline, layerIndex, frameIndex, [e], frameFilters);
+							pushElementSpritemap(timeline, layerIndex, frameIndex, [e]);
 						}
 						else
 						{
@@ -1361,14 +1361,7 @@ function parseElements(elements, frameIndex, layerIndex, timeline)
 
 	if (shapeQueue.length > 0) {
 		push("{");
-		if (hasFrameFilters && bakedFilters)
-		{
-			pushElementSpritemap(timeline, layerIndex, frameIndex, shapeQueue, frameFilters);
-		}
-		else
-		{
-			parseShape(timeline, layerIndex, frameIndex, shapeQueue);
-		}
+		parseShape(timeline, layerIndex, frameIndex, shapeQueue);
 		push("}");
 	}
 
@@ -1601,10 +1594,10 @@ function parseShape(timeline, layerIndex, frameIndex, elementIndices)
 	}
 
 	var shapeBounds = pushShapeSpritemap(timeline, layerIndex, frameIndex, elementIndices);
-	var atlasIndex = (smIndex - 1);
-
 	if (shapeBounds == null)
 		return;
+	
+	var atlasIndex = smIndex - 1;
 	
 	var shapeLeft = Number.POSITIVE_INFINITY;
 	var shapeTop = Number.POSITIVE_INFINITY;
@@ -1632,7 +1625,7 @@ function parseShape(timeline, layerIndex, frameIndex, elementIndices)
 
 var cachedTimelineRects;
 
-function getElementRect(element, frameFilters, overrideFilters)
+function getElementRect(element, overrideFilters)
 {
 	var minX;
 	var minY;
@@ -1722,16 +1715,16 @@ function getElementRect(element, frameFilters, overrideFilters)
 		bottom: maxY
 	}
 
-	expandBounds(bounds, overrideFilters != null ? overrideFilters : element.filters, frameFilters);
+	expandBounds(bounds, overrideFilters != null ? overrideFilters : element.filters);
 
 	return bounds;
 }
 
-function expandBounds(bounds, filters, frameFilters)
+function expandBounds(bounds, filters)
 {
 	var instanceFilters = new Array();
-	if (frameFilters != null && frameFilters.length > 0) 	instanceFilters = instanceFilters.concat(frameFilters);
-	if (filters != null && filters.length > 0) 				instanceFilters = instanceFilters.concat(filters);
+	if (filters != null && filters.length > 0)
+		instanceFilters = instanceFilters.concat(filters);
 
 	forEachFilter(instanceFilters, function (filter) {
 		switch (filter.name)
@@ -1821,7 +1814,7 @@ function pushElementsFromFrame(timeline, layerIndex, frameIndex, elementIndices)
 	frameQueue.push(elementIndices);
 }
 
-function pushElementSpritemap(timeline, layerIndex, frameIndex, elementIndices, frameFilters)
+function pushElementSpritemap(timeline, layerIndex, frameIndex, elementIndices)
 {
 	pushElementsFromFrame(timeline, layerIndex, frameIndex, elementIndices);
 	var itemName = "_bta_asi_" + smIndex;
@@ -1842,7 +1835,7 @@ function pushElementSpritemap(timeline, layerIndex, frameIndex, elementIndices, 
 	if (curTweenFilters != null)
 		bakedTweenedFilters[smIndex] = curTweenFilters;
 
-	var rect = expandBounds(getFrameBounds(elem.libraryItem.timeline, 0), elementFilters, frameFilters);
+	var rect = expandBounds(getFrameBounds(elem.libraryItem.timeline, 0), elementFilters);
 
 	var w = rect.right - rect.left;
 	var h = rect.bottom - rect.top;
