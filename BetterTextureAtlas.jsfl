@@ -230,6 +230,7 @@ function initVars()
 	cachedTimelineRects = [];
 	instanceSizes = [];
 	cachedOneFrames = [];
+	cachedRectangles = [];
 
 	lastTimeline = null;
 	lastLayer = null;
@@ -399,12 +400,20 @@ function exportAtlas(symbolNames)
 				}
 				else
 				{
-					// Round the pixel for antialiasing reasons
-					var targetX = Math.floor(element.width / matrix.a) / element.width;
-					var targetY = Math.floor(element.height / matrix.d) / element.height;
+					if (cachedRectangles[i])
+					{
+						element.width = 25;
+						element.height = 25;
+					}
+					else
+					{
+						// Round the pixel for antialiasing reasons
+						var targetX = Math.ceil(element.width / matrix.a) / element.width;
+						var targetY = Math.ceil(element.height / matrix.d) / element.height;
 
-					element.scaleX = targetX;
-					element.scaleY = targetY;
+						element.scaleX = targetX;
+						element.scaleY = targetY;
+					}
 				}
 			}
 			else
@@ -531,7 +540,6 @@ function divideSpritemap(smData, symbol)
 {
 	var parent = smData.sm;
 	var framesLength = symbol.timeline.layers[0].frames.length;
-	var cutFrames = Math.floor(framesLength * 0.5);
 
 	if (framesLength === 1)
 	{
@@ -543,6 +551,7 @@ function divideSpritemap(smData, symbol)
 	lib.addNewItem("graphic", nextSmID);
 	var nextSmSymbol = findItem(nextSmID);
 
+	var cutFrames = Math.floor(framesLength * 0.5);
 	symbol.timeline.copyFrames(cutFrames, framesLength);
 	nextSmSymbol.timeline.pasteFrames(0, (framesLength - cutFrames));
 	symbol.timeline.removeFrames(cutFrames, framesLength);
@@ -630,10 +639,24 @@ function exportSpritemap(id, exportPath, smData, index)
 
 		// expand the frame a pixel because animate makes em too small for some reason
 		var frameValues = frame.split(",");
-		frameValues[0] = '"x":' + (parseInt(frameValues[0].substring(4, frameValues[0].length)) - 1);
-		frameValues[1] = '"y":' + (parseInt(frameValues[1].substring(4, frameValues[1].length)) - 1);
-		frameValues[2] = '"w":' + (parseInt(frameValues[2].substring(4, frameValues[2].length)) + 1);
-		frameValues[3] = '"h":' + (parseInt(frameValues[3].substring(4, frameValues[3].length)) + 1);
+		
+		var x = parseInt(frameValues[0].substring(4, frameValues[0].length)) - 1;
+		var y = parseInt(frameValues[1].substring(4, frameValues[1].length)) - 1;
+		var w = parseInt(frameValues[2].substring(4, frameValues[2].length)) + 1;
+		var h = parseInt(frameValues[3].substring(4, frameValues[3].length)) + 1;
+
+		if (cachedRectangles[name])
+		{
+			x += Math.floor(w / 2);
+			y += Math.floor(h / 2);
+			w = 1;
+			h = 1;
+		}
+		
+		frameValues[0] = '"x":' + x;
+		frameValues[1] = '"y":' + y;
+		frameValues[2] = '"w":' + w;
+		frameValues[3] = '"h":' + h;
 
 		smJson.push('{"SPRITE":{"name":"' +  name + '",' + frameValues.join(",") + ',' + rotated + '}}');
 		if (l < atlasLimbs.length - 1) smJson.push(',\n');
@@ -1584,6 +1607,8 @@ function drawShape(shape)
 	smIndex++;
 }
 
+var cachedRectangles;
+
 function parseShape(timeline, layerIndex, frameIndex, elementIndices)
 {
 	if (curTweenShape != null)
@@ -1605,6 +1630,7 @@ function parseShape(timeline, layerIndex, frameIndex, elementIndices)
 	var shapeBottom = Number.NEGATIVE_INFINITY;
 
 	var s = 0;
+	
 	while (s < shapeBounds.length)
 	{	
 		var bounds = shapeBounds[s++];
@@ -1612,14 +1638,30 @@ function parseShape(timeline, layerIndex, frameIndex, elementIndices)
 		shapeTop = min(shapeTop, bounds.top);
 		shapeRight = max(shapeRight, bounds.right);
 		shapeBottom = max(shapeBottom, bounds.bottom);
-
-		// isRectangle = (shape.isRectangleObject || shape.vertices.length === 4)
 	}
 
 	var scale = getMatrixScale(shapeRight - shapeLeft, shapeBottom - shapeTop);
 	var mtx = makeMatrix(scale, 0, 0, scale, shapeLeft, shapeTop);
-
 	resizeInstanceMatrix(curSymbol, mtx);
+	
+	if (elementIndices.length == 1) {
+		var shape = TEMP_LAYER.frames[atlasIndex].elements[elementIndices[0]];
+		var isRectangle = (shape.isRectangleObject || shape.vertices.length === 4);
+
+		/*if (!isRectangle) // Experimental, gonna leave this off for now
+		{
+			if (((shape.width / mtx.a) >= doc.width) && ((shape.height / mtx.d) >= doc.height))
+				isRectangle = shape.contours.length == 2;
+		}*/
+		
+		if (isRectangle)
+		{
+			mtx.a = shape.width;
+			mtx.d = shape.height;
+			cachedRectangles[atlasIndex] = true;
+		}
+	}
+	
 	parseAtlasInstance(mtx, atlasIndex);
 }
 
@@ -2808,7 +2850,7 @@ function legacySpritesheet(shapeLength, sheetFrame)
 
 	var i = 0;
 	while (i < packedRectangles.length)
-	{	
+	{
 		var rect = packedRectangles[i];
 		push('{"SPRITE":{"name":"' + i +
 			'","x":' + rect.x + ',"y":' + rect.y +
