@@ -20,11 +20,12 @@ Adding features and fixing its Animation file format so it presents more data fo
 
   * [x] Blend Mode Support
   * [x] Baked Filters Support
-  * [x] Matrix reformatting
+  * [x] Matrix Reformatting
   * [x] Multi-Symbol Support
   * [x] Extra Metadata
-  * [x] Dynamic Tweening values
-  * [x] Sound support with its according settings (Event, Stream)
+  * [x] Dynamic Tween values
+  * [x] Sound Support with its according settings (Event, Stream)
+  * [x] ActionScript Support
   * [ ] Vector Support 
 </details>
 
