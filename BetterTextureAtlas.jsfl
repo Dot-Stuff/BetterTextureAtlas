@@ -230,12 +230,15 @@ function initVars()
 	cachedTimelineRects = [];
 	instanceSizes = [];
 	cachedOneFrames = [];
+
 	cachedRectangles = [];
+	minRectangleSize = 25; // spritesheet exporter does some goofy shit otherwise
 
 	lastTimeline = null;
 	lastLayer = null;
 	lastFrame = null;
 	openedSpritemap = false;
+	createdLibrary = false;
 
 	dictionary = [];
 	bakedDictionary = [];
@@ -402,8 +405,8 @@ function exportAtlas(symbolNames)
 				{
 					if (cachedRectangles[i])
 					{
-						element.width = 25;
-						element.height = 25;
+						element.width = minRectangleSize;
+						element.height = minRectangleSize;
 					}
 					else
 					{
@@ -788,8 +791,7 @@ function generateAnimation(symbol)
 		{
 			push("}");
 			animJson = closeJson();
-
-			FLfile.createFolder(path + "/LIBRARY");
+			ensureLibrary();
 
 			var pushSymbolLibrary = function (symbolName, jsonContent)
 			{
@@ -805,7 +807,7 @@ function generateAnimation(symbol)
 					foldI++;
 				}
 	
-				FLfile.write(path + "/LIBRARY/" + symbolName + ".json", jsonContent);
+				writeLibraryFile(symbolName, jsonContent, "json");
 			}
 
 			var dictIndex = 0;
@@ -1172,11 +1174,9 @@ function parseFrames(frames, layerIndex, timeline)
 
 			if (includeSnd && frame.soundLibraryItem != null)
 			{
-				FLfile.createFolder(path + "/LIBRARY");
-				var ext = ".mp3";
-				if (frame.soundLibraryItem.originalCompressionType == "RAW")
-					ext = ".wav";
+				ensureLibrary();
 				
+				var ext = (frame.soundLibraryItem.originalCompressionType == "RAW") ? ".wav" : ".mp3";
 				var fileName = frame.soundLibraryItem.name;
 				if (fileName.indexOf(ext) === -1)
 					fileName += ext;
@@ -1194,6 +1194,9 @@ function parseFrames(frames, layerIndex, timeline)
 					removeTrail(1);
 				push('},\n');
 			}
+
+			if (frame.actionScript != null && frame.actionScript.length > 0)
+				parseActionScript(frame, layerIndex, timeline);
 
 			jsonVar(key("index", "I"), f);
 			jsonVar(key("duration", "DU"), bakeTween ? 1 : frame.duration);
@@ -1218,6 +1221,33 @@ function parseFrames(frames, layerIndex, timeline)
 
 	removeTrail(1);
 	push(']');
+}
+
+function parseActionScript(frame, layerIndex, timeline)
+{
+	ensureLibrary();
+
+	var content = rtrim(frame.actionScript);
+	var asId = "AS_" + timeline.name + "_" + layerIndex + "_" + frame.startFrame;
+
+	jsonStr(key("actionScript", "AS"), asId+".as");
+	writeLibraryFile(asId, content, "as");
+}
+
+var createdLibrary;
+
+function ensureLibrary()
+{
+	if (createdLibrary)
+		return;
+	// TODO: if library already exists, remove/clear it first?
+	FLfile.createFolder(path + "/LIBRARY");
+	createdLibrary = true;
+}
+
+function writeLibraryFile(fileName, content, ext)
+{
+	writeFile(path + "/LIBRARY/" + fileName + "." + ext, content);
 }
 
 // This is what pain looks like
@@ -1314,6 +1344,13 @@ function setupBakedTween(frame, frameIndex)
 function parseElements(elements, frameIndex, layerIndex, timeline)
 {
 	jsonArray(key("elements", "E"));
+
+	if (elements.length <= 0) // skip calculating anything lol
+	{
+		removeTrail(1, "");
+		push(']\n');
+		return;
+	}
 
 	var e = 0;
 	var shapeQueue = [];
@@ -1639,6 +1676,7 @@ function drawShape(shape)
 }
 
 var cachedRectangles;
+var minRectangleSize;
 
 function parseShape(timeline, layerIndex, frameIndex, elementIndices)
 {
@@ -1685,7 +1723,7 @@ function parseShape(timeline, layerIndex, frameIndex, elementIndices)
 				isRectangle = shape.contours.length == 2;
 		}*/
 		
-		if (isRectangle)
+		if (isRectangle && ((shape.width > minRectangleSize) || (shape.height > minRectangleSize)))
 		{
 			mtx.a = shape.width;
 			mtx.d = shape.height;
@@ -1908,7 +1946,8 @@ function pushElementSpritemap(timeline, layerIndex, frameIndex, elementIndices)
 	if (curTweenFilters != null)
 		bakedTweenedFilters[smIndex] = curTweenFilters;
 
-	var rect = expandBounds(getFrameBounds(elem.libraryItem.timeline, 0), elementFilters);
+	var baseBounds = elem.libraryItem != null ? getFrameBounds(elem.libraryItem.timeline, 0) : elem.objectSpaceBounds;
+	var rect = expandBounds(baseBounds, elementFilters);
 
 	var w = rect.right - rect.left;
 	var h = rect.bottom - rect.top;
@@ -2639,9 +2678,11 @@ function push(data)
 	curJson.push(data);
 }
 
-function removeTrail(trail)
+function removeTrail(trail, separator)
 {
-	curJson[curJson.length -1] = curJson[curJson.length -1].slice(0, -trail) + "\n";
+	if (separator == null)
+		separator = "\n";
+	curJson[curJson.length -1] = curJson[curJson.length -1].slice(0, -trail) + separator;
 }
 
 function xmlToObject(__xml)
@@ -2652,22 +2693,22 @@ function xmlToObject(__xml)
 
 function xmlNode(xml)
 {
-    var obj = {};
+	var obj = {};
 
 	var at = 0;
 	var attributes = xml.attributes();
 	while (at < atrib.length())
-    {
-        var attribute = attributes[at++];
-        obj[attribute.name()] = attribute.toString();
-    }
+	{
+		var attribute = attributes[at++];
+		obj[attribute.name()] = attribute.toString();
+	}
 
 	var j = 0;
 	var children = xml.children();
-    while (j < children.length())
+	while (j < children.length())
 	{
-        var child = children[j++];
-        var childName = child.name();
+		var child = children[j++];
+		var childName = child.name();
 
 		if (obj[childName] == undefined) // Basic value
 		{
@@ -2681,9 +2722,25 @@ function xmlNode(xml)
 		{
 			obj[childName] = [obj[childName], xmlNode(child)];
 		}
-    }
-    
-    return obj;
+	}
+
+	return obj;
+}
+
+// copy pasted from haxe lol
+function isSpace(s, pos) {
+	if (s.length === 0 || pos < 0 || pos >= s.length)
+		return false;
+	var c = s.charCodeAt(pos);
+	return (c > 8 && c < 14) || c === 32;
+}
+
+function rtrim(s) {
+	var l = s.length;
+	var r = 0;
+	while (r < l && isSpace(s, l - r - 1))
+		r++;
+	return (r > 0) ? s.substring(0, l - r) : s;
 }
 
 function writeFile(path, content)
