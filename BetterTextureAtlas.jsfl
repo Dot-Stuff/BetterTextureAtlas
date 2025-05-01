@@ -419,7 +419,10 @@ function exportAtlas(symbolNames)
 						var targetY = Math.ceil(element.height / matrix.d) / element.height;
 
 						if (element.elementType == "shape") // check if the shape has lines and is scaled
-							checkShapeLines(element, targetX, targetY);
+						{
+							if (checkShapeLines(element, targetX, targetY))
+								element = frame.elements[e];
+						}
 
 						element.scaleX = targetX;
 						element.scaleY = targetY;
@@ -524,7 +527,7 @@ function exportAtlas(symbolNames)
 function checkShapeLines(shape, targetX, targetY)
 {
 	if ((Math.abs(targetX - 1) <= 0.01) && (Math.abs(targetY - 1) <= 0.01))
-		return; // doesnt need scaling
+		return false; // doesnt need scaling
 
 	var hasLines = false;
 	var edges = shape.edges;
@@ -541,12 +544,14 @@ function checkShapeLines(shape, targetX, targetY)
 	}
     
 	if (!hasLines)
-		return; // doesnt have lines
+		return false; // doesnt have lines
 
 	doc.selectNone();
 	doc.selection = [shape];
 	doc.convertLinesToFills();
 	doc.selectNone();
+
+	return true;
 }
 
 function cleanElement(elem)
