@@ -35,9 +35,11 @@ var AllRot = true;
 ///// ADDITIONAL BIZZ
 var inlineSym = false;
 var includeSnd = true;
+var includeAs = false;
 
 var bakedFilters = false;
 var bakedTweens = false;
+var optiRects = false;
 var bakeOneFR = true;
 var bakeTexts = false;
 /////
@@ -148,6 +150,8 @@ function _main()
 	bakeOneFR = dataAdd[3] == "true";
 	bakedFilters = dataAdd[4] == "true";
 	bakedTweens = dataAdd[5] == "true";
+	includeAs = dataAdd[6] == "true";
+	optiRects = dataAdd[7] == "true";
 
 	if (bakedTweens && flversion < 13)
 	{
@@ -1195,7 +1199,7 @@ function parseFrames(frames, layerIndex, timeline)
 				push('},\n');
 			}
 
-			if (frame.actionScript != null && frame.actionScript.length > 0)
+			if (includeAs && frame.actionScript != null && frame.actionScript.length > 0)
 				parseActionScript(frame, layerIndex, timeline);
 
 			jsonVar(key("index", "I"), f);
@@ -1713,7 +1717,7 @@ function parseShape(timeline, layerIndex, frameIndex, elementIndices)
 	var mtx = makeMatrix(scale, 0, 0, scale, shapeLeft, shapeTop);
 	resizeInstanceMatrix(curSymbol, mtx);
 	
-	if (elementIndices.length == 1) {
+	if (optiRects && elementIndices.length == 1) {
 		var shape = TEMP_LAYER.frames[atlasIndex].elements[elementIndices[0]];
 		var isRectangle = (shape.isRectangleObject || shape.vertices.length === 4);
 

@@ -37,12 +37,14 @@ function addParams()
 
     var save = [];
 
-    save[0] = xPan.InSym;
+    save[0] = xPan.INSYM;
     save[1] = xPan.BATX;
     save[2] = xPan.INCS;
     save[3] = xPan.BOFS;
     save[4] = xPan.BF;
     save[5] = xPan.BTW;
+    save[6] = xPan.INCAS;
+    save[7] = xPan.ORECTS;
 
     FLfile.write(fl.configURI + "Commands/bta_src/saveADDBTA.txt", save.join("\n"));
 }

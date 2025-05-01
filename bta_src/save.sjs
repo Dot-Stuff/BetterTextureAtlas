@@ -35,12 +35,14 @@ function xmlAddData()
     var data = FLfile.read(fl.configURI + "Commands/bta_src/BTAAdd.xml");
     var saveData = FLfile.read(fl.configURI + "Commands/bta_src/saveADDBTA.txt").split("\n");
 
-	data = data.split("$INSYMB").join(saveData[0]);
+	data = data.split("$INSYM").join(saveData[0]);
 	data = data.split("$BATX").join(saveData[1]);
 	data = data.split("$INCS").join(saveData[2]);
 	data = data.split("$BOFS").join(saveData[3]);
 	data = data.split("$BF").join(saveData[4]);
 	data = data.split("$BTW").join(saveData[5]);
+	data = data.split("$INCAS").join(saveData[6]);
+	data = data.split("$ORECTS").join(saveData[7]);
 
 	var buttonWidth = 0;
 	if (parseInt(version[0]) >= 20)
@@ -74,10 +76,14 @@ function xmlSaveStuff()
 
     var save = [];
 
-    save[0] = xPan.InSym;
+    save[0] = xPan.INSYM;
     save[1] = xPan.BATX;
     save[2] = xPan.INCS;
     save[3] = xPan.BOFS;
+	save[4] = xPan.BF;
+	save[5] = xPan.BTW;
+	save[6] = xPan.INCAS;
+	save[7] = xPan.ORECTS;
 
     FLfile.write(fl.configURI + "Commands/bta_src/saveADDBTA.txt", save.join("\n"));
 }
@@ -134,6 +140,8 @@ function setupSaves()
 		save[3] = bakeOneFR;
 		save[4] = bakedFilters;
 		save[5] = bakedTweens;
+		save[6] = includeAs;
+		save[7] = bakedRects;
 
 		FLfile.write(fl.configURI + "Commands/bta_src/saveADDBTA.txt", save.join("\n"));
 	}
