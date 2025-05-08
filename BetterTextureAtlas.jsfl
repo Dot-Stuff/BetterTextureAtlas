@@ -113,25 +113,9 @@ function _main()
 		return;
 	}
 
-	var familySymbol = [];
-	var frs = [];
-	var curFr = doc.getTimeline().currentFrame;
-	var n = "";
-
-	while (true)
-	{
-		n = doc.getTimeline().name;
-		doc.exitEditMode();
-
-		if (n == doc.timelines[0].name)
-			break;
-
-		if (doc.selection[0] != undefined)
-		{
-			familySymbol.unshift(doc.selection[0]);
-			frs.unshift(doc.getTimeline().currentFrame);
-		}
-	}
+	var curTl = doc.getTimeline();
+	var curFr = curTl.currentFrame;
+	var tlIndex = doc.currentTimeline;
 
 	ShpPad = parseInt(xPan.ShpPad);
 	BrdPad = parseInt(xPan.BrdPad);
@@ -185,19 +169,18 @@ function _main()
 	exportAtlas(symbols);
 	});
 
-	for (i = 0; i < familySymbol.length; i++)
-	{
-		doc.getTimeline().currentFrame = frs[i];
-		familySymbol[i].selected = true;
-		
-		if (doc.selection.length > 0)
-			doc.enterEditMode("inPlace");
-	}
+	// check for scene timelines
+	if (tlIndex != doc.currentTimeline)
+		doc.currentTimeline = tlIndex;
+
+	// check for symbol timelines
+	if (doc.getTimeline().name != curTl.name)
+		lib.editItem(curTl.name);
 
 	doc.getTimeline().currentFrame = curFr;
 
 	if (resizedContain)
-		trace("WARNING: some shapes were resized to fit within the 8192 size limit");
+		trace("WARNING: some shapes were resized to fit within the 8192px size limit");
 
 	trace("DONE");
 	fl.showIdleMessage(true);
@@ -280,7 +263,7 @@ function exportAtlas(symbolNames)
 		while(i < symbolNames.length)
 		{
 			var tempName = symbolNames[i];
-			var frameCount = findItem(tempName).timeline.frameCount - 1;
+			var frameCount = max(findItem(tempName).timeline.frameCount - 1, 1);
 
 			var startFrame = symbol.timeline.layers[0].frames[startIndex];
 			startFrame.name = tempName;
@@ -1987,7 +1970,7 @@ function pushElementSpritemap(timeline, layerIndex, frameIndex, elementIndices)
 		matScaleY *= max(scaleYMult, 1);
 	}
 
-	var atlasMatrix = makeMatrix(matScaleX, 0, 0, matScaleY, rect.left - matScaleX, rect.top - matScaleY);
+	var atlasMatrix = makeMatrix(matScaleX, 0, 0, matScaleY, rect.left, rect.top);
 
 	//if (flattenSkewing)
 	//{
