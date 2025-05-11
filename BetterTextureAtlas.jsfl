@@ -1691,6 +1691,7 @@ function drawShape(shape)
 var cachedRectangles;
 var minRectangleSize;
 
+// TODO: could also optimize gradient rectangles if theyre exactly vertical or horizontal
 function parseShape(timeline, layerIndex, frameIndex, elementIndices)
 {
 	if (curTweenShape != null)
@@ -1728,13 +1729,7 @@ function parseShape(timeline, layerIndex, frameIndex, elementIndices)
 	
 	if (optiRects && elementIndices.length == 1) {
 		var shape = TEMP_LAYER.frames[atlasIndex].elements[elementIndices[0]];
-		var isRectangle = (shape.isRectangleObject || shape.vertices.length === 4);
-
-		/*if (!isRectangle) // Experimental, gonna leave this off for now
-		{
-			if (((shape.width / mtx.a) >= doc.width) && ((shape.height / mtx.d) >= doc.height))
-				isRectangle = shape.contours.length == 2;
-		}*/
+		var isRectangle = isShapeRectangle(shape);
 		
 		if (isRectangle && ((shape.width > minRectangleSize) || (shape.height > minRectangleSize)))
 		{
@@ -1745,6 +1740,35 @@ function parseShape(timeline, layerIndex, frameIndex, elementIndices)
 	}
 	
 	parseAtlasInstance(mtx, atlasIndex);
+}
+
+function isShapeRectangle(shape)
+{
+	var isRectangle = (shape.contours.length == 2) && (shape.vertices.length === 4);
+	if (!isRectangle)
+		return false;
+
+	if (isRectangle) {
+		isRectangle = shape.contours[1].fill.style == "solid";
+		if (isRectangle && (!shape.isRectangleObject)) {
+			var verts = shape.vertices;
+
+			// TODO: i think the order of verts is random and needs sorting
+			var v0 = {x: Math.floor(verts[2].x), y: Math.floor(verts[2].y)};
+			var v1 = {x: Math.floor(verts[0].x), y: Math.floor(verts[0].y)};
+			var v2 = {x: Math.floor(verts[1].x), y: Math.floor(verts[1].y)};
+			var v3 = {x: Math.floor(verts[3].x), y: Math.floor(verts[3].y)};
+	
+			isRectangle = (
+				(Math.abs(v0.x - v3.x) <= 4) &&
+				(Math.abs(v1.x - v2.x) <= 4) &&
+				(Math.abs(v0.y - v1.y) <= 4) &&
+				(Math.abs(v2.y - v3.y) <= 4)
+			);
+		}
+	}
+
+	return isRectangle;
 }
 
 var cachedTimelineRects;
