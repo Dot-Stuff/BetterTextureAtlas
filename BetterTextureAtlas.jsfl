@@ -174,7 +174,7 @@ function _main()
 		doc.currentTimeline = tlIndex;
 
 	// check for symbol timelines
-	if (doc.getTimeline().name != curTl.name)
+	if (lib.itemExists(curTl.name) && doc.getTimeline().name != curTl.name)
 		lib.editItem(curTl.name);
 
 	doc.getTimeline().currentFrame = curFr;
@@ -363,8 +363,11 @@ function exportAtlas(symbolNames)
 
 				if (filters != undefined && filters.length > 0)
 				{
-					element.scaleX /= matrix.a;
-					element.scaleY /= matrix.d;
+					var targetX = Math.ceil(element.width / matrix.a) / element.width;
+					var targetY = Math.ceil(element.height / matrix.d) / element.height;
+					
+					element.scaleX *= targetX;
+					element.scaleY *= targetY;
 					element.selected = true;
 		
 					if (bakedFilters) {
@@ -373,8 +376,8 @@ function exportAtlas(symbolNames)
 							{
 								case "glowFilter":
 								case "blurFilter":
-									filter.blurX  /= matrix.a;
-									filter.blurY  /= matrix.d;
+									filter.blurX /= matrix.a;
+									filter.blurY /= matrix.d;
 								break;
 							}
 						});
@@ -397,18 +400,21 @@ function exportAtlas(symbolNames)
 					}
 					else
 					{
-						// Round the pixel for antialiasing reasons
-						var targetX = Math.ceil(element.width / matrix.a) / element.width;
-						var targetY = Math.ceil(element.height / matrix.d) / element.height;
+						var scaleX = 1 / matrix.a;
+						var scaleY = 1 / matrix.d;
 
 						if (element.elementType == "shape") // check if the shape has lines and is scaled
 						{
-							if (checkShapeLines(element, targetX, targetY))
+							if (checkShapeLines(element, scaleX, scaleY))
 								element = frame.elements[e];
 						}
 
-						element.scaleX = targetX;
-						element.scaleY = targetY;
+						var w = element.width;
+						var h = element.height;
+
+						// making sure this shit is pixel perfect
+						element.width = Math.ceil((w / element.scaleX) * scaleX);
+						element.height = Math.ceil((h / element.scaleY) * scaleY);
 					}
 				}
 			}
@@ -633,18 +639,33 @@ function exportSpritemap(id, exportPath, smData, index)
 			smHeight = Math.max(smHeight, y + h);
 		}
 
+		var w = smWidth + BrdPad;
+		var h = smHeight + BrdPad;
+
 		sm.autoSize = false;
-		sm.sheetWidth = smWidth + BrdPad;
-		sm.sheetHeight = smHeight + BrdPad;
-		
-		if (sm.overflowed)
+		sm.sheetWidth = w;
+		sm.sheetHeight = h;
+
+		// this shouldnt happen (most of the time)
+		// but just in case, fuck it
+		var hasOverflowed = false
+		while (sm.overflowed)
 		{
-			break;
+			w+=2;
+			h+=2;
+
+			if (w > 8192 || h > 8192) {
+				hasOverflowed = true;
+				trace("ERROR: Couldn't trim spritemap" + index +" correctly");
+				break;
+			}
+
+			sm.sheetWidth = w;
+			sm.sheetHeight = h;
 		}
-		else
-		{
+
+		if (!hasOverflowed)
 			sm.exportSpriteSheet(smPath, smSettings, true);
-		}
 	}
 
 	// Parse and change json to spritemap format
@@ -1418,7 +1439,7 @@ function parseElements(elements, frameIndex, layerIndex, timeline)
 				switch (element.textType)
 				{
 					case "static": // TODO: add missing text types
-					case "dynamic": 
+					case "dynamic":
 					case "input":
 						if (!element.useDeviceFonts || bakeTexts)
 						{
@@ -1836,11 +1857,20 @@ function expandBounds(bounds, filters)
 				if (filter.inner)
 					break;
 			case "blurFilter":
-				var blurMult = getQualityScale(filter.quality) * 1.375; // hear me out here
-				bounds.left -= filter.blurX * blurMult;
-				bounds.top -= filter.blurY * blurMult;
-				bounds.right += filter.blurX * blurMult;
-				bounds.bottom += filter.blurY * blurMult;
+				var quality = 1;
+				if (filter.quality == "medium") 	quality = 2;
+				else if (filter.quality == "high")	quality = 3;
+				
+				var blurX = filter.blurX;
+				var blurY = filter.blurY;
+
+				var expansionX = blurX * quality / 2;
+                var expansionY = blurY * quality / 2;
+				
+				bounds.left -= expansionX;
+				bounds.top -= expansionY;
+				bounds.right += expansionX;
+				bounds.bottom += expansionY;
 			break;
 		}
 	});
@@ -1872,10 +1902,8 @@ function getMatrixScale(width, height)
 
 function parseAtlasInstance(matrix, index, skipPush)
 {
-	//cachedMatrices[index] = matrix;
 	if (skipPush == null)
 		cachedMatrices[index] = matrix;
-	//	cachedMatrices.splice(index, 0, matrix);
 	
 	jsonHeader(key("ATLAS_SPRITE_instance", "ASI"));
 	jsonVar(key("Matrix", "MX"), parseMatrix(matrix, false));
@@ -2539,13 +2567,6 @@ function parseMatrix3D(m) {
 
 function parseArray(array) {
 	return '["' + array.join('","') +'"]';
-}
-
-function getQualityScale(quality)
-{
-	if (quality == "low") return 0.333;
-	if (quality == "medium") return 0.75;
-	return 1;
 }
 
 function parseQuality(quality) {
