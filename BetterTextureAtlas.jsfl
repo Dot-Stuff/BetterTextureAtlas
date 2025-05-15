@@ -988,6 +988,8 @@ function isBakeableTimeline(targetKeyframe, timeline)
 							return false;
 					}
 				}
+				else if (element.elementType == "shape" && element.isGroup && element.members.length > 0)
+					return false;
 			}
 		}
 	}
@@ -1381,10 +1383,15 @@ function parseElements(elements, frameIndex, layerIndex, timeline)
 		var element = elements[e];
 		var elementType = element.elementType;
 		var isShape = (elementType == "shape");
+		var isShapeGroup = isShape && (element.isGroup && element.members.length > 1);
+
+		if (isShapeGroup) {
+			isShape = false;
+		}
 		
 		if (isShape) // Adobe sometimes forgets how their own software works
 		{
-			shapeQueue.push(e);
+			shapeQueue.push(e);	
 		}
 		else
 		{
@@ -1401,6 +1408,11 @@ function parseElements(elements, frameIndex, layerIndex, timeline)
 
 		switch (element.elementType)
 		{
+			case "shape":
+				if (isShapeGroup) {
+					parseShapeGroup(timeline, layerIndex, frameIndex, e, element);
+				}
+			break;
 			case "instance":
 				switch (element.instanceType) {
 					case "symbol":
@@ -1470,6 +1482,21 @@ function parseElements(elements, frameIndex, layerIndex, timeline)
 	}
 
 	push(']');
+}
+
+function parseShapeGroup(timeline, layerIndex, frameIndex, elementIndex, group)
+{
+	queueEditSpritemap();
+
+	initJson();
+	parseElements(group.members, frameIndex, layerIndex, timeline);
+
+	curJson[0] = "";
+	curJson[1] = "";
+	curJson[curJson.length - 1] = "";
+	curJson[curJson.length - 2] = "";
+
+	push(closeJson());
 }
 
 function parseTextInstance(text)
