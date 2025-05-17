@@ -211,7 +211,7 @@
 			</row>
 			<row>
 				<textbox id="saveBox" value="$FILEURI" />
-				<button align="center" label="Examine" oncommand="getPath();" width="$BWI"/>
+				<button align="center" label="Browse" oncommand="getPath();" width="$BWI"/>
 				
 
 				<!-- <choosefile size="40" value="$FILEURI" required="true" pathtype="absolute" id="saveBox" type="save" /> -->

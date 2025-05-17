@@ -143,14 +143,7 @@ function _main()
 		trace("WARNING: Baked tweens is not supported on this flash version.\nTry using Flash Pro CC or newer.");
 	}
 	
-	var fileuri = xPan.saveBox.split("/").join("\\");
-	if (doc.path != null)
-	{
-		var docarr = doc.path.split("\\");
-		docarr.pop();
-		if (fileuri.split("C:\\")[0] != "")
-			fileuri = docarr.join("\\") + "\\" + fileuri;
-	}
+	var fileuri = FLfile.platformPathToURI(xPan.saveBox);
 
 	optimizeDimensions = (optDimens == "true");
 	optimizeJson = (optAn == "true");
@@ -162,7 +155,7 @@ function _main()
 	key = optimizeJson ? function (a, b) {return b} : function (a, b) {return a};
 
 	// First ask for the export folder
-	path = formatPath(fileuri);
+	path = fileuri;
 	FLfile.createFolder(path);
 
 	measure(function() {
@@ -510,7 +503,7 @@ function exportAtlas(symbolNames)
 	if (tmpSymbol)
 		lib.deleteItem(symbol.name);
 
-	trace("Exported to folder: " + path);
+	trace("Exported to folder: " + FLfile.uriToPlatformPath(path));
 }
 
 function checkShapeLines(shape, targetX, targetY)
@@ -2596,29 +2589,6 @@ function formatLimbName(numStr) {
         i++;
     }
     return i === numStr.length ? "0" : numStr.slice(i);
-}
-
-function formatPath(path)
-{
-	// All good here im gonna assume
-	if (path.split("file:///").length > 1) {
-		return path;
-	}
-
-	var arr = path.split("\\");
-
-	arr = arr.join("\\").split(":");
-
-	path = "file:///" + arr.join("|");
-	path = path.split("\\").join("/");
-
-	// Remove leading spaces of the path
-	var endIndex = path.length - 1;
-	while (endIndex >= 0 && path[endIndex] === ' ') {
-		endIndex--;
-	}
-
-	return path.substring(0, endIndex + 1);
 }
 
 function findItem(name) {

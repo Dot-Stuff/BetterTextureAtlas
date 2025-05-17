@@ -4,11 +4,18 @@ function xmlData(symbols)
 {
     var data = FLfile.read(fl.configURI + "Commands/bta_src/BTADialog.xml");
     var saveData = FLfile.read(fl.configURI + "Commands/bta_src/saveBTA.txt").split("\n");
-
-    fl.trace(saveData);
 	
 	var formatSymbolName = String(symbols[0]).split("/").pop().split(",").pop();
-	var fileuri = (saveData[0] != "") ? saveData[0].split("\\").join("/") + "/" + formatSymbolName : formatSymbolName;
+	var fileuri = saveData[0];
+	
+	if (fileuri.length <= 0) {
+		var document = fl.getDocumentDOM();
+		var docPath = document.path.split("\\");
+		docPath.pop();
+		fileuri = docPath.join("\\");
+	}
+
+	fileuri += "\\" + formatSymbolName;
 
 	data = data.split("$CONFIGDIR").join(fl.configDirectory);
 	data = data.split("$FILEURI").join(fileuri);
