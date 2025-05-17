@@ -155,7 +155,7 @@ function _main()
 	key = optimizeJson ? function (a, b) {return b} : function (a, b) {return a};
 
 	// First ask for the export folder
-	path = fileuri;
+	path = formatPath(fileuri);
 	FLfile.createFolder(path);
 
 	measure(function() {
@@ -177,6 +177,17 @@ function _main()
 
 	trace("DONE");
 	fl.showIdleMessage(true);
+}
+
+function formatPath(path) {
+	path = path.split("%20").join(" ");
+
+	var endIndex = path.length - 1;
+	while (endIndex >= 0 && path[endIndex] === ' ') {
+		endIndex--;
+	}
+
+	return path.substring(0, endIndex + 1);
 }
 
 var SPRITEMAP_ID;
