@@ -1120,7 +1120,6 @@ function parseFrames(frames, layerIndex, timeline)
 		if (curTweenFrame > -1)
 		{
 			curTweenMatrix = null;
-			//curTweenShape = null;
 			curTweenColorTransform = null;
 			curTweenFilters = null;
 			curTweenFrame = -1;
@@ -1389,7 +1388,6 @@ var startTweenElements;
 var curTweenMatrix;
 var curTweenColorTransform;
 var curTweenFilters;
-//var curTweenShape;
 var curTweenFrame;
 
 function setupBakedTween(frame, frameIndex)
@@ -1405,10 +1403,6 @@ function setupBakedTween(frame, frameIndex)
 		curTweenColorTransform = frame.tweenObj.getColorTransform(frameOffset);
 		curTweenFilters = frame.tweenObj.getFilters(frameOffset);
 	}
-	//else
-	//{
-	//	curTweenShape = frame.tweenObj.getShape(frameOffset);
-	//}
 }
 
 function parseElements(elements, frameIndex, layerIndex, timeline)
@@ -1692,97 +1686,12 @@ function queueEditSpritemap() {
 	lib.editItem(TEMP_SPRITEMAP);
 }
 
-/*function drawShape(shape)
-{
-	queueEditSpritemap();
-
-	// prepare da keyframe
-	TEMP_TIMELINE.currentFrame = smIndex;
-	TEMP_TIMELINE.convertToBlankKeyframes(smIndex);
-	doc.selectNone();
-
-	// prepare the render shape path
-	fl.drawingLayer.beginDraw();
-	fl.drawingLayer.beginFrame();
-	var ogFill =  doc.getCustomFill("toolbar");
-
-	var contours = shape.contours;
-	var c = 0;
-
-	while (c < contours.length)
-	{
-		var contour = contours[c++];
-		var color = contour.fill.color;
-
-		if (color == null)
-			continue;
-
-		var path = fl.drawingLayer.newPath();
-		doc.setCustomFill(contour.fill);
-
-		var halfEdge = contour.getHalfEdge();
-		var startEdgeID = halfEdge.id;
-		var firstVertex = halfEdge.getVertex();
-		var started = false;
-
-		while (halfEdge.id != startEdgeID || !started)
-		{
-			var vertex = halfEdge.getVertex();	
-			var e = halfEdge.getEdge();		
-
-			if (!e.isLine)
-			{	
-				var p0 = e.getControl(0);
-				var p1 = e.getControl(1);
-				var p2 = e.getControl(2);
-				path.addCurve(p0.x, p0.y, p1.x, p1.y, p2.x, p2.y); // TODO: this is still kinda innacurate
-			}
-			
-			path.addPoint(vertex.x, vertex.y);
-
-			halfEdge = halfEdge.getNext();
-			started = true;
-		}
-
-		path.addPoint(firstVertex.x, firstVertex.y);
-
-		// render the crap
-		path.close();
-		path.makeShape(false, true);
-	}
-
-	fl.drawingLayer.endFrame();
-	fl.drawingLayer.endDraw();
-
-	// add back the old fill
-	doc.setCustomFill(ogFill);
-
-	// ok we're done with that ugly stuff
-	var resultShape = TEMP_LAYER.frames[smIndex].elements[0];
-	if (resultShape == null)
-		return;
-	
-	var mtx = makeMatrix(1, 0, 0, 1, resultShape.left, resultShape.top);
-	resizeInstanceMatrix(curSymbol, mtx);
-	parseAtlasInstance(mtx, smIndex);
-	
-	frameQueue.push([0]);
-	smIndex++;
-}*/
-
 var cachedRectangles;
 var minRectangleSize;
 
 // TODO: could also optimize gradient rectangles if theyre exactly vertical or horizontal
 function parseShape(timeline, layerIndex, frameIndex, elementIndices)
 {
-	/*if (curTweenShape != null)
-	{
-		drawShape(curTweenShape);
-		curTweenShape = null;
-		return;
-	}*/
-
 	var shapeBounds = pushShapeSpritemap(timeline, layerIndex, frameIndex, elementIndices);
 	if (shapeBounds == null)
 		return;
