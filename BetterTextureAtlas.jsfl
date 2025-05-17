@@ -1078,18 +1078,24 @@ function parseSymbol(symbol)
 	push(']}');
 }
 
-function makeBasicLayer(elementCallback, duration) {
+function makeBasicFrame(elementCallback, index, duration)
+{
 	push('{');
-	jsonStr(key("Layer_name", "LN"), "Layer 1");
-	jsonArray(key("Frames", "FR"));
-	push('{');
-	jsonVar(key("index", "I"), 0);
+	jsonVar(key("index", "I"), index);
 	jsonVar(key("duration", "DU"), duration);
 	jsonArray(key("elements", "E"));
 	push('{');
 	if (elementCallback != null)
 		elementCallback();
-	push('}]}]}]}');
+	push('}]}');
+}
+
+function makeBasicLayer(elementCallback, duration) {
+	push('{');
+	jsonStr(key("Layer_name", "LN"), "Layer 1");
+	jsonArray(key("Frames", "FR"));
+	makeBasicFrame(elementCallback, 0, duration);
+	push(']}]}');
 }
 
 function parseFrames(frames, layerIndex, timeline)
@@ -1114,7 +1120,7 @@ function parseFrames(frames, layerIndex, timeline)
 		if (curTweenFrame > -1)
 		{
 			curTweenMatrix = null;
-			curTweenShape = null;
+			//curTweenShape = null;
 			curTweenColorTransform = null;
 			curTweenFilters = null;
 			curTweenFrame = -1;
@@ -1122,69 +1128,75 @@ function parseFrames(frames, layerIndex, timeline)
 
 		if (isKeyframe || bakeTween)
 		{
+			if (canBeTween && bakeTween) {
+				if (isKeyframe) {
+					var isShapeTween = (tweenType == "shape");
+					if (isShapeTween) // parse shape tween type
+					{
+						var tweenLength = parseShapeTween(frame, timeline, layerIndex);
+						f += tweenLength;
+						continue;
+					}
+				}
+				else // parse other tween types
+					setupBakedTween(frame, f);
+			}
+
 			push('{\n');
 
 			if (frame.name.length > 0)
 				jsonStr(key("name", "N"), frame.name);
 
-			if (canBeTween)
+			if (canBeTween && !bakeTween)
 			{
-				if (bakeTween)
+				jsonHeader(key("tween", "TWN"));
+
+				var isCubic = frame.getCustomEase() != null;
+				if (isCubic)
 				{
-					if (!isKeyframe)
-						setupBakedTween(frame, f);
+					jsonArray(key("curve", "CV"));
+					var e = 0;
+					var eases = frame.getCustomEase();
+					while (e < eases.length)
+					{
+						var field = eases[e++];
+						push("{");
+						jsonVar("x", field.x);
+						jsonVarEnd("y", field.y);
+						push("},\n");
+					}
+	
+					if (eases.length > 0)
+						removeTrail(2);
+					
+					push("],\n");
 				}
 				else
 				{
-					jsonHeader(key("tween", "TWN"));
-
-					var isCubic = frame.getCustomEase() != null;
-					if (isCubic)
-					{
-						jsonArray(key("curve", "CV"));
-						var e = 0;
-						var eases = frame.getCustomEase();
-						while (e < eases.length)
-						{
-							var field = eases[e++];
-							push("{");
-							jsonVar("x", field.x);
-							jsonVarEnd("y", field.y);
-							push("},\n");
-						}
+					jsonVar(key("ease", "ES"), frame.tweenEasing);
+				}
 	
-						if (eases.length > 0)
-							removeTrail(2);
-						
-						push("],\n");
-					}
-					else
-					{
-						jsonVar(key("ease", "ES"), frame.tweenEasing);
-					}
-	
-					switch (frame.tweenType)
-					{
-						case "motion": // "classic"
+				switch (frame.tweenType)
+				{
+					case "motion": // "classic"
 						jsonStr(key("type", "T"), key("motion", "MT"));
 						jsonStr(key("rotate", "RT"), frame.motionTweenRotate);
 						jsonVar(key("rotateTimes", "RTT"), frame.motionTweenRotateTimes);
 						jsonVar(key("scale", "SL"), frame.motionTweenScale);
 						jsonVar(key("snap", "SP"), frame.motionTweenSnap);
 						jsonVarEnd(key("sync", "SC"), frame.motionTweenSync);
-						break;
-						case "motion object":
+					break;
+					case "motion object":
 						jsonStr(key("type", "T"), key("motion_OBJECT", "MTO"));
 						parseMotionObject(xmlToObject(frame.getMotionObjectXML()));
-						break;
-						case "IK pose":
-							removeTrail(2); // TODO: look where the IK pose tween variables are stored
-						break;
-						case "shape": break; // unused, shape tweens are force baked
-					}	
+					break;
+					case "IK pose":
+						removeTrail(2); // TODO: look where the IK pose tween variables are stored
+					break;
+					case "shape": break; // unused, shape tweens are force baked
+				}	
 	
-					push("},\n");
-				}
+				push("},\n");
 			}
 
 			if (includeSnd && frame.soundLibraryItem != null)
@@ -1236,6 +1248,49 @@ function parseFrames(frames, layerIndex, timeline)
 
 	removeTrail(1);
 	push(']');
+}
+
+function parseShapeTween(keyframe, timeline, layerIndex)
+{
+	lastTimeline = timeline.name;
+	lastLayer = layerIndex;
+	lastFrame = -1;
+
+	var du = keyframe.duration;
+
+	timeline.setSelectedLayers(layerIndex, true);
+	timeline.copyFrames(keyframe.startFrame, keyframe.startFrame + du + 1);
+	TEMP_TIMELINE.pasteFrames(smIndex);
+	
+	var i = 0;
+	var startShape = keyframe.elements[0];
+	var endShape = TEMP_LAYER.frames[smIndex + du].elements[0];
+	
+	// prepare lerp function
+	var lerp = function(a, b, r) { return a + r * (b - a); }	
+	var easePoints = keyframe.getCustomEase("all");
+	if (easePoints != null)
+		lerp = function (a, b, r) { return customEase(a, b, r, easePoints); }
+
+	while (i < du)
+	{
+		// manually calculating the tween position because tweenObj.getShape is slow as FUCK
+		var t = i / du;
+		var left = lerp(startShape.left, endShape.left, t);
+		var top = lerp(startShape.top, endShape.top, t);
+
+		makeBasicFrame(function () {
+			var mtx = makeMatrix(1, 0, 0, 1, left, top);
+			resizeInstanceMatrix(curSymbol, mtx);
+			parseAtlasInstance(mtx, smIndex);
+			smIndex++;
+		}, keyframe.startFrame + i, 1);
+		push((i < du - 1) ? ',\n' : ',');
+
+		i++;
+	}
+
+	return du;
 }
 
 function parseActionScript(frame, layerIndex, timeline)
@@ -1334,7 +1389,7 @@ var startTweenElements;
 var curTweenMatrix;
 var curTweenColorTransform;
 var curTweenFilters;
-var curTweenShape;
+//var curTweenShape;
 var curTweenFrame;
 
 function setupBakedTween(frame, frameIndex)
@@ -1350,10 +1405,10 @@ function setupBakedTween(frame, frameIndex)
 		curTweenColorTransform = frame.tweenObj.getColorTransform(frameOffset);
 		curTweenFilters = frame.tweenObj.getFilters(frameOffset);
 	}
-	else
-	{
-		curTweenShape = frame.tweenObj.getShape(frameOffset);
-	}
+	//else
+	//{
+	//	curTweenShape = frame.tweenObj.getShape(frameOffset);
+	//}
 }
 
 function parseElements(elements, frameIndex, layerIndex, timeline)
@@ -1637,7 +1692,7 @@ function queueEditSpritemap() {
 	lib.editItem(TEMP_SPRITEMAP);
 }
 
-function drawShape(shape)
+/*function drawShape(shape)
 {
 	queueEditSpritemap();
 
@@ -1713,7 +1768,7 @@ function drawShape(shape)
 	
 	frameQueue.push([0]);
 	smIndex++;
-}
+}*/
 
 var cachedRectangles;
 var minRectangleSize;
@@ -1721,12 +1776,12 @@ var minRectangleSize;
 // TODO: could also optimize gradient rectangles if theyre exactly vertical or horizontal
 function parseShape(timeline, layerIndex, frameIndex, elementIndices)
 {
-	if (curTweenShape != null)
+	/*if (curTweenShape != null)
 	{
 		drawShape(curTweenShape);
 		curTweenShape = null;
 		return;
-	}
+	}*/
 
 	var shapeBounds = pushShapeSpritemap(timeline, layerIndex, frameIndex, elementIndices);
 	if (shapeBounds == null)
@@ -2747,6 +2802,47 @@ function removeTrail(trail, separator)
 	if (separator == null)
 		separator = "\n";
 	curJson[curJson.length -1] = curJson[curJson.length -1].slice(0, -trail) + separator;
+}
+
+// not sure if this is 100% accurate, but its good enough
+// some stuff stolen from flxanimate lol
+function customEase(from, to, r, points)
+{
+	r = max(0, min(1, r));
+
+	var p0 = points[0];
+	var p1 = points[1];
+	var p2 = points[2];
+	var p3 = points[3];
+
+	function bezier(t) {
+		var u = 1 - t;
+		var tt = t * t;
+		var uu = u * u;
+		var uuu = uu * u;
+		var ttt = tt * t;
+		var ttu = 3 * tt * u;
+		var utt = 3 * t * uu;
+
+		var x = uuu * p0.x + utt * p1.x + ttu * p2.x + ttt * p3.x;
+		var y = uuu * p0.y + utt * p1.y + ttu * p2.y + ttt * p3.y;
+		return {x: x, y: y};
+	}
+
+	var tMin = 0, tMax = 1, t, precision = 0.001;
+	while (tMax - tMin > precision)
+	{
+		t = (tMin + tMax) / 2;
+		
+		var point = bezier(t);
+		if (point.x < r)	tMin = t;
+		else 				tMax = t;
+    }
+
+    var easedPoint = bezier((tMin + tMax) / 2);
+    var ease = easedPoint.y;
+
+    return from + ease * (to - from);
 }
 
 function xmlToObject(__xml)
