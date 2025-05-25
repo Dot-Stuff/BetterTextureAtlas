@@ -116,6 +116,7 @@ function _main()
 	var curTl = doc.getTimeline();
 	var curFr = curTl.currentFrame;
 	var tlIndex = doc.currentTimeline;
+	var curZoom = doc.zoomFactor;
 
 	ShpPad = parseInt(xPan.ShpPad);
 	BrdPad = parseInt(xPan.BrdPad);
@@ -171,6 +172,7 @@ function _main()
 		lib.editItem(curTl.name);
 
 	doc.getTimeline().currentFrame = curFr;
+	doc.zoomFactor = curZoom;
 
 	if (resizedContain)
 		trace("WARNING: some shapes were resized to fit within the 8192px size limit");
@@ -206,6 +208,7 @@ var flversion;
 
 var oneFrameSymbols;
 var bakedTweenedFilters;
+var pushedElementBounds;
 
 _main();
 
@@ -218,6 +221,7 @@ function initVars()
 	cachedMatrices = [];
 	cachedBitmaps = [];
 	cachedBitmapsList = new Array();
+	pushedElementBounds = [];
 	cachedTimelineRects = [];
 	instanceSizes = [];
 	cachedOneFrames = [];
@@ -373,6 +377,10 @@ function exportAtlas(symbolNames)
 					element.scaleX *= targetX;
 					element.scaleY *= targetY;
 					element.selected = true;
+
+					var m = element.matrix;
+					m.tx = 0; m.ty = 0;
+					element.matrix = m;
 		
 					if (bakedFilters) {
 						forEachFilter(filters, function (filter) {
@@ -419,6 +427,10 @@ function exportAtlas(symbolNames)
 						// making sure this shit is pixel perfect
 						element.width = Math.ceil((w / element.scaleX) * scaleX);
 						element.height = Math.ceil((h / element.scaleY) * scaleY);
+
+						var m = element.matrix;
+						m.tx = 0; m.ty = 0;
+						element.matrix = m;
 					}
 				}
 			}
@@ -700,8 +712,27 @@ function exportSpritemap(id, exportPath, smData, index)
 		{
 			x += Math.floor(w / 2);
 			y += Math.floor(h / 2);
-			w = 1;
-			h = 1;
+			w = 1; h = 1;
+		}
+
+		var dumbRect = pushedElementBounds[name];
+		if (dumbRect != null) {
+			var dumbW = dumbRect.right - dumbRect.left;
+			var dumbH = dumbRect.bottom - dumbRect.top;
+
+			var offX = (dumbW - w) / 6;
+			var offY = (dumbH - h) / 6;
+
+			// TODO: gotta find a way to be able to have this as integers
+			if (offX > 0){
+				x += offX; w -= offX;
+				x = rValue(x); w = Math.round(w);
+			}
+
+			if (offY > 0) {
+				y += offX; h -= offX;
+				y = rValue(y); h = Math.round(h);
+			}
 		}
 		
 		frameValues[0] = '"x":' + x;
@@ -876,7 +907,15 @@ function generateAnimation(symbol)
 
 function metadata()
 {
+	var accName = doc.name.split(".");
+	accName.pop();
+
 	jsonStr(key("version", "V"), BTA_version);
+	jsonStr(key("name", "N"), accName.join("."));
+	jsonStr(key("backgroundColor", "BGC"), doc.backgroundColor);
+	jsonVar(key("width", "W"), doc.width);
+	jsonVar(key("height", "H"), doc.height);
+	jsonVar(key("asVersion", "ASV"), doc.asVersion);
 	jsonVarEnd(key("framerate", "FRT"), doc.frameRate);
 }
 
@@ -1154,19 +1193,17 @@ function parseFrames(frames, layerIndex, timeline)
 			{
 				jsonHeader(key("tween", "TWN"));
 
-				var isCubic = frame.getCustomEase() != null;
+				var eases = frame.getCustomEase();
+				var isCubic = eases != null;
 				if (isCubic)
 				{
 					jsonArray(key("curve", "CV"));
 					var e = 0;
-					var eases = frame.getCustomEase();
 					while (e < eases.length)
 					{
 						var field = eases[e++];
-						push("{");
-						jsonVar("x", field.x);
-						jsonVarEnd("y", field.y);
-						push("},\n");
+						push('{"x":' + field.x +
+						',"y":' + field.y + "},\n");
 					}
 	
 					if (eases.length > 0)
@@ -1876,9 +1913,9 @@ function expandBounds(bounds, filters)
 				if (filter.inner)
 					break;
 			case "blurFilter":
-				var quality = 1;
-				if (filter.quality == "medium") 	quality = 2;
-				else if (filter.quality == "high")	quality = 3;
+				var quality = 1.25;
+				if (filter.quality == "medium") 	quality = 2.35;
+				else if (filter.quality == "high")	quality = 2.9;
 				
 				var blurX = filter.blurX;
 				var blurY = filter.blurY;
@@ -1992,6 +2029,7 @@ function pushElementSpritemap(timeline, layerIndex, frameIndex, elementIndices)
 	var h = rect.bottom - rect.top;
 	
 	var matScale = getMatrixScale(w, h);
+
 	var matScaleX = matScale;
 	var matScaleY = matScale;
 
@@ -2016,6 +2054,13 @@ function pushElementSpritemap(timeline, layerIndex, frameIndex, elementIndices)
 		matScaleX *= max(scaleXMult, 1);
 		matScaleY *= max(scaleYMult, 1);
 	}
+
+	var bounds = {left: rect.left, top: rect.top, right: rect.right, bottom: rect.bottom}
+	bounds.left /= matScaleX;
+	bounds.top /= matScaleY;
+	bounds.right /= matScaleX;
+	bounds.bottom /= matScaleY;
+	pushedElementBounds[smIndex] = bounds;
 
 	var atlasMatrix = makeMatrix(matScaleX, 0, 0, matScaleY, rect.left, rect.top);
 
