@@ -38,6 +38,8 @@ var includeSnd = true;
 var includeAs = false;
 
 var bakedFilters = false;
+var bakedFilterQuality = 1; // 1 to 3
+
 var bakedTweens = false;
 var optiRects = false;
 var bakeOneFR = true;
@@ -208,7 +210,7 @@ var flversion;
 
 var oneFrameSymbols;
 var bakedTweenedFilters;
-var pushedElementBounds;
+var tempItems;
 
 _main();
 
@@ -221,10 +223,11 @@ function initVars()
 	cachedMatrices = [];
 	cachedBitmaps = [];
 	cachedBitmapsList = new Array();
-	pushedElementBounds = [];
+	cachedElements = {};
 	cachedTimelineRects = [];
 	instanceSizes = [];
 	cachedOneFrames = [];
+	tempItems = [];
 
 	cachedRectangles = [];
 	minRectangleSize = 25; // spritesheet exporter does some goofy shit otherwise
@@ -376,11 +379,12 @@ function exportAtlas(symbolNames)
 					
 					element.scaleX *= targetX;
 					element.scaleY *= targetY;
-					element.selected = true;
 
 					var m = element.matrix;
 					m.tx = 0; m.ty = 0;
 					element.matrix = m;
+
+					element.selected = true;
 		
 					if (bakedFilters) {
 						forEachFilter(filters, function (filter) {
@@ -403,7 +407,7 @@ function exportAtlas(symbolNames)
 					
 					element.selected = false;
 				}
-				else
+				else if (cachedElements[i] == null)
 				{
 					if (cachedRectangles[i])
 					{
@@ -525,6 +529,11 @@ function exportAtlas(symbolNames)
 
 	if (tmpSymbol)
 		lib.deleteItem(symbol.name);
+
+	var i = 0;
+	while (i < tempItems.length) {
+		lib.deleteItem(tempItems[i++]);
+	}
 
 	trace("Exported to folder: " + FLfile.uriToPlatformPath(path));
 }
@@ -714,26 +723,6 @@ function exportSpritemap(id, exportPath, smData, index)
 			y += Math.floor(h / 2);
 			w = 1; h = 1;
 		}
-
-		var dumbRect = pushedElementBounds[name];
-		if (dumbRect != null) {
-			var dumbW = dumbRect.right - dumbRect.left;
-			var dumbH = dumbRect.bottom - dumbRect.top;
-
-			var offX = (dumbW - w) / 6;
-			var offY = (dumbH - h) / 6;
-
-			// TODO: gotta find a way to be able to have this as integers
-			if (offX > 0){
-				x += offX; w -= offX;
-				x = rValue(x); w = Math.round(w);
-			}
-
-			if (offY > 0) {
-				y += offX; h -= offX;
-				y = rValue(y); h = Math.round(h);
-			}
-		}
 		
 		frameValues[0] = '"x":' + x;
 		frameValues[1] = '"y":' + y;
@@ -778,6 +767,11 @@ function generateAnimation(symbol)
 
 	if (instance != null) {
 		curTweenFrame = 0;
+		if (instance.libraryItem != null)
+		{
+			curSymbol = instance.libraryItem.name;
+			pushInstanceSize(curSymbol, instance.scaleX, instance.scaleY);
+		}
 		jsonHeader(key("StageInstance", "STI"));
 		parseSymbolInstance(instance);
 		curTweenFrame = -1;
@@ -1514,7 +1508,7 @@ function parseElements(elements, frameIndex, layerIndex, timeline)
 					
 					if (bakeInstance)
 					{
-						pushElementSpritemap(timeline, layerIndex, frameIndex, [e]);
+						pushElementSpritemap(timeline, layerIndex, frameIndex, e);
 					}
 					else
 					{
@@ -1545,7 +1539,7 @@ function parseElements(elements, frameIndex, layerIndex, timeline)
 					case "input":
 						if (!element.useDeviceFonts || bakeTexts)
 						{
-							pushElementSpritemap(timeline, layerIndex, frameIndex, [e]);
+							pushElementSpritemap(timeline, layerIndex, frameIndex, e);
 						}
 						else
 						{
@@ -1669,6 +1663,7 @@ function parseTextInstance(text)
 var cachedMatrices;
 var cachedBitmaps;
 var cachedBitmapsList;
+var cachedElements;
 
 function makeBitmapItem(name)
 {
@@ -2001,105 +1996,117 @@ function pushElementsFromFrame(timeline, layerIndex, frameIndex, elementIndices)
 	frameQueue.push(elementIndices);
 }
 
-function pushElementSpritemap(timeline, layerIndex, frameIndex, elementIndices)
+function pushElementSpritemap(timeline, layerIndex, frameIndex, elementIndex)
 {
-	pushElementsFromFrame(timeline, layerIndex, frameIndex, elementIndices);
 	var itemName = "_bta_asi_" + smIndex;
+	var baseElement = timeline.layers[layerIndex].frames[frameIndex].elements[elementIndex];
+	bakeBitmapElement(timeline, layerIndex, frameIndex, [elementIndex], itemName);
+	parseSymbolInstance(baseElement, itemName);
+}
 
-	initJson();
-	push('{\n');
+function bakeBitmapElement(timeline, layerIndex, frameIndex, elemIndices, bitmapID)
+{
+	queueEditSpritemap();
+	pushElementsFromFrame(timeline, layerIndex, frameIndex, [0]);
 	
-	if (inlineSym) {
-		jsonStr(key("SYMBOL_name", "SN"), itemName);
-		jsonHeader(key("TIMELINE", "TL"));
+	TEMP_TIMELINE.currentFrame = smIndex;
+
+	var removeSelection = new Array();
+	var bitmapSelection = new Array();
+	var dumbElements = TEMP_LAYER.frames[smIndex].elements;
+
+	var i = 0;
+	var l = dumbElements.length;
+
+	while (i < l) {
+		var elem = dumbElements[i];
+		var exportElem = elemIndices.indexOf(i) !== -1;
+		if (exportElem) {
+			bitmapSelection[bitmapSelection.length] = elem;
+		} else {
+			removeSelection[removeSelection.length] = elem;
+		}
+		i++;
 	}
 
-	jsonArray(key("LAYERS", "L"));
+	if (removeSelection.length > 0)
+	{
+		doc.selectNone();
+		doc.selection = removeSelection;
+		doc.deleteSelection();
+	}
 
-	var elem = TEMP_LAYER.frames[smIndex].elements[elementIndices[0]];
-	var elementFilters = curTweenFilters != null ? curTweenFilters : elem.filters;
-	
-	if (curTweenFilters != null)
-		bakedTweenedFilters[smIndex] = curTweenFilters;
+	var baseElementFilters = null;
+	if (bitmapSelection.length == 1) {
+		var baseElem = bitmapSelection[0];
+		baseElem.colorMode = "none";
+		baseElem.matrix = makeMatrix(1, 0, 0, 1, 0, 0);
+		baseElementFilters = curTweenFilters != null ? curTweenFilters : elem.filters;
 
-	var baseBounds = elem.libraryItem != null ? getFrameBounds(elem.libraryItem.timeline, 0) : elem.objectSpaceBounds;
-	var rect = expandBounds(baseBounds, elementFilters);
+		if (curTweenFilters != null) {
+			doc.selectNone();
+			doc.selection = [baseElem];
+			doc.setFilters(curTweenFilters);
+		}
+	}
 
-	var w = rect.right - rect.left;
-	var h = rect.bottom - rect.top;
-	
-	var matScale = getMatrixScale(w, h);
+	doc.selectNone();
+	doc.selection = bitmapSelection;
+	doc.convertSelectionToBitmap();
 
+	var resultBitmap = TEMP_LAYER.frames[smIndex].elements[0];
+	tempItems.push(resultBitmap.libraryItem.name);
+
+	var matScale = getMatrixScale(resultBitmap.libraryItem.hPixels, resultBitmap.libraryItem.vPixels);
 	var matScaleX = matScale;
 	var matScaleY = matScale;
 
-	if (bakedFilters)
-	{
+	if (baseElementFilters != null) {
 		var scaleXMult = 1;
 		var scaleYMult = 1;
 	
 		// Scaling down blurry symbols so antialiasing can do the dirty work later
-		forEachFilter(elementFilters, function (filter) {
+		forEachFilter(baseElementFilters, function (filter) {
 			switch (filter.name) {
 				case "blurFilter":
-					var qualityScale = 0.25;
-					if (filter.quality == "medium") qualityScale = 0.375;
-					if (filter.quality == "low") 	qualityScale = 0.50;
-					scaleXMult *= (filter.blurX / (30 * qualityScale));
-					scaleYMult *= (filter.blurY / (30 * qualityScale));
+					var qualityScale = getQualityScale(filter.quality);
+					scaleXMult *= (filter.blurX / (30 * (qualityScale)));
+					scaleYMult *= (filter.blurY / (30 * (qualityScale)));
 				break;
 			}
 		});
-	
+
 		matScaleX *= max(scaleXMult, 1);
 		matScaleY *= max(scaleYMult, 1);
 	}
 
-	var bounds = {left: rect.left, top: rect.top, right: rect.right, bottom: rect.bottom}
-	bounds.left /= matScaleX;
-	bounds.top /= matScaleY;
-	bounds.right /= matScaleX;
-	bounds.bottom /= matScaleY;
-	pushedElementBounds[smIndex] = bounds;
+	var tx = resultBitmap.matrix.tx;
+	var ty = resultBitmap.matrix.ty;
+	var libItem = resultBitmap.libraryItem;
 
-	var atlasMatrix = makeMatrix(matScaleX, 0, 0, matScaleY, rect.left, rect.top);
+	var resultWidth = libItem.hPixels / matScaleX;
+	var resultHeight = libItem.vPixels / matScaleY;
+	
+	var ceilWidth = Math.ceil(resultWidth);
+	var ceilHeight = Math.ceil(resultHeight);
 
-	//if (flattenSkewing)
-	//{
-	//	var m = elem.matrix;
-		//var w = (rect.right - rect.left);
-		//var h = (rect.bottom - rect.top);
+	resultBitmap.matrix = makeMatrix(1, 0, 0, 1, 0, 0);
+	resultBitmap.width = ceilWidth;
+	resultBitmap.height = ceilHeight;
 
-		// TODO: still kinda innacurate, fix it later
-		//atlasMatrix.tx += ((w * m.c)) / 2;
-		//atlasMatrix.ty += ((h * m.b)) / 2;
-	//}
+	var scaleXDiff = ceilWidth / resultWidth;
+	var scaleYDiff = ceilHeight / (resultHeight);
 
-	makeBasicLayer(function () {
-		resizeInstanceMatrix(curSymbol, atlasMatrix);
-		parseAtlasInstance(atlasMatrix, smIndex);
-		smIndex++;
-	}, 1);
+	matScaleX /= scaleXDiff;
+	matScaleX /= scaleYDiff;
 
-	if (inlineSym)
-		push('}');
+	cachedBitmapsList.push(bitmapID);
+	cachedMatrices[smIndex] = makeMatrix(matScaleX, 0, 0, matScaleY, tx - (matScaleX / 2), ty - (matScaleY / 2));
+	cachedBitmaps[bitmapID] = smIndex;
+	cachedElements[smIndex] = true;
+	smIndex++;
 
-	var matrix = cloneMatrix(elem.matrix);
-	var scaleX = Math.sqrt(matrix.a * matrix.a + matrix.b * matrix.b);
-	var scaleY = Math.sqrt(matrix.c * matrix.c + matrix.d * matrix.d);
-
-	if (scaleX !== 0) {
-		matrix.a /= scaleX;
-		matrix.b /= scaleX;
-	}
-
-	if (scaleY !== 0) {
-		matrix.c /= scaleY;
-		matrix.d /= scaleY;
-	}
-
-	bakedDictionary.push({name: itemName, json: closeJson()});
-	parseSymbolInstance(elem, itemName, matrix);
+	return resultBitmap;
 }
 
 function forEachFilter(filters, callback)
@@ -2111,6 +2118,21 @@ function forEachFilter(filters, callback)
 	while (f < filters.length) {
 		callback(filters[f++]);
 	}
+}
+
+function getQualityScale(quality)
+{
+	var qualityScale = 0.25;
+	if (quality == "medium") qualityScale = 0.375;
+	else if (quality == "low") 	qualityScale = 0.50;
+
+	switch (bakedFilterQuality) {
+		case 1: qualityScale *= 1.0; break;
+		case 2: qualityScale *= 1.5; break;
+		case 3: qualityScale *= 2.0; break;
+	}
+
+	return qualityScale;
 }
 
 function getFrameBounds(timeline, frameIndex)
