@@ -209,6 +209,7 @@ var flversion;
 var oneFrameSymbols;
 var bakedTweenedFilters;
 var pushedElementBounds;
+var cachedElements;
 
 _main();
 
@@ -227,6 +228,7 @@ function initVars()
 	cachedOneFrames = [];
 
 	cachedRectangles = [];
+	cachedElements = {};
 	minRectangleSize = 25; // spritesheet exporter does some goofy shit otherwise
 
 	lastTimeline = null;
@@ -708,6 +710,13 @@ function exportSpritemap(id, exportPath, smData, index)
 		var w = parseInt(frameValues[2].substring(4, frameValues[2].length)) + 1;
 		var h = parseInt(frameValues[3].substring(4, frameValues[3].length)) + 1;
 
+		if (cachedElements[name]) {
+			x++;
+			y++;
+			w--;
+			h--;
+		}
+
 		if (cachedRectangles[name])
 		{
 			x += Math.floor(w / 2);
@@ -715,7 +724,7 @@ function exportSpritemap(id, exportPath, smData, index)
 			w = 1; h = 1;
 		}
 
-		var dumbRect = pushedElementBounds[name];
+		/*var dumbRect = pushedElementBounds[name];
 		if (dumbRect != null) {
 			var dumbW = dumbRect.right - dumbRect.left;
 			var dumbH = dumbRect.bottom - dumbRect.top;
@@ -733,7 +742,7 @@ function exportSpritemap(id, exportPath, smData, index)
 				y += offX; h -= offX;
 				y = rValue(y); h = Math.round(h);
 			}
-		}
+		}*/
 		
 		frameValues[0] = '"x":' + x;
 		frameValues[1] = '"y":' + y;
@@ -2055,12 +2064,12 @@ function pushElementSpritemap(timeline, layerIndex, frameIndex, elementIndices)
 		matScaleY *= max(scaleYMult, 1);
 	}
 
-	var bounds = {left: rect.left, top: rect.top, right: rect.right, bottom: rect.bottom}
+	/*var bounds = {left: rect.left, top: rect.top, right: rect.right, bottom: rect.bottom}
 	bounds.left /= matScaleX;
 	bounds.top /= matScaleY;
 	bounds.right /= matScaleX;
 	bounds.bottom /= matScaleY;
-	pushedElementBounds[smIndex] = bounds;
+	pushedElementBounds[smIndex] = bounds;*/
 
 	var atlasMatrix = makeMatrix(matScaleX, 0, 0, matScaleY, rect.left, rect.top);
 
@@ -2074,6 +2083,8 @@ function pushElementSpritemap(timeline, layerIndex, frameIndex, elementIndices)
 		//atlasMatrix.tx += ((w * m.c)) / 2;
 		//atlasMatrix.ty += ((h * m.b)) / 2;
 	//}
+
+	cachedElements[smIndex] = true;
 
 	makeBasicLayer(function () {
 		resizeInstanceMatrix(curSymbol, atlasMatrix);
