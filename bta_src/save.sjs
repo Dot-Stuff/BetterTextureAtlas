@@ -4,8 +4,17 @@ function xmlData(symbols)
 {
     var data = FLfile.read(fl.configURI + "Commands/bta_src/BTADialog.xml");
     var saveData = FLfile.read(fl.configURI + "Commands/bta_src/saveBTA.txt").split("\n");
+
+	var symbols = String(symbols).split('_bta_');
+	var symbolID = symbols[0];
+
+	if (symbols.length > 1) // use the document name if its a packed symbol
+	{
+		var accName = fl.getDocumentDOM().name.split("."); accName.pop();
+		symbolID = accName.join(".")
+	}
 	
-	var formatSymbolName = String(symbols[0]).split("/").pop().split(",").pop();
+	var formatSymbolName = String(symbolID).split("/").pop().split(",").pop();
 	var fileuri = saveData[0];
 	
 	if (fileuri.length <= 0) {

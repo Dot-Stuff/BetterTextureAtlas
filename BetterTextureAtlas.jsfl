@@ -97,7 +97,7 @@ function _main()
 
 	SaveData.setupSaves();
 
-	var rawXML = fl.runScript(fl.configURI + "Commands/bta_src/save.sjs", "xmlData", [symbols]);
+	var rawXML = fl.runScript(fl.configURI + "Commands/bta_src/save.sjs", "xmlData", [symbols.join("_bta_")]);
 
 	var xPan = SaveData.openXMLFromString(rawXML);
 
@@ -705,23 +705,21 @@ function exportSpritemap(id, exportPath, smData, index)
 		// expand the frame a pixel because animate makes em too small for some reason
 		var frameValues = frame.split(",");
 		
-		var x = parseInt(frameValues[0].substring(4, frameValues[0].length)) - 1;
-		var y = parseInt(frameValues[1].substring(4, frameValues[1].length)) - 1;
-		var w = parseInt(frameValues[2].substring(4, frameValues[2].length)) + 1;
-		var h = parseInt(frameValues[3].substring(4, frameValues[3].length)) + 1;
+		var x = parseInt(frameValues[0].substring(4, frameValues[0].length));
+		var y = parseInt(frameValues[1].substring(4, frameValues[1].length));
+		var w = parseInt(frameValues[2].substring(4, frameValues[2].length));
+		var h = parseInt(frameValues[3].substring(4, frameValues[3].length));
 
-		if (cachedElements[name]) {
-			x++;
-			y++;
-			w--;
-			h--;
-		}
-
-		if (cachedRectangles[name])
-		{
+		// 1x1 baked solid color rectangle
+		if (cachedRectangles[name]) {
 			x += Math.floor(w / 2);
 			y += Math.floor(h / 2);
 			w = 1; h = 1;
+		}
+		// if its not a frame that requires precision, we can expand it to reduce sharp edges
+		else if (cachedElements[name] == null) {
+			x -= 1; y -= 1;
+			w += 2; h += 2;
 		}
 
 		/*var dumbRect = pushedElementBounds[name];
