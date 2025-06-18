@@ -58,7 +58,7 @@ function xmlAddData()
 	data = data.split("$BF").join(saveData[4]);
 	data = data.split("$BTW").join(saveData[5]);
 	data = data.split("$INCAS").join(saveData[6]);
-	data = data.split("$ORECTS").join(saveData[7]);
+	//data = data.split("$ORECTS").join(saveData[7]);
 
 	var buttonWidth = 0;
 	if (parseInt(version[0]) >= 20)
@@ -99,7 +99,7 @@ function xmlSaveStuff()
 	save[4] = xPan.BF;
 	save[5] = xPan.BTW;
 	save[6] = xPan.INCAS;
-	save[7] = xPan.ORECTS;
+	//save[7] = xPan.ORECTS;
 
     FLfile.write(fl.configURI + "Commands/bta_src/saveADDBTA.txt", save.join("\n"));
 }
@@ -157,7 +157,7 @@ function setupSaves()
 		save[4] = bakedFilters;
 		save[5] = bakedTweens;
 		save[6] = includeAs;
-		save[7] = bakedRects;
+		//save[7] = bakedRects;
 
 		FLfile.write(fl.configURI + "Commands/bta_src/saveADDBTA.txt", save.join("\n"));
 	}

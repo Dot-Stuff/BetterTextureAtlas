@@ -25,7 +25,7 @@
         </row>
         <row>
             <checkbox label="Include ActionScript" checked="$INCAS" id="INCAS" />
-            <checkbox label="Optimized Rectangles" checked="$ORECTS" id="ORECTS" />
+            <!-- <checkbox label="Optimized Rectangles" checked="$ORECTS" id="ORECTS" />-->
         </row>
     </rows>
 </grid>

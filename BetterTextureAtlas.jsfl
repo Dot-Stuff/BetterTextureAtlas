@@ -50,9 +50,6 @@ var path = "";
 var instance = null;
 var resScale = 1.0;
 
-if (SaveData.version[0] <= 12)
-	alert("WARNING: Even though it's functional, we still recommend using a newer version, such as Adobe Animate!");
-
 function _main()
 {
 	if (doc == null)
@@ -88,6 +85,11 @@ function _main()
 	{
 		alert("No symbol has been selected");
 		return;
+	}
+
+	if (flversion <= 12)
+	{
+		alert("WARNING: Even though it's functional, we still recommend using a newer version, such as Adobe Animate!");
 	}
 
 	var res = 1.0;
@@ -136,7 +138,7 @@ function _main()
 	bakedFilters = dataAdd[4] == "true";
 	bakedTweens = dataAdd[5] == "true";
 	includeAs = dataAdd[6] == "true";
-	optiRects = dataAdd[7] == "true";
+	//optiRects = dataAdd[7] == "true";
 
 	if (bakedTweens && flversion < 13)
 	{
@@ -157,6 +159,13 @@ function _main()
 
 	// First ask for the export folder
 	path = formatPath(fileuri);
+
+	// fix spritesheet exporter related crash in cs6
+	if (flversion <= 12 && FLfile.exists(path)) {
+		FLfile.remove(path);
+	}
+
+	// create da texture atlas folder
 	FLfile.createFolder(path);
 
 	measure(function() {
@@ -281,7 +290,7 @@ function exportAtlas(symbolNames)
 
 			symbol.timeline.insertFrames(frameCount, false, startIndex);
 			symbol.timeline.currentFrame = startIndex;
-			lib.addItemToDocument({x: 0, y: 0}, tempName);
+			fl.getDocumentDOM().library.addItemToDocument({x: 0.0, y: 0.0}, tempName);
 
 			var element = startFrame.elements[0];
 			element.symbolType = "graphic"; // make sure all frames get exported
@@ -334,7 +343,7 @@ function exportAtlas(symbolNames)
 		
 		TEMP_TIMELINE.currentFrame = i;
 
-		if (flversion > 12 && doc.selection.length > 0)
+		if (doc.selection.length > 0)
 			doc.selectNone();
 
 		var selection = new Array();
@@ -446,19 +455,10 @@ function exportAtlas(symbolNames)
 
 		if (selection.length > 0)
 		{
-			if (flversion > 12)
-			{
-				doc.selection = selection;
-				doc.deleteSelection();
-			}
-			else
-			{
-				doc.selectNone();
-				var s = 0;
-				while (s < selection.length)
-					selection[s++].selected = true;
-				doc.deleteSelection();
-			}
+			doc.selectNone();
+			doc.selection = selection;
+			doc.deleteSelection(); // TODO: this sometimes causes crashes on CS6 downwards, look into it
+			doc.selectNone();
 		}
 
 		i++;
@@ -632,7 +632,7 @@ function exportSpritemap(id, exportPath, smData, index)
 	sm.exportSpriteSheet(smPath, smSettings, true);
 
 	// TODO: this is causing issues for CS6, revise later
-	if (optimizeDimensions && flversion > 12) for (__ = 0; __ < 2; __++) // TODO: figure out a better way to double-check trimmed resolutions
+	if (optimizeDimensions) for (__ = 0; __ < 2; __++) // TODO: figure out a better way to double-check trimmed resolutions
 	{
 		var smWidth = 1;
 		var smHeight = 1;
@@ -682,8 +682,13 @@ function exportSpritemap(id, exportPath, smData, index)
 			sm.sheetHeight = h;
 		}
 
-		if (!hasOverflowed)
+		if (!hasOverflowed) {
+			if (flversion <= 12) {
+				if (FLfile.exists(smPath + ".png"))	 FLfile.remove(smPath + ".png")
+				if (FLfile.exists(smPath + ".json")) FLfile.remove(smPath + ".json")
+			}
 			sm.exportSpriteSheet(smPath, smSettings, true);
+		}	
 	}
 
 	// Parse and change json to spritemap format
@@ -762,15 +767,15 @@ function exportSpritemap(id, exportPath, smData, index)
 }
 
 function makeSpritemap() {
-	var sm = new SpriteSheetExporter;
-	sm.algorithm = algorithm;
+	var sm = new SpriteSheetExporter();
+	sm.layoutFormat = "JSON-Array";
+	sm.algorithm = (flversion <= 12) ? "basic" : algorithm;
 	sm.autoSize = true;
 	sm.borderPadding = max(BrdPad, 1);
 	sm.shapePadding = max(ShpPad, 1);
 	sm.allowRotate = AllRot;
 	sm.allowTrimming = true;
 	sm.stackDuplicate = true;
-	sm.layoutFormat = "JSON-Array";
 	return sm;
 }
 
@@ -1226,7 +1231,7 @@ function parseFrames(frames, layerIndex, timeline)
 				switch (frame.tweenType)
 				{
 					case "motion": // "classic"
-						jsonStr(key("type", "T"), key("motion", "MT"));
+						jsonStr(key("type", "TP"), key("motion", "MT"));
 						jsonStr(key("rotate", "RT"), frame.motionTweenRotate);
 						jsonVar(key("rotateTimes", "RTT"), frame.motionTweenRotateTimes);
 						jsonVar(key("scale", "SL"), frame.motionTweenScale);
@@ -1234,7 +1239,7 @@ function parseFrames(frames, layerIndex, timeline)
 						jsonVarEnd(key("sync", "SC"), frame.motionTweenSync);
 					break;
 					case "motion object":
-						jsonStr(key("type", "T"), key("motion_OBJECT", "MTO"));
+						jsonStr(key("type", "TP"), key("motion_OBJECT", "MTO"));
 						parseMotionObject(xmlToObject(frame.getMotionObjectXML()));
 					break;
 					case "IK pose":
@@ -1375,7 +1380,7 @@ function parseMotionObject(motionData)
 	var timemap = motionData.TimeMap;
 	jsonHeader(key("timeMap", "TM"));
 	jsonVar(key("strength", "S"), timemap.strength);
-	jsonStrEnd(key("type", "T"), timemap.type);
+	jsonStrEnd(key("type", "TP"), timemap.type);
 	push("},\n");
 
 	// Property Container
@@ -1600,7 +1605,7 @@ function parseTextInstance(text)
 {
 	jsonHeader(key("textFIELD_Instance", "TFI"));
 	jsonStr(key("text", "TXT"), text.getTextString());
-	jsonStr(key("type", "T"), text.textType);
+	jsonStr(key("type", "TP"), text.textType);
 	
 	if (text.textType != "static")
 		jsonStr(key("Instance_name", "IN"), text.name);
@@ -1766,7 +1771,7 @@ function parseShape(timeline, layerIndex, frameIndex, elementIndices)
 	var mtx = makeMatrix(scale, 0, 0, scale, shapeLeft, shapeTop);
 	resizeInstanceMatrix(curSymbol, mtx);
 	
-	if (optiRects && elementIndices.length == 1) {
+	/*if (optiRects && elementIndices.length == 1) {
 		var shape = TEMP_LAYER.frames[atlasIndex].elements[elementIndices[0]];
 		var isRectangle = isShapeRectangle(shape);
 		
@@ -1776,7 +1781,7 @@ function parseShape(timeline, layerIndex, frameIndex, elementIndices)
 			mtx.d = shape.height;
 			cachedRectangles[atlasIndex] = true;
 		}
-	}
+	}*/
 	
 	parseAtlasInstance(mtx, atlasIndex);
 }
@@ -2533,7 +2538,7 @@ function parseFilters(filters)
 				jsonVar(key("blurY", "BLY"), filter.blurY);
 				jsonVar(key("distance", "D"), filter.distance);
 				jsonVar(key("knockout", "KK"), filter.knockout);
-				jsonStr(key("type", "T"), filter.type);
+				jsonStr(key("type", "TP"), filter.type);
 				jsonVar(key("strength", "STR"), filter.strength);
 				jsonVar(key("angle", "A"), filter.angle);
 				jsonStr(key("shadowColor", "SC"), filter.shadowColor);
@@ -2575,10 +2580,10 @@ function parseFilters(filters)
 				jsonVar(key("blurY", "BLY"), filter.blurY);
 				jsonVar(key("distance", "D"), filter.distance);
 				jsonVar(key("knockout", "KK"), filter.knockout);
-				jsonStr(key("type", "T"), filter.type);
+				jsonStr(key("type", "TP"), filter.type);
 				jsonVar(key("strength", "STR"), filter.strength);
 				jsonVar(key("angle", "A"), filter.angle);
-				jsonVar(key("colorArray", "CA"), parseArray(filter.colorArray));
+				parseGradientEntries(filter.colorArray, filter.posArray);
 				jsonVarEnd(key("quality", "Q"), parseQuality(filter.quality));
 			break;
 			case "gradientGlowFilter":
@@ -2588,7 +2593,8 @@ function parseFilters(filters)
 				jsonVar(key("inner", "IN"), filter.inner);
 				jsonVar(key("knockout", "KK"), filter.knockout);
 				jsonVar(key("strength", "STR"), filter.strength);
-				jsonVar(key("colorArray", "CA"), parseArray(filter.colorArray));
+				jsonStr(key("type", "TP"), filter.type);
+				parseGradientEntries(filter.colorArray, filter.posArray);
 				jsonVarEnd(key("quality", "Q"), parseQuality(filter.quality));
 			break;
 		}
@@ -2598,6 +2604,32 @@ function parseFilters(filters)
 	}
 
 	push(']\n');
+}
+
+function parseGradientEntries(colorArray, posArray)
+{
+	jsonArray(key("GradientEntries","GE"));
+
+	var ge = 0;
+	while (ge < colorArray.length) {
+		var color = colorArray[ge];
+		var ratio = posArray[ge] / 255;
+		var alpha = 1.0;
+		ge++;
+
+		if (String(color).length == 9) {
+			alpha = parseInt(String(color).slice(-3)) / 255;
+			color = String(color).slice(0, -2);
+		}
+
+		push('{\n');
+		jsonStr(key("color", "C"), color);
+		jsonVar(key("ratio", "R"), ratio);
+		jsonVarEnd(key("alpha", "A"), alpha);
+		push(ge < colorArray.length ? '},\n' : '}\n');
+	}
+
+	push('],\n');
 }
 
 function makeMatrix(a, b, c, d, tx, ty) { return {a: a, b: b, c: c, d: d, tx: tx, ty: ty} }
