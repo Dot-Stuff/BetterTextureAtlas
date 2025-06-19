@@ -2236,15 +2236,15 @@ function pushShapeSpritemap(timeline, layerIndex, frameIndex, elementIndices)
 
 	while (e < l)
 	{
-		if (elementIndices.indexOf(e) !== - 1)
+		if (elementIndices.indexOf(e) !== -1)
 		{
 			e++;
 			continue;
 		}
 
 		var elem = frameElements[e++];
-		elem.x = frameBounds.right - 1;
-		elem.y = frameBounds.bottom - 1;
+		elem.x = frameBounds.right * 2;
+		elem.y = frameBounds.bottom * 2;
 		elem.width = 1;
 		elem.height = 1;
 	}
@@ -2263,7 +2263,12 @@ function pushShapeSpritemap(timeline, layerIndex, frameIndex, elementIndices)
 			if (elemWidth != lastWidth && elemHeight != lastHeight)
 			{
 				// Gotta do this because jsfl scripts cant keep track well of instances data and will randomly corrupt values
-				shapes.push(elem.objectSpaceBounds);
+				shapes.push({
+					left: elem.left,
+					top: elem.top,
+					right: elem.left + elem.width,
+					bottom: elem.top + elem.height
+				});
 
 				lastWidth = elemWidth;
 				lastHeight = elemHeight;
