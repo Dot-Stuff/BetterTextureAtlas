@@ -2243,8 +2243,8 @@ function pushShapeSpritemap(timeline, layerIndex, frameIndex, elementIndices)
 		}
 
 		var elem = frameElements[e++];
-		elem.x = frameBounds.right * 2;
-		elem.y = frameBounds.bottom * 2;
+		elem.x = frameBounds.right+0.5;
+		elem.y = frameBounds.bottom+0.5;
 		elem.width = 1;
 		elem.height = 1;
 	}
