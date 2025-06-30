@@ -1555,7 +1555,8 @@ function parseElements(elements, frameIndex, layerIndex, timeline)
 					case "static": // TODO: add missing text types
 					case "dynamic":
 					case "input":
-						if (!element.useDeviceFonts || bakeTexts)
+						//if (!element.useDeviceFonts || bakeTexts)
+						if (bakeTexts)
 						{
 							pushElementSpritemap(timeline, layerIndex, frameIndex, [e]);
 						}
@@ -1604,6 +1605,7 @@ function parseShapeGroup(timeline, layerIndex, frameIndex, elementIndex, group)
 function parseTextInstance(text)
 {
 	jsonHeader(key("textFIELD_Instance", "TFI"));
+	jsonVar(key("Matrix", "MX"), parseMatrix(text.matrix, true));
 	jsonStr(key("text", "TXT"), text.getTextString());
 	jsonStr(key("type", "TP"), text.textType);
 	
