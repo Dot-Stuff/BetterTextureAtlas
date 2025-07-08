@@ -92,6 +92,7 @@ function formatPath(path)
 	actP += path;
 
     actP = actP.split("%20").join(" ");
+    actP = actP.split("%27").join("'");
 
 	return actP;
 }
