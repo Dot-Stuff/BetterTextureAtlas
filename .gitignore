@@ -7,5 +7,6 @@ bta_src/saveBTA.txt
 bta_src/saveADDBTA.txt
 bta_src/BTATheme.txt
 bta_output/
+haxe/hx-BetterTextureAtlas/
 testing/
 .vscode/

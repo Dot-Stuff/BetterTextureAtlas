@@ -2509,7 +2509,7 @@ function parseBlendMode(blend)
 		case "darken": return 2;
 		case "difference": return 3;
 		case "erase": return 4;
-		case "hardlight": return 5;
+		case "hardLight": return 5;
 		case "invert": return 6;
 		case "layer": return 7;
 		case "lighten": return 8;
