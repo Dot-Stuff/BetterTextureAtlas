@@ -222,6 +222,8 @@ var bakedTweenedFilters;
 var pushedElementBounds;
 var cachedElements;
 
+//var adobeFailures;
+
 _main();
 
 function initVars()
@@ -255,6 +257,8 @@ function initVars()
 
 	oneFrameSymbols = {};
 	bakedTweenedFilters = {};
+
+	//adobeFailures = 0;
 
 	flversion = parseInt(fl.version.split(" ")[1].split(",")[0]);
 }
@@ -465,6 +469,20 @@ function exportAtlas(symbolNames)
 
 		i++;
 	}
+
+	// Make sure the element is inside the render bounds of the spritesheet exporter
+	// Also helps a bit with float point accuracy
+	var _ = 0;
+	while (_ < frameQueue.length)
+	{
+		var frame = TEMP_LAYER.frames[_];
+		if (frame.elements.length == 1) {
+			var element = frame.elements[0];
+			element.x = 0;
+			element.y = 0;
+		}
+		_++;
+	}
 	
 	if (flversion < 12) // Super primitive spritemap export for versions below CS6
 	{
@@ -522,8 +540,8 @@ function exportAtlas(symbolNames)
 			var id = SPRITEMAP_ID + i;
 			var exportId = (i == 0) ? 1 : Math.abs(i - spritemaps.length - 1);
 
-			exportSpritemap(id, path, spritemaps[i++], exportId);
-			lib.deleteItem(id);
+			exportSpritemap(id, path, spritemaps[i], exportId);
+			i++;
 		}
 	}
 
@@ -632,6 +650,27 @@ function exportSpritemap(id, exportPath, smData, index)
 	var sm = smData.sm;
 
 	sm.exportSpriteSheet(smPath, smSettings, true);
+	/*if (result == undefined)
+	{
+		// For whatever reason, Animate failed to output the symbol, so we have to make a temporal fake one
+		var tempID = "__BTA_ADOBE_SUCKS_" + (adobeFailures++);
+		var item = initBtaItem(tempID);
+
+		sm = makeSpritemap();
+			
+		var lastTimeline = findItem(id).timeline;
+		lastTimeline.setSelectedLayers(0, true);
+		lastTimeline.copyFrames(0, lastTimeline.frameCount);
+
+		item.timeline.setSelectedLayers(0, true);
+		item.timeline.pasteFrames();
+
+		sm.addSymbol(item);
+		sm.exportSpriteSheet(smPath, smSettings, true);
+
+		//lib.deleteItem(id);
+		id = tempID;
+	}*/
 
 	// TODO: this is causing issues for CS6, revise later
 	if (optimizeDimensions) for (__ = 0; __ < 2; __++) // TODO: figure out a better way to double-check trimmed resolutions
@@ -763,9 +802,11 @@ function exportSpritemap(id, exportPath, smData, index)
 
 	var metaData = atlasLimbs.pop().split('"meta":')[1];
 	metaData = metaData.split(sm.app.split(" ").join("")).join(sm.app + " (Better TA Extension)");
-	smJson.push(metaData.split("scale").join("resolution").slice(0, -1));
+	smJson.push(metaData.split('"scale":"1"').join('"resolution":"' + resolution + '"').slice(0, -1));
 
 	FLfile.write(smPath + ".json", smJson.join(""));
+
+	lib.deleteItem(id);
 }
 
 function makeSpritemap() {
