@@ -39,7 +39,6 @@ var includeAs = false;
 
 var bakedFilters = false;
 var bakedTweens = false;
-var optiRects = false;
 var bakeOneFR = true;
 var bakeTexts = false;
 /////
@@ -138,7 +137,6 @@ function _main()
 	bakedFilters = dataAdd[4] == "true";
 	bakedTweens = dataAdd[5] == "true";
 	includeAs = dataAdd[6] == "true";
-	//optiRects = dataAdd[7] == "true";
 
 	if (bakedTweens && flversion < 13)
 	{
@@ -222,8 +220,6 @@ var bakedTweenedFilters;
 var pushedElementBounds;
 var cachedElements;
 
-//var adobeFailures;
-
 _main();
 
 function initVars()
@@ -239,10 +235,7 @@ function initVars()
 	cachedTimelineRects = [];
 	instanceSizes = [];
 	cachedOneFrames = [];
-
-	cachedRectangles = [];
 	cachedElements = {};
-	minRectangleSize = 25; // spritesheet exporter does some goofy shit otherwise
 
 	lastTimeline = null;
 	lastLayer = null;
@@ -257,8 +250,6 @@ function initVars()
 
 	oneFrameSymbols = {};
 	bakedTweenedFilters = {};
-
-	//adobeFailures = 0;
 
 	flversion = parseInt(fl.version.split(" ")[1].split(",")[0]);
 }
@@ -316,6 +307,7 @@ function exportAtlas(symbolNames)
 	TEMP_TIMELINE = TEMP_ITEM.timeline;
 	TEMP_LAYER = TEMP_TIMELINE.layers[0];
 	TEMP_TIMELINE.removeFrames(0,0);
+	lib.editItem(TEMP_SPRITEMAP);
 
 	ogSym = symbol;
 
@@ -335,9 +327,8 @@ function exportAtlas(symbolNames)
 
 	// Write Animation.json
 	FLfile.write(path + "/Animation.json", generateAnimation(symbol));
-	TEMP_LAYER.layerType = "normal";
 
-	queueEditSpritemap();
+	TEMP_LAYER.layerType = "normal";
 	TEMP_TIMELINE.currentLayer = 0;
 
 	var i = 0;
@@ -346,6 +337,9 @@ function exportAtlas(symbolNames)
 		var elemIndices = frameQueue[i];
 		var matrix = cachedMatrices[i];
 		var frame = TEMP_LAYER.frames[i];
+
+		var scaleX = 1 / matrix.a;
+		var scaleY = 1 / matrix.d;
 		
 		TEMP_TIMELINE.currentFrame = i;
 
@@ -388,16 +382,8 @@ function exportAtlas(symbolNames)
 
 				if (filters != undefined && filters.length > 0)
 				{
-					var targetX = Math.ceil(element.width / matrix.a) / element.width;
-					var targetY = Math.ceil(element.height / matrix.d) / element.height;
-					
-					element.scaleX *= targetX;
-					element.scaleY *= targetY;
+					doc.selectNone();
 					element.selected = true;
-
-					var m = element.matrix;
-					m.tx = 0; m.ty = 0;
-					element.matrix = m;
 		
 					if (bakedFilters) {
 						forEachFilter(filters, function (filter) {
@@ -410,44 +396,18 @@ function exportAtlas(symbolNames)
 								break;
 							}
 						});
-	
 						doc.setFilters(filters);
 					}
-					else
-					{
+					else {
 						doc.setFilters(new Array(0));
 					}
-					
-					element.selected = false;
 				}
 				else
 				{
-					if (cachedRectangles[i])
+					if (element.elementType == "shape") // check if the shape has lines and is scaled
 					{
-						element.width = minRectangleSize;
-						element.height = minRectangleSize;
-					}
-					else
-					{
-						var scaleX = 1 / matrix.a;
-						var scaleY = 1 / matrix.d;
-
-						if (element.elementType == "shape") // check if the shape has lines and is scaled
-						{
-							if (checkShapeLines(element, scaleX, scaleY))
-								element = frame.elements[e];
-						}
-
-						var w = element.width;
-						var h = element.height;
-
-						// making sure this shit is pixel perfect
-						element.width = Math.ceil((w / element.scaleX) * scaleX);
-						element.height = Math.ceil((h / element.scaleY) * scaleY);
-
-						var m = element.matrix;
-						m.tx = 0; m.ty = 0;
-						element.matrix = m;
+						if (checkShapeLines(element, scaleX, scaleY))
+							element = frame.elements[e];
 					}
 				}
 			}
@@ -464,24 +424,31 @@ function exportAtlas(symbolNames)
 			doc.selectNone();
 			doc.selection = selection;
 			doc.deleteSelection(); // TODO: this sometimes causes crashes on CS6 downwards, look into it
-			doc.selectNone();
 		}
+
+
+		// make each limb a group so its easier to prepare it for export, normal shapes tend to corrupt easily
+		doc.selectNone();
+		doc.selectAll();
+		doc.group();
+		
+		// apply the scale
+		var group = frame.elements[0];
+		group.scaleX = scaleX;
+		group.scaleY = scaleY;
+
+		// after the size is recalculated, make sure its pixel perfect
+		group.scaleX = (scaleX * Math.ceil(group.width) / group.width);
+		group.scaleY = (scaleY * Math.ceil(group.height) / group.height);
+
+		// make sure the element is inside the render bounds of the spritesheet exporter
+		// also helps a bit with float point accuracy
+		group.x = group.width / 2;
+		group.y = group.height / 2;
+
+		doc.selectNone();
 
 		i++;
-	}
-
-	// Make sure the element is inside the render bounds of the spritesheet exporter
-	// Also helps a bit with float point accuracy
-	var _ = 0;
-	while (_ < frameQueue.length)
-	{
-		var frame = TEMP_LAYER.frames[_];
-		if (frame.elements.length == 1) {
-			var element = frame.elements[0];
-			element.x = 0;
-			element.y = 0;
-		}
-		_++;
 	}
 	
 	if (flversion < 12) // Super primitive spritemap export for versions below CS6
@@ -553,6 +520,9 @@ function exportAtlas(symbolNames)
 
 function checkShapeLines(shape, targetX, targetY)
 {
+	if (flversion <= 12) // I dont know why this keeps crashing on older flash
+		return false;
+
 	if ((Math.abs(targetX - 1) <= 0.01) && (Math.abs(targetY - 1) <= 0.01))
 		return false; // doesnt need scaling
 
@@ -650,27 +620,6 @@ function exportSpritemap(id, exportPath, smData, index)
 	var sm = smData.sm;
 
 	sm.exportSpriteSheet(smPath, smSettings, true);
-	/*if (result == undefined)
-	{
-		// For whatever reason, Animate failed to output the symbol, so we have to make a temporal fake one
-		var tempID = "__BTA_ADOBE_SUCKS_" + (adobeFailures++);
-		var item = initBtaItem(tempID);
-
-		sm = makeSpritemap();
-			
-		var lastTimeline = findItem(id).timeline;
-		lastTimeline.setSelectedLayers(0, true);
-		lastTimeline.copyFrames(0, lastTimeline.frameCount);
-
-		item.timeline.setSelectedLayers(0, true);
-		item.timeline.pasteFrames();
-
-		sm.addSymbol(item);
-		sm.exportSpriteSheet(smPath, smSettings, true);
-
-		//lib.deleteItem(id);
-		id = tempID;
-	}*/
 
 	// TODO: this is causing issues for CS6, revise later
 	if (optimizeDimensions) for (__ = 0; __ < 2; __++) // TODO: figure out a better way to double-check trimmed resolutions
@@ -756,17 +705,9 @@ function exportSpritemap(id, exportPath, smData, index)
 		var w = parseInt(frameValues[2].substring(4, frameValues[2].length));
 		var h = parseInt(frameValues[3].substring(4, frameValues[3].length));
 
-		// 1x1 baked solid color rectangle
-		if (cachedRectangles[name]) {
-			x += Math.floor(w / 2);
-			y += Math.floor(h / 2);
-			w = 1; h = 1;
-		}
-		// if its not a frame that requires precision, we can expand it to reduce sharp edges
-		else if (cachedElements[name] == null) {
-			x -= 1; y -= 1;
-			w += 2; h += 2;
-		}
+		// expand frame to reduce sharp edges
+		x -= 1; y -= 1;
+		w += 2; h += 2;
 
 		/*var dumbRect = pushedElementBounds[name];
 		if (dumbRect != null) {
@@ -1632,8 +1573,6 @@ function parseElements(elements, frameIndex, layerIndex, timeline)
 
 function parseShapeGroup(timeline, layerIndex, frameIndex, elementIndex, group)
 {
-	queueEditSpritemap();
-
 	initJson();
 	parseElements(group.members, frameIndex, layerIndex, timeline);
 
@@ -1758,6 +1697,8 @@ function parseBitmapInstance(bitmap, timeline, layerIndex, frameIndex, elemIndex
 	var item = bitmap.libraryItem;
 	var name = item.name;
 
+	//item.compressionType = "lossless";
+
 	parseSymbolInstance(bitmap, name);
 	pushInstanceSize(name, min(Math.abs(bitmap.scaleX), 1), min(Math.abs(bitmap.scaleY), 1));
 
@@ -1774,20 +1715,6 @@ function parseBitmapInstance(bitmap, timeline, layerIndex, frameIndex, elemIndex
 	}
 }
 
-var openedSpritemap;
-
-function queueEditSpritemap() {
-	if (openedSpritemap)
-		return;
-
-	openedSpritemap = true;
-	lib.editItem(TEMP_SPRITEMAP);
-}
-
-var cachedRectangles;
-var minRectangleSize;
-
-// TODO: could also optimize gradient rectangles if theyre exactly vertical or horizontal
 function parseShape(timeline, layerIndex, frameIndex, elementIndices)
 {
 	var shapeBounds = pushShapeSpritemap(timeline, layerIndex, frameIndex, elementIndices);
@@ -1815,18 +1742,6 @@ function parseShape(timeline, layerIndex, frameIndex, elementIndices)
 	var scale = getMatrixScale(shapeRight - shapeLeft, shapeBottom - shapeTop);
 	var mtx = makeMatrix(scale, 0, 0, scale, shapeLeft, shapeTop);
 	resizeInstanceMatrix(curSymbol, mtx);
-	
-	/*if (optiRects && elementIndices.length == 1) {
-		var shape = TEMP_LAYER.frames[atlasIndex].elements[elementIndices[0]];
-		var isRectangle = isShapeRectangle(shape);
-		
-		if (isRectangle && ((shape.width > minRectangleSize) || (shape.height > minRectangleSize)))
-		{
-			mtx.a = shape.width;
-			mtx.d = shape.height;
-			cachedRectangles[atlasIndex] = true;
-		}
-	}*/
 	
 	parseAtlasInstance(mtx, atlasIndex);
 }
