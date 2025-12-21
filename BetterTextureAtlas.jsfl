@@ -16,9 +16,10 @@ var symbols = [];
 var meshExport = false; // If to use a spritemap or mesh vertex data
 
 // cur bta release version
-var BTA_version = "BTA ";
-var _mxi = FLfile.read(fl.configURI + "Commands/BetterTextureAtlas.mxi");
-BTA_version += _mxi.split('version="')[2].split('"')[0];
+var _mxiPath = fl.configURI + "Commands/BetterTextureAtlas.mxi";
+var BTA_version = "BTA ??? (Missing MXI)";
+if (FLfile.exists(_mxiPath))
+	BTA_version = "BTA " + FLfile.read(_mxiPath).split('version="')[2].split('"')[0];
 
 trace(BTA_version);
 var algorithm = "maxRects";
@@ -158,13 +159,9 @@ function _main()
 	// First ask for the export folder
 	path = formatPath(fileuri);
 
-	// fix spritesheet exporter related crash in cs6
-	if (flversion <= 12 && FLfile.exists(path)) {
-		FLfile.remove(path);
-	}
-
 	// create da texture atlas folder
-	FLfile.createFolder(path);
+	if (!FLfile.exists(path))
+		FLfile.createFolder(path);
 
 	measure(function() {
 	exportAtlas(symbols);
@@ -217,7 +214,6 @@ var flversion;
 
 var oneFrameSymbols;
 var bakedTweenedFilters;
-var pushedElementBounds;
 var cachedElements;
 
 _main();
@@ -231,7 +227,6 @@ function initVars()
 	cachedMatrices = [];
 	cachedBitmaps = [];
 	cachedBitmapsList = new Array();
-	pushedElementBounds = [];
 	cachedTimelineRects = [];
 	instanceSizes = [];
 	cachedOneFrames = [];
@@ -324,6 +319,19 @@ function exportAtlas(symbolNames)
 	}
 
 	//measure(function () {
+
+	// Clear up previous texture atlas files
+	if (FLfile.exists(path + '/Animation.json'))
+	{
+		FLfile.remove(path + '/Animation.json');
+
+		var smFileIndex = 1;
+		while (FLfile.exists(path + '/spritemap' + smFileIndex + '.json'))
+		{
+			FLfile.remove(path + '/spritemap' + smFileIndex + '.json');
+			smFileIndex = smFileIndex + 1;
+		}
+	}
 
 	// Write Animation.json
 	FLfile.write(path + "/Animation.json", generateAnimation(symbol));
@@ -619,10 +627,15 @@ function exportSpritemap(id, exportPath, smData, index)
 	var smSettings = {format: "png", bitDepth: bitDepth, backgroundColor: "#00000000"};
 	var sm = smData.sm;
 
-	sm.exportSpriteSheet(smPath, smSettings, true);
+	var exportSheet = function () {
+		//if (FLfile.exists(smPath + ".png"))	 FLfile.remove(smPath + ".png")
+		//if (FLfile.exists(smPath + ".json")) FLfile.remove(smPath + ".json")
+		sm.exportSpriteSheet(smPath, smSettings, true);
+	}
 
-	// TODO: this is causing issues for CS6, revise later
-	if (optimizeDimensions) for (__ = 0; __ < 2; __++) // TODO: figure out a better way to double-check trimmed resolutions
+	exportSheet();
+
+	if (optimizeDimensions && flversion > 12) for (__ = 0; __ < 2; __++) // TODO: figure out a better way to double-check trimmed resolutions
 	{
 		var smWidth = 1;
 		var smHeight = 1;
@@ -659,8 +672,8 @@ function exportSpritemap(id, exportPath, smData, index)
 		var hasOverflowed = false
 		while (sm.overflowed)
 		{
-			w+=2;
-			h+=2;
+			w += 2;
+			h += 2;
 
 			if (w > 8192 || h > 8192) {
 				hasOverflowed = true;
@@ -673,12 +686,8 @@ function exportSpritemap(id, exportPath, smData, index)
 		}
 
 		if (!hasOverflowed) {
-			if (flversion <= 12) {
-				if (FLfile.exists(smPath + ".png"))	 FLfile.remove(smPath + ".png")
-				if (FLfile.exists(smPath + ".json")) FLfile.remove(smPath + ".json")
-			}
-			sm.exportSpriteSheet(smPath, smSettings, true);
-		}	
+			exportSheet();
+		}
 	}
 
 	// Parse and change json to spritemap format
@@ -708,26 +717,6 @@ function exportSpritemap(id, exportPath, smData, index)
 		// expand frame to reduce sharp edges
 		x -= 1; y -= 1;
 		w += 2; h += 2;
-
-		/*var dumbRect = pushedElementBounds[name];
-		if (dumbRect != null) {
-			var dumbW = dumbRect.right - dumbRect.left;
-			var dumbH = dumbRect.bottom - dumbRect.top;
-
-			var offX = (dumbW - w) / 6;
-			var offY = (dumbH - h) / 6;
-
-			// TODO: gotta find a way to be able to have this as integers
-			if (offX > 0){
-				x += offX; w -= offX;
-				x = rValue(x); w = Math.round(w);
-			}
-
-			if (offY > 0) {
-				y += offX; h -= offX;
-				y = rValue(y); h = Math.round(h);
-			}
-		}*/
 		
 		frameValues[0] = '"x":' + x;
 		frameValues[1] = '"y":' + y;
@@ -2026,13 +2015,6 @@ function pushElementSpritemap(timeline, layerIndex, frameIndex, elementIndices)
 		matScaleX *= max(scaleXMult, 1);
 		matScaleY *= max(scaleYMult, 1);
 	}
-
-	/*var bounds = {left: rect.left, top: rect.top, right: rect.right, bottom: rect.bottom}
-	bounds.left /= matScaleX;
-	bounds.top /= matScaleY;
-	bounds.right /= matScaleX;
-	bounds.bottom /= matScaleY;
-	pushedElementBounds[smIndex] = bounds;*/
 
 	var atlasMatrix = makeMatrix(matScaleX, 0, 0, matScaleY, rect.left, rect.top);
 

@@ -107,18 +107,19 @@ function xmlSaveStuff()
 function theme()
 {
     var stuff = "";
-    if (version[0] >= 13)
+    var leVersion = parseInt(version[0]);
+	if (leVersion >= 13)
     {
-        if (version[0] < 20)
+        if (leVersion < 20)
             stuff = fl.getThemeColor("themeAppBackgroundColor");
         else
         {
             stuff = fl.getThemeColor("themeAppBackgroundColor");
             switch(stuff)
             {
-                    case "#404040": stuff = (version[0] >= 24) ? "#323232" : "#333333"; break;
-                    case "#262626": stuff = (version[0] >= 24) ? "#1D1D1D" : "#1f1f1f"; break;
-                    case "#B9B9B9": stuff = (version[0] >= 24) ? "#F8F8F8" : "#f5f5f5"; break;
+                    case "#404040": stuff = (leVersion >= 24) ? "#323232" : "#333333"; break;
+                    case "#262626": stuff = (leVersion >= 24) ? "#1D1D1D" : "#1f1f1f"; break;
+                    case "#B9B9B9": stuff = (leVersion >= 24) ? "#F8F8F8" : "#f5f5f5"; break;
                     case "#F2F2F2": stuff = "#ffffff"; break;
             }
         }
