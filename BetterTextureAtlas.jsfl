@@ -189,6 +189,7 @@ function formatPath(path) {
 	// TODO: fix the rest of the html special chars crap
 	path = path.split("%20").join(" ");
 	path = path.split("%27").join("'");
+	path = path.split("%5C").join("/");
 
 	var endIndex = path.length - 1;
 	while (endIndex >= 0 && path[endIndex] === ' ') {
