@@ -404,7 +404,6 @@ function exportAtlas(symbolNames)
 					element.selected = true;
 		
 					if (bakedFilters) {
-						bakedAFilter = true;
 						forEachFilter(filters, function (filter) {
 							switch (filter.name)
 							{
@@ -412,6 +411,7 @@ function exportAtlas(symbolNames)
 								case "blurFilter":
 									filter.blurX /= matrix.a;
 									filter.blurY /= matrix.d;
+									bakedAFilter = true; // only apply for blur type filters
 								break;
 							}
 						});
