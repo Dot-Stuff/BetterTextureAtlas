@@ -9,12 +9,15 @@ SaveData.setupSaves = function()
 	{
 		var saveConfig = [
 			"", // pos
-			0, // ShpPad
-			0, // BrdPad
-			1, // res
-			true, // optDimens
-			true, // optAn
-			false // flatten
+			3, // shape pad
+			3, // border pad
+			1, // resolution
+			true, // optimize dimensions
+			true, // optimize animation
+			false, // flatten skew
+			"MaxRects", // algorithm
+			"PNG 32 bits", // image format
+			true // rotate
 		];
 
 		FLfile.write(fl.configURI + "Commands/bta_src/saveBTA.txt", saveConfig.join("\n"));
