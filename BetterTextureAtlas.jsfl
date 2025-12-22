@@ -27,12 +27,12 @@ var onlyVisibleLayers = true;
 var optimizeDimensions = true;
 var optimizeJson = true;
 var flattenSkewing = false;
+var allowRotation = true;
 var resolution = 1.0;
 var version = SaveData.prototype.version;
 var ShpPad = 0;
 var BrdPad = 0;
 var bitDepth = 32;
-var AllRot = true;
 ///// ADDITIONAL BIZZ
 var inlineSym = false;
 var includeSnd = true;
@@ -96,6 +96,7 @@ function _main()
 	var optDimens = "true";
 	var optAn = "true";
 	var flatten = "false";
+	var allRot = "true";
 
 	SaveData.setupSaves();
 
@@ -126,7 +127,8 @@ function _main()
 	optDimens = xPan.OptDimens;
 	optAn = xPan.OptAn;
 	flatten = xPan.FlatSke;
-	AllRot = xPan.Rotate;
+	allRot = xPan.Rotate;
+
 	bitDepth = (xPan.imgFormat == "PNG 8 bits") ? 8 : 32;
 	algorithm = (xPan.algorithm == "Basic") ? "basic" : "maxRects";
 
@@ -150,6 +152,7 @@ function _main()
 	optimizeDimensions = (optDimens == "true");
 	optimizeJson = (optAn == "true");
 	flattenSkewing = (flatten == "true");
+	allowRotation = (allRot == "true");
 	resolution = parseFloat(res);
 	resScale =  1 / resolution;
 
@@ -217,6 +220,10 @@ var oneFrameSymbols;
 var bakedTweenedFilters;
 var cachedElements;
 
+// Only allow rotation if no movieclip with a filter was baked
+// For accuracy reasons
+var bakedAFilter;
+
 _main();
 
 function initVars()
@@ -246,6 +253,8 @@ function initVars()
 
 	oneFrameSymbols = {};
 	bakedTweenedFilters = {};
+
+	bakedAFilter = false;
 
 	flversion = parseInt(fl.version.split(" ")[1].split(",")[0]);
 }
@@ -395,6 +404,7 @@ function exportAtlas(symbolNames)
 					element.selected = true;
 		
 					if (bakedFilters) {
+						bakedAFilter = true;
 						forEachFilter(filters, function (filter) {
 							switch (filter.name)
 							{
@@ -741,13 +751,13 @@ function exportSpritemap(id, exportPath, smData, index)
 }
 
 function makeSpritemap() {
-	var sm = new SpriteSheetExporter();
+	var sm = new SpriteSheetExporter;
 	sm.layoutFormat = "JSON-Array";
 	sm.algorithm = (flversion <= 12) ? "basic" : algorithm;
 	sm.autoSize = true;
 	sm.borderPadding = max(BrdPad, 1);
 	sm.shapePadding = max(ShpPad, 1);
-	sm.allowRotate = AllRot;
+	sm.allowRotate = allowRotation && !bakedAFilter;
 	sm.allowTrimming = true;
 	sm.stackDuplicate = true;
 	return sm;
@@ -933,53 +943,32 @@ function isOneFrame(itemTimeline)
 
 	var result = false;
 	var layers = itemTimeline.layers;
+
+	var usedLayers = [];
+	var usedLayerCount = 0;
+	var l = 0;
+	while (l < layers.length) {
+		var layer = layers[l];
+		if (layer.layerType == "normal") {
+			usedLayers.push(l);
+			usedLayerCount++;
+		}
+		l++;
+	}
 	
 	if (itemTimeline.frameCount === 1) // Basic one frame check
-	{	
-		if (itemTimeline.layerCount == 1)
-		{
-			var frame = layers[0].frames[0];
-			result = (frame.elements.length > 1);
-			
-			if (!result && (frame.elements.length == 1))
-			{
-				var elem = frame.elements[0];
-				if (elem.elementType == "instance")
-				{
-					if (elem.instanceType == "symbol")
-						result = (elem.blendMode == "normal");
-					else if (elem.instanceType == "bitmap") // skip bitmaps getting upscaled / duplicated
-						result = false;
-				}
-			}
-		}
-		else
-		{
+	{
+		if (usedLayerCount > 1) {
 			result = true;
+		} else {
+			var frame = layers[0].frames[0];
+			result = frame.elements.length > 1;
 		}
 	}
-	else // "Advanced" one frame check, maybe should make it a setting because i can see this being a bit costy
+	else if (usedLayerCount == 1) // "Advanced" one frame check, maybe should make it a setting because i can see this being a bit costy
 	{
-		var firstNormalLayer = null;
-		var i = 0;
-		while (i < layers.length) {
-			var layer = layers[i++];
-			if (layer.layerType == "normal")
-			{
-				firstNormalLayer = layer;
-				break;
-			}
-		}
-
-		if (firstNormalLayer == null)
-		{
-			result = false;
-		}
-		else
-		{
-			var startFrame = firstNormalLayer.frames[0].startFrame;
-			result = isBakeableTimeline(startFrame, itemTimeline);
-		}
+		var usedLayer = layers[usedLayers[0]];
+		result = isBakeableTimeline(usedLayer.frames[0].startFrame, itemTimeline);
 	}
 
 	cachedOneFrames[id] = result;
@@ -1035,6 +1024,7 @@ function parseSymbol(symbol)
 
 	if (isOneFrame(timeline) && oneFrameSymbols[symbol.name] != null)
 	{
+		trace("BAKE " + timeline.name, isOneFrame(timeline), oneFrameSymbols[symbol.name] != null);
 		makeBasicLayer(function () {
 			var index = oneFrameSymbols[symbol.name];
 			var bounds = getFrameBounds(timeline, 0);
@@ -1053,7 +1043,7 @@ function parseSymbol(symbol)
 		var layer = layers[l];
 		var layerType = layer.layerType;
 
-		if ((layer.visible || !onlyVisibleLayers) && layer.frameCount > 0 && layerType != "guide" && layerType != "guided")
+		if (isValidLayer(layer))
 		{
 			var lockedLayer = layer.locked;
 			layer.locked = false;
@@ -1809,7 +1799,7 @@ function getElementRect(element, overrideFilters)
 					while (l < timeline.layers.length)
 					{
 						var layer =  timeline.layers[l++];
-						if (!isValidLayer(layer))
+						if (!isValidLayer(layer) || layer.layerType == "folder")
 							continue;
 
 						var frame = layer.frames[frameIndex];
@@ -1897,9 +1887,7 @@ function expandBounds(bounds, filters)
 }
 
 function isValidLayer(layer) {
-	if ((layer.layerType == "folder") || (layer.layerType == "guide") || (layer.layerType == "guided"))
-		return false;
-	return true;
+	return (layer.visible || !onlyVisibleLayers) && layer.frameCount > 0 && layer.layerType != "guide" && layer.layerType != "guided";
 }
 
 var resizedContain = false;
@@ -2076,8 +2064,29 @@ function getFrameBounds(timeline, frameIndex)
 	// TODO: may have to change in the future due to filter bounds tho
 	if (flversion >= 15)
 	{
-		var bounds = timeline.getBounds(frameIndex + 1);
-		return bounds === 0 ? {left: 0, top: 0, right: 0, bottom: 0} : bounds;
+		// The timeline.getBounds function will take guides and guided layers, even tho we dont want them
+		// But it does offer a way to exclude hidden layers, so with some visibility fuckery we can select what layers we want to be exported
+		var layerVisibility = [];
+		var l = 0;
+		while (l < timeline.layers.length) {
+			var layer = timeline.layers[l++];
+			layerVisibility.push(layer.visible);
+			if (layer.layerType != "folder")
+				layer.visible = isValidLayer(layer);
+		}
+
+		var bounds = timeline.getBounds(frameIndex + 1, false);
+		bounds = (bounds === 0) ? {left: 0, top: 0, right: 0, bottom: 0} : bounds;
+
+		l = 0;
+		while (l < timeline.layers.length) {
+			var layer = timeline.layers[l];
+			if (layer.layerType != "folder")
+				layer.visible = layerVisibility[l];
+			l++;
+		}
+
+		return bounds;
 	}
 
 	if (timeline.layerCount == 1) {
@@ -2099,7 +2108,7 @@ function getFrameBounds(timeline, frameIndex)
 
 	while (l < timeline.layerCount)
 	{
-		var layer = timeline.layers[l++];	
+		var layer = timeline.layers[l++];
 		if (frameIndex > layer.frameCount - 1)
 			continue;
 
