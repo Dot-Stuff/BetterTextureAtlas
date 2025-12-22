@@ -130,36 +130,3 @@ function theme()
 
     FLfile.write(fl.configURI + "Commands/bta_src/BTATheme.txt", stuff);
 }
-
-function setupSaves()
-{
-    if (!FLfile.exists(fl.configURI + "Commands/bta_src/saveBTA.txt"))
-	{
-		var saveConfig = [
-			"", // pos
-			0, // ShpPad
-			0, // BrdPad
-			1, // res
-			true, // optDimens
-			true, // optAn
-			false // flatten
-		];
-
-		FLfile.write(fl.configURI + "Commands/bta_src/saveBTA.txt", saveConfig.join("\n"));
-	}
-	if (!FLfile.exists(fl.configURI + "Commands/bta_src/saveADDBTA.txt"))
-	{
-		var save = [];
-
-		save[0] = inlineSym;
-		save[1] = bakeTexts;
-		save[2] = includeSnd;
-		save[3] = bakeOneFR;
-		save[4] = bakedFilters;
-		save[5] = bakedTweens;
-		save[6] = includeAs;
-		//save[7] = bakedRects;
-
-		FLfile.write(fl.configURI + "Commands/bta_src/saveADDBTA.txt", save.join("\n"));
-	}
-}

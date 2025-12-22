@@ -23,10 +23,13 @@ SaveData.setupSaves = function()
 	{
 		var save = [];
 
-		save[0] = inlineSym;
-		save[1] = bakeTexts;
-		save[2] = includeSnd;
-		save[3] = bakeOneFR;
+		save[0] = true;//inlineSym;
+		save[1] = true;//bakeTexts;
+		save[2] = false;//includeSnd;
+		save[3] = true;//bakeOneFR;
+		save[4] = false;//bakedFilters;
+		save[5] = true;//bakedTweens;
+		save[6] = false;//includeAs;
 
 		FLfile.write(fl.configURI + "Commands/bta_src/saveADDBTA.txt", save.join("\n"));
 	}

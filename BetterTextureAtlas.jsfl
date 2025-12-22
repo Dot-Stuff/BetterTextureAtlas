@@ -101,7 +101,6 @@ function _main()
 	SaveData.setupSaves();
 
 	var rawXML = fl.runScript(fl.configURI + "Commands/bta_src/save.sjs", "xmlData", [symbols.join("_bta_")]);
-
 	var xPan = SaveData.openXMLFromString(rawXML);
 
 	if (xPan == null)
