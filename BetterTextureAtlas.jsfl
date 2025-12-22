@@ -1024,7 +1024,6 @@ function parseSymbol(symbol)
 
 	if (isOneFrame(timeline) && oneFrameSymbols[symbol.name] != null)
 	{
-		trace("BAKE " + timeline.name, isOneFrame(timeline), oneFrameSymbols[symbol.name] != null);
 		makeBasicLayer(function () {
 			var index = oneFrameSymbols[symbol.name];
 			var bounds = getFrameBounds(timeline, 0);
