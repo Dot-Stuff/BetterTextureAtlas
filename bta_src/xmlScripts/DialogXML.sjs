@@ -86,6 +86,16 @@ function formatPath(path)
 	}
 
 	path = path.substring(8);
+
+    // If we're on macOS, we skip the path formatting nonsense.
+    if (fl.version.substring(0, 3) == "MAC") {
+        path = path.split("%20").join(" ");
+        path = path.split("%27").join("'");
+        path = path.split("%5C").join("/");
+
+        return path;
+    }
+
 	var actP = path.charAt(0) + ":";
 	path = path.substring(2);
 	
