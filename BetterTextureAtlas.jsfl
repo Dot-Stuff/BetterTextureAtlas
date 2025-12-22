@@ -2377,7 +2377,7 @@ function parseSymbolInstance(instance, itemName, overrideMatrix)
 		{
 			case "brightness":
 				jsonStr(modeKey, key("Brightness", "CBRT"));
-				jsonVarEnd(key("brightness", "BRT"), colorValues.brightness);
+				jsonVarEnd(key("brightness", "BRT"), colorValues.brightness * 0.01);
 			break;
 			case "tint":
 				jsonStr(modeKey, key("Tint", "T"));
