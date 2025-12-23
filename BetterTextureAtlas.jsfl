@@ -1253,6 +1253,10 @@ function parseFrames(frames, layerIndex, timeline)
 				}
 			}
 
+			var frameBlend = getFrameBlend(timeline.layers[layerIndex], f);
+			if (frameBlend != null && frameBlend != "normal")
+				jsonVar(key("blend", "B"), parseBlendMode(frameBlend));
+
 			curFrameMatrix = (hasRig) ? layer.getRigMatrixAtFrame(f) : null;
 			parseElements(frame.elements, f, layerIndex, timeline);
 			push('},');
@@ -2279,6 +2283,18 @@ function getFrameFilters(layer, frameIndex)
 	}
 
 	return new Array(0);
+}
+
+function getFrameBlend(layer, frameIndex)
+{
+	if (flversion >= 20 && layer.getBlendModeAtFrame != null)
+	{
+		var blend = layer.getBlendModeAtFrame(frameIndex);
+		if (blend != null)
+			return blend;
+	}
+
+	return "normal";
 }
 
 function parseSymbolInstance(instance, itemName, overrideMatrix)
