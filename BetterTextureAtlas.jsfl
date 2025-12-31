@@ -1362,7 +1362,7 @@ function parseMotionObject(motionData)
 			continue;
 
 		push("{\n");
-		jsonStr("id", cont.id);
+		jsonStr("ID", cont.id);
 		jsonArray(key("properties", "P"));
 
 		var p = 0;
@@ -1375,7 +1375,7 @@ function parseMotionObject(motionData)
 
 			push("{\n");
 			jsonStr("ID", prop.id);
-			jsonArray(key("Keyframes", "KFR"));
+			jsonArray(key("keyframes", "KFR"));
 
 			var kf = 0;
 			while (kf < prop.Keyframe.length)
