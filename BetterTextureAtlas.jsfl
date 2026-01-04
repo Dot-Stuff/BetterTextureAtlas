@@ -779,7 +779,7 @@ function generateAnimation(symbol)
 		push('},\n');
 	}
 
-	jsonStr(key("SYMBOL_name", "SN"), symbol.name);
+	jsonStr(key("SYMBOL_name", "SN"), formatSymbolName(symbol.name));
 	jsonHeader(key("TIMELINE", "TL"));
 	parseSymbol(symbol);
 	push('}');
@@ -811,7 +811,7 @@ function generateAnimation(symbol)
 					continue;
 				
 				push('{\n');
-				jsonStr(key("SYMBOL_name", "SN"), curSymbol);
+				jsonStr(key("SYMBOL_name", "SN"), formatSymbolName(curSymbol));
 				jsonHeader(key("TIMELINE", "TL"));
 				parseSymbol(symbol);
 				push('},');
@@ -1658,7 +1658,7 @@ function makeBitmapItem(name)
 	push('{\n');
 
 	if (inlineSym) {
-		jsonStr(key("SYMBOL_name", "SN"), name);
+		jsonStr(key("SYMBOL_name", "SN"), formatSymbolName(name));
 		jsonHeader(key("TIMELINE", "TL"));
 	}
 
@@ -1962,7 +1962,7 @@ function pushElementSpritemap(timeline, layerIndex, frameIndex, elementIndices)
 	push('{\n');
 	
 	if (inlineSym) {
-		jsonStr(key("SYMBOL_name", "SN"), itemName);
+		jsonStr(key("SYMBOL_name", "SN"), formatSymbolName(itemName));
 		jsonHeader(key("TIMELINE", "TL"));
 	}
 
@@ -2313,7 +2313,7 @@ function parseSymbolInstance(instance, itemName, overrideMatrix)
 	}
 
 	if (itemName != undefined) {
-		jsonStr(key("SYMBOL_name", "SN"), itemName);
+		jsonStr(key("SYMBOL_name", "SN"), formatSymbolName(itemName));
 
 		if (!bakedInstance)
 		{
@@ -2460,6 +2460,10 @@ function parseSymbolInstance(instance, itemName, overrideMatrix)
 	else removeTrail(2);
 
 	push('}');
+}
+
+function formatSymbolName(name) {
+	return name.split('"').join('\\"');
 }
 
 function parseBlendMode(blend)
