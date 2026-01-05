@@ -447,8 +447,17 @@ function exportAtlas(symbolNames)
 
 		// make each limb a group so its easier to prepare it for export, normal shapes tend to corrupt easily
 		doc.selectNone();
-		doc.selectAll();
-		doc.group();
+
+		var canGroup = true;
+		var lastFrame = TEMP_LAYER.frames[i-1];
+
+		if (frame.tweenType == "shape" || (lastFrame != null && lastFrame.tweenType == "shape"))
+			canGroup = false;
+
+		if (canGroup) {
+			doc.selectAll();
+			doc.group();
+		}
 		
 		// apply the scale
 		var group = frame.elements[0];
