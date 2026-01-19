@@ -42,7 +42,7 @@ Adding features and fixing its Animation file format so it presents more data fo
 ## How to install
 
 <details>
-<summary><b>Manually</b></summary><hr>
+<summary><b>Manually (Recommended for newer Animate)</b></summary><hr>
  
 To install them manually, you need to go to <br>``C:\Users\[UserName]\AppData\Local\Adobe\[Flash/Animate version]\[yourLocale]\Configuration\Commands``<br>
 Example: ``C:\Users\sotif\AppData\Local\Adobe\Animate 2022\en_US\Configuration\Commands``
