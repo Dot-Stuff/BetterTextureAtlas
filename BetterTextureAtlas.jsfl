@@ -2798,19 +2798,22 @@ function max(a, b) {
 	return (a > b) ? a : b;
 }
 
-var lastJson = undefined;
+var jsonQueue = undefined;
 var curJson = undefined;
 
 function initJson()
 {
-	lastJson = curJson;
+	if (jsonQueue == null)
+		jsonQueue = [];
+
+	jsonQueue.push(curJson);
 	curJson = [];
 }
 
 function closeJson()
 {
 	var result = curJson != undefined ? curJson.join("") : "";
-	curJson = lastJson;
+	curJson = jsonQueue.pop();
 	return result;
 }
 
