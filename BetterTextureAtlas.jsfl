@@ -26,7 +26,7 @@ var algorithm = "maxRects";
 var onlyVisibleLayers = true;
 var optimizeDimensions = true;
 var optimizeJson = true;
-var flattenSkewing = false;
+//var flattenSkewing = false;
 var allowRotation = true;
 var resolution = 1.0;
 var version = SaveData.prototype.version;
@@ -95,7 +95,7 @@ function _main()
 	var res = 1.0;
 	var optDimens = "true";
 	var optAn = "true";
-	var flatten = "false";
+	//var flatten = "false";
 	var allRot = "true";
 
 	SaveData.setupSaves();
@@ -125,7 +125,7 @@ function _main()
 	res = xPan.ResSld;
 	optDimens = xPan.OptDimens;
 	optAn = xPan.OptAn;
-	flatten = xPan.FlatSke;
+	//flatten = xPan.FlatSke;
 	allRot = xPan.Rotate;
 
 	bitDepth = (xPan.imgFormat == "PNG 8 bits") ? 8 : 32;
@@ -150,7 +150,7 @@ function _main()
 
 	optimizeDimensions = (optDimens == "true");
 	optimizeJson = (optAn == "true");
-	flattenSkewing = (flatten == "true");
+	//flattenSkewing = (flatten == "true");
 	allowRotation = (allRot == "true");
 	resolution = parseFloat(res);
 	resScale =  1 / resolution;
@@ -464,8 +464,9 @@ function exportAtlas(symbolNames)
 		// make each limb a group so its easier to prepare it for export, normal shapes tend to corrupt easily
 		doc.selectNone();
 
-		var canGroup = true;
+		//var canGroup = true;
 		var lastFrame = TEMP_LAYER.frames[i-1];
+		var canGroup = true
 
 		if (frame.tweenType == "shape" || (lastFrame != null && lastFrame.tweenType == "shape"))
 			canGroup = false;
@@ -598,8 +599,8 @@ function cleanElement(elem)
 {
 	elem.scaleX = elem.scaleY = 1;
 
-	if (flattenSkewing)
-		return;
+	//if (flattenSkewing)
+	//	return;
 
 	elem.rotation = 0;
 	elem.skewX = elem.skewY = 0;
@@ -1555,7 +1556,7 @@ function parseElements(elements, frameIndex, layerIndex, timeline, frameFilters)
 
 					var hasFilters = element.filters != undefined && element.filters.length > 0;
 					var bakeInstanceFilters = (bakedFilters && hasFilters);
-					var bakeInstanceSkew = (flattenSkewing && (element.skewX != 0 || element.skewY != 0));
+					var bakeInstanceSkew = false;//(flattenSkewing && (element.skewX != 0 || element.skewY != 0));
 					var bakeInstance = (bakeInstanceFilters || bakeInstanceSkew);
 					
 					if (bakeInstance)

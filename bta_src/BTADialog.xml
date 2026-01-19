@@ -160,8 +160,8 @@
 				<row>
 					<vbox>
 						<checkbox id="OptAn" checked="$OPTAN" label="Optimize Animation.json file" />
-
-						<checkbox id="FlatSke" checked="$FLAT" label="Flatten skewed objects to bitmap" />
+						<!-- "$FLAT"-->
+						<checkbox id="FlatSke" checked="false" oncreate="fl.xmlui.setEnabled('FlatSke', false);" label="Flatten skewed objects to bitmap" />
 					</vbox>
 					<label value=" "/>
 					<label value=" "/>
