@@ -364,13 +364,28 @@ function exportAtlas(symbolNames)
 			doc.selectNone();
 
 		var selection = new Array();
+		var frameFilters = new Array();
 
 		// Remove frame filters (only from Animate 2020 upwards)
 		if (flversion >= 20)
 		{
-			if (!bakedFilters && TEMP_LAYER.setFiltersAtFrame != undefined)
-			{
-				TEMP_LAYER.setFiltersAtFrame(i, new Array(0));
+			var foundFilters = getFrameFilters(TEMP_LAYER, i);
+			if (foundFilters.length > 0) {
+				if (!bakedFilters) {
+					TEMP_LAYER.setFiltersAtFrame(i, new Array(0));
+				}
+				else if (frame.elements.length == 1 && frame.elements[0].symbolType == "movie clip") {
+					var applyFilters = new Array();
+					var fi = 0;
+					while (fi < foundFilters.length) {
+						var filter = foundFilters[fi++];
+						if (filter.name == "blurFilter")
+							frameFilters.push(filter)
+						else
+							applyFilters.push(filter);
+					}
+					TEMP_LAYER.setFiltersAtFrame(i, applyFilters);
+				}
 			}
 		}
 
@@ -395,9 +410,10 @@ function exportAtlas(symbolNames)
 					element.colorMode = "none";
 
 				var tweenFilters = bakedTweenedFilters[i];
-				var filters = tweenFilters != null ? tweenFilters : element.filters;
+				var filters = (tweenFilters != null) ? tweenFilters : element.filters;
+				filters = (filters == null) ? frameFilters : filters.concat(frameFilters);
 
-				if (filters != undefined && filters.length > 0)
+				if (filters != null && filters.length > 0)
 				{
 					doc.selectNone();
 					element.selected = true;
@@ -923,6 +939,35 @@ function metadata()
 	jsonVarEnd(key("framerate", "FRT"), doc.frameRate);
 }
 
+function pushFilteredFrame(timeline, layerIndex, frameIndex, frameFilters)
+{
+	var filteredFrame = timeline.layers[layerIndex].frames[frameIndex];
+
+	if (filteredFrame.startFrame == frameIndex) {
+		var elementIndices = [];
+		var elementsLength = filteredFrame.elements.length;
+		var i = 0;
+		while (i < elementsLength) {
+			elementIndices.push(i++);
+		}
+		pushElementsFromFrame(timeline, layerIndex, frameIndex, elementIndices, filteredFrame.startFrame + filteredFrame.duration);
+	}
+
+	// TODO: add blur filter compression
+
+	var bounds = getFrameBounds(TEMP_TIMELINE, smIndex);
+	//expandBounds(bounds, frameFilters);
+	
+	var atlasMatrix = makeMatrix(1, 0, 0, 1, bounds.left, bounds.top);
+	//resizeInstanceMatrix(curSymbol, atlasMatrix); // TODO: add this shit too
+	
+	push("{");
+	parseAtlasInstance(atlasMatrix, smIndex);
+	push("}");
+	
+	smIndex++;
+}
+
 function pushOneFrameSymbol(symbolInstance, timeline, layerIndex, frameIndex, elemIndex)
 {
 	var item = symbolInstance.libraryItem;
@@ -997,6 +1042,11 @@ function isBakeableTimeline(targetKeyframe, timeline)
 
 			// Has more than one keyframe
 			if (frame.startFrame !== targetKeyframe)
+				return false;
+
+			// Has blend mode filter, dont bake
+			var frameBlend = getFrameBlend(layer, frame.startFrame);
+			if (frameBlend != "normal")
 				return false;
 
 			var e = 0;
@@ -1151,7 +1201,10 @@ function parseFrames(frames, layerIndex, timeline)
 			curTweenFrame = -1;
 		}
 
-		if (isKeyframe || bakeTween)
+		var frameFilters = getFrameFilters(timeline.layers[layerIndex], f);
+		var bakeFrameFilters = bakedFilters && frameFilters.length > 0;
+
+		if (isKeyframe || bakeTween || bakeFrameFilters)
 		{
 			if (canBeTween && bakeTween) {
 				if (isKeyframe) {
@@ -1249,25 +1302,23 @@ function parseFrames(frames, layerIndex, timeline)
 				parseActionScript(frame, layerIndex, timeline);
 
 			jsonVar(key("index", "I"), f);
-			jsonVar(key("duration", "DU"), bakeTween ? 1 : frame.duration);
-			
-			if (!bakedFilters)
-			{
-				var frameFilters = getFrameFilters(timeline.layers[layerIndex], f);
-				if (frameFilters.length > 0)
-				{
-					parseFilters(frameFilters);
-					removeTrail(1);
-					push(",");
-				}
-			}
+
+			var frameDuration = (bakeTween || bakeFrameFilters) ? 1 : frame.duration;
+			jsonVar(key("duration", "DU"), frameDuration);
 
 			var frameBlend = getFrameBlend(timeline.layers[layerIndex], f);
 			if (frameBlend != null && frameBlend != "normal")
 				jsonVar(key("blend", "B"), parseBlendMode(frameBlend));
 
+			
+			if (!bakedFilters && frameFilters.length > 0) {
+				parseFilters(frameFilters);
+				removeTrail(1);
+				push(",");
+			}
+
 			curFrameMatrix = (hasRig) ? layer.getRigMatrixAtFrame(f) : null;
-			parseElements(frame.elements, f, layerIndex, timeline);
+			parseElements(frame.elements, f, layerIndex, timeline, frameFilters);
 			push('},');
 		}
 		f++;
@@ -1433,7 +1484,7 @@ function setupBakedTween(frame, frameIndex)
 	}
 }
 
-function parseElements(elements, frameIndex, layerIndex, timeline)
+function parseElements(elements, frameIndex, layerIndex, timeline, frameFilters)
 {
 	jsonArray(key("elements", "E"));
 
@@ -1442,6 +1493,14 @@ function parseElements(elements, frameIndex, layerIndex, timeline)
 		removeTrail(1, "");
 		push(']\n');
 		return;
+	}
+
+	if (bakedFilters) {
+		if (frameFilters != null && frameFilters.length > 0) {
+			pushFilteredFrame(timeline, layerIndex, frameIndex, frameFilters);
+			push(']');
+			return;
+		}
 	}
 
 	var e = 0;
@@ -1932,8 +1991,11 @@ var lastTimeline;
 var lastLayer;
 var lastFrame;
 
-function pushElementsFromFrame(timeline, layerIndex, frameIndex, elementIndices)
+function pushElementsFromFrame(timeline, layerIndex, frameIndex, elementIndices, lastFrameIndex)
 {
+	if (lastFrameIndex == null)
+		lastFrameIndex = frameIndex;
+
 	if (timeline.name != lastTimeline) {
 		lastTimeline = timeline.name;
 		lastLayer = null;
@@ -1946,7 +2008,7 @@ function pushElementsFromFrame(timeline, layerIndex, frameIndex, elementIndices)
 	}
 
 	if (lastFrame != frameIndex) {
-		timeline.copyFrames(frameIndex);
+		timeline.copyFrames(frameIndex, lastFrameIndex);
 		lastFrame = frameIndex;
 	}
 
