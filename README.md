@@ -42,21 +42,22 @@ Adding features and fixing its Animation file format so it presents more data fo
 ## How to install
 
 <details>
- <summary><b>With an Extension Manager</b> (advisable)</summary><hr>
-With the <b>Extension Manager</b> open, whether from the Command Line or as an application, you install the extension, this should be known whether you use an application that comes within your Flash app or the CMD tool.<br><br>
+<summary><b>Manually</b></summary><hr>
+ 
+To install them manually, you need to go to <br>``C:\Users\[UserName]\AppData\Local\Adobe\[Flash/Animate version]\[yourLocale]\Configuration\Commands``<br>
+Example: ``C:\Users\sotif\AppData\Local\Adobe\Animate 2022\en_US\Configuration\Commands``
 
-That being said, if you're using the <b>Extension Manager</b> app, just accept the license it'll be provided and it should be good to go.
+Download a release or the latest commit from the repostory (advisable). If the file ends in a `zxp`, rename the extension to `zip` and extract **all** contents into the commands folder. Make sure all of them are included as they are necessary for the plugin to run, not only the main `jsfl` file.
+<br><b>Pro Tip</b>: You can search where should the files be placed in the `mxi` file, specifically on the `<files>` block.
 
 <hr></details>
 
 <details>
- <summary><b>Manually</b></summary><hr>
- 
- To install them manually, you need to go to <br>``C:\Users\[UserName]\AppData\Local\Adobe\[Flash/Animate version]\[yourLocale]\Configuration\Commands``<br>
-Example: ``C:\Users\sotif\AppData\Local\Adobe\Animate 2022\en_US\Configuration\Commands``
+<summary><b>With an Extension Manager</b></summary><hr>
 
-With your `zxp` file, rename the extension to `zip` so you can extract the contents. Make sure to keep all the files included on the zip as they are necessary for the plugin to run, not only the `jsfl` file.
-<br><b>Pro Tip</b>: You can search where should the files be placed in the `mxi` file, specifically on the `<files>` block.
+With the <b>Extension Manager</b> open, whether from the Command Line or as an application, you install the extension, this should be known whether you use an application that comes within your Flash app or the CMD tool.<br><br>
+
+That being said, if you're using the <b>Extension Manager</b> app, just accept the license it'll be provided and it should be good to go.
 
 <hr></details>
 
