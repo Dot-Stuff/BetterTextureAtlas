@@ -1,22 +1,25 @@
-﻿var included = {};
+﻿fl.outputPanel.clear(); // debug purposes
+fl.showIdleMessage(false);
+
+var scriptFolder = findScriptURI();
+
+var included = {};
 fl.include = function(file) {
 	if (included[file]) { return; }
 		included[file] = true;
-	eval(FLfile.read(fl.configURI+"Commands/bta_src/"+file+".sjs"));
+	eval(FLfile.read(scriptFolder+"/bta_src/"+file+".js"));
 }
 
 fl.include("SaveData");
+SaveData.scriptFolder = scriptFolder;
 
 ///// CONFIGURATION
-
-fl.outputPanel.clear(); // debug purposes
-fl.showIdleMessage(false);
 
 var symbols = [];
 var meshExport = false; // If to use a spritemap or mesh vertex data
 
 // cur bta release version
-var _mxiPath = fl.configURI + "Commands/BetterTextureAtlas.mxi";
+var _mxiPath = scriptFolder+"/BetterTextureAtlas.mxi";
 var BTA_version = "BTA ??? (Missing MXI)";
 if (FLfile.exists(_mxiPath))
 	BTA_version = "BTA " + FLfile.read(_mxiPath).split('version="')[2].split('"')[0];
@@ -49,6 +52,29 @@ var path = "";
 
 var instance = null;
 var resScale = 1.0;
+
+function findScriptURI()
+{
+	var err = new Error();
+	var stack = err.stack;
+
+	var scriptPath = stack.split("\n").join("").split("Error()@:0findScriptURI()@").join("");
+	scriptPath = scriptPath.split("@")[0];
+
+	var pathSplit = scriptPath.split(":");
+	pathSplit.pop();
+	scriptPath = pathSplit.join(":");
+
+	scriptPath = FLfile.platformPathToURI(scriptPath);
+	
+	if (FLfile.exists(scriptPath)) {
+		pathSplit = scriptPath.split("/");
+		pathSplit.pop();
+		return pathSplit.join("/");
+	}
+	
+	return fl.configURI + 'Commands';
+}
 
 function _main()
 {
@@ -97,11 +123,12 @@ function _main()
 	var optAn = "true";
 	//var flatten = "false";
 	var allRot = "true";
+	
+	//var rawXML = fl.runScript(scriptFolder+"/bta_src/save.js", "xmlData", symbols.join("_bta_"), scriptFolder);
 
-	SaveData.setupSaves();
-
-	var rawXML = fl.runScript(fl.configURI + "Commands/bta_src/save.sjs", "xmlData", [symbols.join("_bta_")]);
-	var xPan = SaveData.openXMLFromString(rawXML);
+	SaveData.setupSaves(scriptFolder);
+	var rawXML = SaveData.xmlData(symbols.join("_bta_"), scriptFolder);
+	var xPan = SaveData.openXMLFromString(rawXML, scriptFolder);
 
 	if (xPan == null)
 	{
@@ -131,7 +158,7 @@ function _main()
 	bitDepth = (xPan.imgFormat == "PNG 8 bits") ? 8 : 32;
 	algorithm = (xPan.algorithm == "Basic") ? "basic" : "maxRects";
 
-	var dataAdd = FLfile.read(fl.configURI + "Commands/bta_src/saveADDBTA.txt").split("\n");
+	var dataAdd = FLfile.read(scriptFolder+"/bta_src/saveADDBTA.txt").split("\n");
 	inlineSym = dataAdd[0] == "true";
 	bakeTexts = dataAdd[1] == "true";
 	includeSnd = dataAdd[2] == "true";
@@ -318,7 +345,7 @@ function exportAtlas(symbolNames)
 	// Failsafe for invalid export paths
 	if (path.indexOf("unknown|") !== -1)
 	{
-		var defaultOutputFolder = fl.configURI + "Commands/bta_output";
+		var defaultOutputFolder = scriptFolder+"/bta_output";
 		FLfile.createFolder(defaultOutputFolder);
 
 		path = (defaultOutputFolder + "/" + ogSym.name);
