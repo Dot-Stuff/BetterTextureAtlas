@@ -11,7 +11,6 @@ fl.include = function(file) {
 }
 
 fl.include("SaveData");
-SaveData.scriptFolder = scriptFolder;
 
 ///// CONFIGURATION
 

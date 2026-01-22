@@ -91,6 +91,14 @@ SaveData.xmlData = function (symbols, scriptFolder)
 	}
 
 	fileuri += "\\" + formatSymbolName;
+	
+	// xml formatting of special characters (fix fucked display in older flash xml dialog)
+	fileuri = fileuri
+	.replace(/&/g, '&amp;')
+	.replace(/"/g, '&quot;')
+	.replace(/'/g, '&apos;')
+	.replace(/</g, '&lt;')
+	.replace(/>/g, '&gt;');
 
 	data = data.split("$CONFIGDIR").join(FLfile.uriToPlatformPath(scriptFolder));
 	data = data.split("$FILEURI").join(fileuri);

@@ -150,3 +150,25 @@ function accept()
     if (check.dismiss == "accept")
         SaveData.saveAndCloseXML(scriptFolder)
 }
+
+function saveAndClose()
+{
+    var save = [];
+    var saveArray = fl.xmlui.get("saveBox").split("/").join("\\").split("\\");
+    saveArray.pop();
+    var savePath = saveArray.join("\\");
+    
+    save[0] = savePath;
+    save[1] = fl.xmlui.get("ShpPad");
+    save[2] = fl.xmlui.get("BrdPad");
+    save[3] = fl.xmlui.get("ResSld");
+    save[4] = fl.xmlui.get("OptDimens");
+    save[5] = fl.xmlui.get("OptAn");
+    save[6] = fl.xmlui.get("FlatSke");
+    save[7] = fl.xmlui.get("algorithm");
+    save[8] = fl.xmlui.get("imgFormat");
+    save[9] = fl.xmlui.get("Rotate");
+
+    FLfile.write(scriptFolder+"/bta_src/saveBTA.txt", save.join("\n"));
+    fl.xmlui.accept();
+}
