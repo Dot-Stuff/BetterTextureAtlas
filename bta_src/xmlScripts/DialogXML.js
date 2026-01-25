@@ -1,39 +1,26 @@
+var scriptFolder = "$FOLDERINPUT";
+
 var included = {};
 include = function(file) {
 	if (included[file]) { return; }
 		included[file] = true;
-	eval(FLfile.read(fl.configURI+"Commands/bta_src/"+file+".sjs"));
+	eval(FLfile.read(scriptFolder+"/bta_src/"+file+".js"));
 }
-
 
 include("SaveData");
 
 var save = [];
 
-if (FLfile.exists(fl.configURI + "Commands/bta_src/saveBTA.txt"))
-    save = FLfile.read(fl.configURI + "Commands/bta_src/saveBTA.txt").split("\n");
-
-function myThing()
-{
-    //fl.trace(fl.xmlui.get("imgDims"));
-    var isVisible = fl.xmlui.getVisible("DFormat"); 
-    //fl.trace(isVisible);
-    
-    //fl.trace(fl.xmlui.get("algorithm"));
-    fl.xmlui.set("algorithm", "MaxRects");
-
-
-    //fl.trace(save);
-}
+if (FLfile.exists(scriptFolder+"/bta_src/saveBTA.txt"))
+    save = FLfile.read(scriptFolder+"/bta_src/saveBTA.txt").split("\n");
 
 function addParams()
 {
+    //var config = fl.configURI;
+    //var rawXML = fl.runScript(scriptFolder+"/bta_src/save.js", "xmlAddData", scriptFolder);
 
-    var config = fl.configURI;
-
-	var rawXML = fl.runScript(fl.configURI + "Commands/bta_src/save.sjs", "xmlAddData");
-
-	var xPan = SaveData.openXMLFromString(rawXML);
+    var rawXML = SaveData.xmlAddData(scriptFolder);
+    var xPan = SaveData.openXMLFromString(rawXML, scriptFolder);
 
     var save = [];
 
@@ -46,9 +33,8 @@ function addParams()
     save[6] = xPan.INCAS;
     save[7] = xPan.ORECTS;
 
-    FLfile.write(fl.configURI + "Commands/bta_src/saveADDBTA.txt", save.join("\n"));
+    FLfile.write(scriptFolder+"/bta_src/saveADDBTA.txt", save.join("\n"));
 }
-
 
 function algorithmSet()
 {
@@ -107,7 +93,9 @@ function formatPath(path)
 	return actP;
 }
 
-fl.runScript(fl.configURI + "Commands/bta_src/save.sjs", "theme");
+//fl.runScript(scriptFolder+"/bta_src/save.js", "theme", scriptFolder);
+
+SaveData.theme(scriptFolder);
 
 function imgFormatSet()
 {
@@ -119,13 +107,13 @@ function imgFormatSet()
     fl.xmlui.set("imgFormat", value);
 }
 
-
 function algorithmSel()
 {
     var value = fl.xmlui.get("algorithm");
 
     fl.xmlui.setEnabled("Rotate", value == "MaxRects");
 }
+
 function dFormatSel()
 {
     var value = fl.xmlui.get("DFormat");
@@ -143,6 +131,7 @@ function dFormatSel()
     fl.xmlui.setEnabled("cusWid", value == "raster");
     fl.xmlui.setEnabled("cusHei", value == "raster");
 }
+
 function accept()
 {
     var saveBox = fl.xmlui.get("saveBox");
@@ -153,24 +142,22 @@ function accept()
         return;
     }
 
-    var data = FLfile.read(fl.configURI + 'Commands/bta_src/BTAConfirm.xml');
-
-	data = data.split("$CONFIGDIR").join(fl.configDirectory);
+    var data = FLfile.read(scriptFolder+"/bta_src/BTAConfirm.xml");
+	data = data.split("$CONFIGDIR").join(FLfile.uriToPlatformPath(scriptFolder));
     data = data.split("$EXPATH").join(saveBox);
     
-    var check = SaveData.openXMLFromString(data);
-
+    var check = SaveData.openXMLFromString(data, scriptFolder);
     if (check.dismiss == "accept")
-        saveAndClose();
+        SaveData.saveAndCloseXML(scriptFolder)
 }
 
 function saveAndClose()
 {
-
     var save = [];
     var saveArray = fl.xmlui.get("saveBox").split("/").join("\\").split("\\");
     saveArray.pop();
     var savePath = saveArray.join("\\");
+    
     save[0] = savePath;
     save[1] = fl.xmlui.get("ShpPad");
     save[2] = fl.xmlui.get("BrdPad");
@@ -182,9 +169,6 @@ function saveAndClose()
     save[8] = fl.xmlui.get("imgFormat");
     save[9] = fl.xmlui.get("Rotate");
 
-    //fl.trace(save.join("\n"));
-    //fl.trace(fl.configURI + "Commands/bta_src/saveBTA.txt");
-
-    FLfile.write(fl.configURI + "Commands/bta_src/saveBTA.txt", save.join("\n"));
+    FLfile.write(scriptFolder+"/bta_src/saveBTA.txt", save.join("\n"));
     fl.xmlui.accept();
 }

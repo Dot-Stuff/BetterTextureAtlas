@@ -1,12 +1,5 @@
-Copy Font Name for ActionScript.jsfl
-Copy Motion as XML.jsfl
-Export Motion XML.jsfl
-Import Motion XML.jsfl
-names.XML
 bta_src/saveBTA.txt
 bta_src/saveADDBTA.txt
 bta_src/BTATheme.txt
 bta_output/
-haxe/hx-BetterTextureAtlas/
-testing/
 .vscode/

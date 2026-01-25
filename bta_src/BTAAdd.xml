@@ -2,8 +2,6 @@
 
 <label value="Additional Params"/>
 
-<radiogroup id="params" groupbox="true" >
-
 <grid>
     <columns>
         <column/>
@@ -29,7 +27,5 @@
         </row>
     </rows>
 </grid>
-
-</radiogroup>
 
 </dialog>

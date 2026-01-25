@@ -1,22 +1,24 @@
-﻿var included = {};
+﻿fl.outputPanel.clear(); // debug purposes
+fl.showIdleMessage(false);
+
+var scriptFolder = findScriptURI();
+
+var included = {};
 fl.include = function(file) {
 	if (included[file]) { return; }
 		included[file] = true;
-	eval(FLfile.read(fl.configURI+"Commands/bta_src/"+file+".sjs"));
+	eval(FLfile.read(scriptFolder+"/bta_src/"+file+".js"));
 }
 
 fl.include("SaveData");
 
 ///// CONFIGURATION
 
-fl.outputPanel.clear(); // debug purposes
-fl.showIdleMessage(false);
-
 var symbols = [];
 var meshExport = false; // If to use a spritemap or mesh vertex data
 
 // cur bta release version
-var _mxiPath = fl.configURI + "Commands/BetterTextureAtlas.mxi";
+var _mxiPath = scriptFolder+"/BetterTextureAtlas.mxi";
 var BTA_version = "BTA ??? (Missing MXI)";
 if (FLfile.exists(_mxiPath))
 	BTA_version = "BTA " + FLfile.read(_mxiPath).split('version="')[2].split('"')[0];
@@ -49,6 +51,29 @@ var path = "";
 
 var instance = null;
 var resScale = 1.0;
+
+function findScriptURI()
+{
+	var err = new Error();
+	var stack = err.stack;
+
+	var scriptPath = stack.split("\n").join("").split("Error()@:0findScriptURI()@").join("");
+	scriptPath = scriptPath.split("@")[0];
+
+	var pathSplit = scriptPath.split(":");
+	pathSplit.pop();
+	scriptPath = pathSplit.join(":");
+
+	scriptPath = FLfile.platformPathToURI(scriptPath);
+	
+	if (FLfile.exists(scriptPath)) {
+		pathSplit = scriptPath.split("/");
+		pathSplit.pop();
+		return pathSplit.join("/");
+	}
+	
+	return fl.configURI + 'Commands';
+}
 
 function _main()
 {
@@ -97,11 +122,12 @@ function _main()
 	var optAn = "true";
 	//var flatten = "false";
 	var allRot = "true";
+	
+	//var rawXML = fl.runScript(scriptFolder+"/bta_src/save.js", "xmlData", symbols.join("_bta_"), scriptFolder);
 
-	SaveData.setupSaves();
-
-	var rawXML = fl.runScript(fl.configURI + "Commands/bta_src/save.sjs", "xmlData", [symbols.join("_bta_")]);
-	var xPan = SaveData.openXMLFromString(rawXML);
+	SaveData.setupSaves(scriptFolder);
+	var rawXML = SaveData.xmlData(symbols.join("_bta_"), scriptFolder);
+	var xPan = SaveData.openXMLFromString(rawXML, scriptFolder);
 
 	if (xPan == null)
 	{
@@ -131,7 +157,7 @@ function _main()
 	bitDepth = (xPan.imgFormat == "PNG 8 bits") ? 8 : 32;
 	algorithm = (xPan.algorithm == "Basic") ? "basic" : "maxRects";
 
-	var dataAdd = FLfile.read(fl.configURI + "Commands/bta_src/saveADDBTA.txt").split("\n");
+	var dataAdd = FLfile.read(scriptFolder+"/bta_src/saveADDBTA.txt").split("\n");
 	inlineSym = dataAdd[0] == "true";
 	bakeTexts = dataAdd[1] == "true";
 	includeSnd = dataAdd[2] == "true";
@@ -318,7 +344,7 @@ function exportAtlas(symbolNames)
 	// Failsafe for invalid export paths
 	if (path.indexOf("unknown|") !== -1)
 	{
-		var defaultOutputFolder = fl.configURI + "Commands/bta_output";
+		var defaultOutputFolder = scriptFolder+"/bta_output";
 		FLfile.createFolder(defaultOutputFolder);
 
 		path = (defaultOutputFolder + "/" + ogSym.name);
@@ -1311,6 +1337,9 @@ function parseFrames(frames, layerIndex, timeline)
 			if (frameBlend != null && frameBlend != "normal")
 				jsonVar(key("blend", "B"), parseBlendMode(frameBlend));
 
+			var frameColorTransform = getFrameColorTransform(timeline.layers[layerIndex], f);
+			if (frameColorTransform != null)
+				parseColorTransform("advanced", frameColorTransform, null);
 			
 			if (!bakedFilters && frameFilters.length > 0) {
 				parseFilters(frameFilters);
@@ -2357,6 +2386,18 @@ function getFrameFilters(layer, frameIndex)
 	return new Array(0);
 }
 
+function getFrameColorTransform(layer, frameIndex)
+{
+	if (flversion >= 20 && layer.getColorTransformAtFrame != null)
+	{
+		var colorTransform = layer.getColorTransformAtFrame(frameIndex);
+		if (colorTransform != null)
+			return colorTransform;
+	}
+
+	return null;
+}
+
 function getFrameBlend(layer, frameIndex)
 {
 	if (flversion >= 20 && layer.getBlendModeAtFrame != null)
@@ -2446,49 +2487,11 @@ function parseSymbolInstance(instance, itemName, overrideMatrix)
 	{
 		if (bakedTweens && curTweenColorTransform != null)
 			colorValues = curTweenColorTransform;
-
-		if (colorMode == "advanced")
-		{
-			validColor =
-			(colorValues.colorRedPercent != 100) || (colorValues.colorGreenPercent != 100) || (colorValues.colorBluePercent != 100) || (colorValues.colorAlphaPercent != 100) ||
-			(colorValues.colorRedAmount != 0) || (colorValues.colorGreenAmount != 0) || (colorValues.colorBlueAmount != 0) || (colorValues.colorAlphaAmount != 0);
-		}
 	}
 
 	if (validColor)// && !(bakedInstance && bakedFilters))
 	{
-		jsonHeader(key("color", "C"));
-		var modeKey = key("mode", "M");
-
-		switch (colorMode)
-		{
-			case "brightness":
-				jsonStr(modeKey, key("Brightness", "CBRT"));
-				jsonVarEnd(key("brightness", "BRT"), colorValues.brightness * 0.01);
-			break;
-			case "tint":
-				jsonStr(modeKey, key("Tint", "T"));
-				jsonStr(key("tintColor", "TC"), instance.tintColor);
-				jsonNumEnd(key("tintMultiplier", "TM"), instance.tintPercent * 0.01);
-			break;
-			case "alpha":
-				jsonStr(modeKey, key("Alpha", "CA"));
-				jsonNumEnd(key("alphaMultiplier", "AM"), colorValues.colorAlphaPercent * 0.01);
-			break;
-			case "advanced":
-				jsonStr(modeKey, key("Advanced", "AD"));
-				jsonNum(key("RedMultiplier", "RM"), colorValues.colorRedPercent * 0.01);
-				jsonNum(key("greenMultiplier", "GM"), colorValues.colorGreenPercent * 0.01);
-				jsonNum(key("blueMultiplier", "BM"), colorValues.colorBluePercent * 0.01);
-				jsonNum(key("alphaMultiplier", "AM"), colorValues.colorAlphaPercent * 0.01);
-				jsonVar(key("redOffset", "RO"), colorValues.colorRedAmount);
-				jsonVar(key("greenOffset", "GO"), colorValues.colorGreenAmount);
-				jsonVar(key("blueOffset", "BO"), colorValues.colorBlueAmount);
-				jsonVarEnd(key("AlphaOffset", "AO"), colorValues.colorAlphaAmount);
-			break;
-		}
-
-		push('},\n');
+		parseColorTransform(colorMode, colorValues, instance)
 	}
 
 	if (instance.name != undefined && instance.name.length > 0)
@@ -2532,6 +2535,50 @@ function parseSymbolInstance(instance, itemName, overrideMatrix)
 	else removeTrail(2);
 
 	push('}');
+}
+
+function parseColorTransform(colorMode, colorValues, instance)
+{
+	if (colorMode == "advanced")
+	{
+		var validColor = (colorValues.colorRedPercent != 100) || (colorValues.colorGreenPercent != 100) || (colorValues.colorBluePercent != 100) || (colorValues.colorAlphaPercent != 100) ||
+		(colorValues.colorRedAmount != 0) || (colorValues.colorGreenAmount != 0) || (colorValues.colorBlueAmount != 0) || (colorValues.colorAlphaAmount != 0);
+		if (!validColor)
+			return;
+	}
+
+	jsonHeader(key("color", "C"));
+	var modeKey = key("mode", "M");
+
+	switch (colorMode)
+	{
+		case "brightness":
+			jsonStr(modeKey, key("Brightness", "CBRT"));
+			jsonVarEnd(key("brightness", "BRT"), colorValues.brightness * 0.01);
+		break;
+		case "tint":
+			jsonStr(modeKey, key("Tint", "T"));
+			jsonStr(key("tintColor", "TC"), instance.tintColor);
+			jsonNumEnd(key("tintMultiplier", "TM"), instance.tintPercent * 0.01);
+		break;
+		case "alpha":
+			jsonStr(modeKey, key("Alpha", "CA"));
+			jsonNumEnd(key("alphaMultiplier", "AM"), colorValues.colorAlphaPercent * 0.01);
+		break;
+		case "advanced":
+			jsonStr(modeKey, key("Advanced", "AD"));
+			jsonNumChained(key("RedMultiplier", "RM"), colorValues.colorRedPercent * 0.01);
+			jsonNumChained(key("greenMultiplier", "GM"), colorValues.colorGreenPercent * 0.01);
+			jsonNumChained(key("blueMultiplier", "BM"), colorValues.colorBluePercent * 0.01);
+			jsonNum(key("alphaMultiplier", "AM"), colorValues.colorAlphaPercent * 0.01);
+			jsonNumChained(key("redOffset", "RO"), colorValues.colorRedAmount);
+			jsonNumChained(key("greenOffset", "GO"), colorValues.colorGreenAmount);
+			jsonNumChained(key("blueOffset", "BO"), colorValues.colorBlueAmount);
+			jsonNumEnd(key("AlphaOffset", "AO"), colorValues.colorAlphaAmount);
+		break;
+	}
+
+	push('},\n');
 }
 
 function formatSymbolName(name) {
@@ -2754,6 +2801,9 @@ function jsonHeader(name)			{ push('"' + name + '":{\n'); }
 function jsonNumEnd(name, value) { jsonVarEnd(name, rValue(value)); }
 function jsonNum(name, value) { jsonVar(name, rValue(value)); }
 function rValue(value) { return parseFloat(value.toFixed(3)); }
+
+function jsonVarChained(name, value) { push('"' + name + '":' + value + ','); }
+function jsonNumChained(name, value) { jsonVarChained(name, rValue(value)); }
 
 function measure(func)
 {

@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <dialog title="Generate a Texture Atlas">
 	
-	<flash src="$CONFIGDIRCommands\bta_src\BTAlogo.swf" width="610" height="72"></flash>
+	<flash src="$CONFIGDIR\bta_src\BTAlogo.swf" width="610" height="72"></flash>
 	
 	<hbox>
 		<label value=" " />
@@ -9,21 +9,11 @@
 	</hbox>
 
 	<script>
-		eval(FLfile.read(fl.configURI+"Commands/bta_src/"+"xmlScripts/DialogXML"+".sjs"));
-
-		function test()
-		{
-			// fl.trace(fl.xmlui.set("ResSld", "123"));
-			fl.trace(fl.xmlui.get("test"));
-		}
-
-		
-
+		eval(FLfile.read($SCRIPTFOLDER+"/bta_src/xmlScripts/DialogXML.js").split("$FOLDERINPUT").join($SCRIPTFOLDER));
 	</script>
 
 	<property id="test"/>
 
-	<radiogroup id="radioGroup" groupbox="true">
 
 		<grid>
 
@@ -173,8 +163,6 @@
 		<spacer/>
 		<spacer/>
 		<spacer/>
-
-	</radiogroup>
 	
 	<spacer/>
 
@@ -210,14 +198,13 @@
 				<label value="Export Path" control="saveBox" />
 			</row>
 			<row>
-				<textbox id="saveBox" value="$FILEURI" />
+				<textbox id="saveBox" value="$FILEURI" width="300" />
+				<label value="" />
 				<button align="center" label="Browse" oncommand="getPath();" width="$BWI"/>
 				
 
 				<!-- <choosefile size="40" value="$FILEURI" required="true" pathtype="absolute" id="saveBox" type="save" /> -->
 				<spacer/>
-				<label value=" "/>
-				<label value=" "/>
 				<label value=" "/>
 				<label value=" "/>
 				<label value=" "/>
@@ -249,7 +236,7 @@
 		</rows>
 	</grid>
 
-	<!-- <flash src="$CONFIGDIRCommands\bta_src\folder stuff.swf" width="65" height="43"></flash> -->
+	<!-- <flash src="$CONFIGDIR\bta_src\folder stuff.swf" width="65" height="43"></flash> -->
 	
 	
 </dialog>
