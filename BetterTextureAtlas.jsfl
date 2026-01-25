@@ -1337,6 +1337,9 @@ function parseFrames(frames, layerIndex, timeline)
 			if (frameBlend != null && frameBlend != "normal")
 				jsonVar(key("blend", "B"), parseBlendMode(frameBlend));
 
+			var frameColorTransform = getFrameColorTransform(timeline.layers[layerIndex], f);
+			if (frameColorTransform != null)
+				parseColorTransform("advanced", frameColorTransform, null);
 			
 			if (!bakedFilters && frameFilters.length > 0) {
 				parseFilters(frameFilters);
@@ -2383,6 +2386,18 @@ function getFrameFilters(layer, frameIndex)
 	return new Array(0);
 }
 
+function getFrameColorTransform(layer, frameIndex)
+{
+	if (flversion >= 20 && layer.getColorTransformAtFrame != null)
+	{
+		var colorTransform = layer.getColorTransformAtFrame(frameIndex);
+		if (colorTransform != null)
+			return colorTransform;
+	}
+
+	return null;
+}
+
 function getFrameBlend(layer, frameIndex)
 {
 	if (flversion >= 20 && layer.getBlendModeAtFrame != null)
@@ -2472,49 +2487,11 @@ function parseSymbolInstance(instance, itemName, overrideMatrix)
 	{
 		if (bakedTweens && curTweenColorTransform != null)
 			colorValues = curTweenColorTransform;
-
-		if (colorMode == "advanced")
-		{
-			validColor =
-			(colorValues.colorRedPercent != 100) || (colorValues.colorGreenPercent != 100) || (colorValues.colorBluePercent != 100) || (colorValues.colorAlphaPercent != 100) ||
-			(colorValues.colorRedAmount != 0) || (colorValues.colorGreenAmount != 0) || (colorValues.colorBlueAmount != 0) || (colorValues.colorAlphaAmount != 0);
-		}
 	}
 
 	if (validColor)// && !(bakedInstance && bakedFilters))
 	{
-		jsonHeader(key("color", "C"));
-		var modeKey = key("mode", "M");
-
-		switch (colorMode)
-		{
-			case "brightness":
-				jsonStr(modeKey, key("Brightness", "CBRT"));
-				jsonVarEnd(key("brightness", "BRT"), colorValues.brightness * 0.01);
-			break;
-			case "tint":
-				jsonStr(modeKey, key("Tint", "T"));
-				jsonStr(key("tintColor", "TC"), instance.tintColor);
-				jsonNumEnd(key("tintMultiplier", "TM"), instance.tintPercent * 0.01);
-			break;
-			case "alpha":
-				jsonStr(modeKey, key("Alpha", "CA"));
-				jsonNumEnd(key("alphaMultiplier", "AM"), colorValues.colorAlphaPercent * 0.01);
-			break;
-			case "advanced":
-				jsonStr(modeKey, key("Advanced", "AD"));
-				jsonNum(key("RedMultiplier", "RM"), colorValues.colorRedPercent * 0.01);
-				jsonNum(key("greenMultiplier", "GM"), colorValues.colorGreenPercent * 0.01);
-				jsonNum(key("blueMultiplier", "BM"), colorValues.colorBluePercent * 0.01);
-				jsonNum(key("alphaMultiplier", "AM"), colorValues.colorAlphaPercent * 0.01);
-				jsonVar(key("redOffset", "RO"), colorValues.colorRedAmount);
-				jsonVar(key("greenOffset", "GO"), colorValues.colorGreenAmount);
-				jsonVar(key("blueOffset", "BO"), colorValues.colorBlueAmount);
-				jsonVarEnd(key("AlphaOffset", "AO"), colorValues.colorAlphaAmount);
-			break;
-		}
-
-		push('},\n');
+		parseColorTransform(colorMode, colorValues, instance)
 	}
 
 	if (instance.name != undefined && instance.name.length > 0)
@@ -2558,6 +2535,50 @@ function parseSymbolInstance(instance, itemName, overrideMatrix)
 	else removeTrail(2);
 
 	push('}');
+}
+
+function parseColorTransform(colorMode, colorValues, instance)
+{
+	if (colorMode == "advanced")
+	{
+		var validColor = (colorValues.colorRedPercent != 100) || (colorValues.colorGreenPercent != 100) || (colorValues.colorBluePercent != 100) || (colorValues.colorAlphaPercent != 100) ||
+		(colorValues.colorRedAmount != 0) || (colorValues.colorGreenAmount != 0) || (colorValues.colorBlueAmount != 0) || (colorValues.colorAlphaAmount != 0);
+		if (!validColor)
+			return;
+	}
+
+	jsonHeader(key("color", "C"));
+	var modeKey = key("mode", "M");
+
+	switch (colorMode)
+	{
+		case "brightness":
+			jsonStr(modeKey, key("Brightness", "CBRT"));
+			jsonVarEnd(key("brightness", "BRT"), colorValues.brightness * 0.01);
+		break;
+		case "tint":
+			jsonStr(modeKey, key("Tint", "T"));
+			jsonStr(key("tintColor", "TC"), instance.tintColor);
+			jsonNumEnd(key("tintMultiplier", "TM"), instance.tintPercent * 0.01);
+		break;
+		case "alpha":
+			jsonStr(modeKey, key("Alpha", "CA"));
+			jsonNumEnd(key("alphaMultiplier", "AM"), colorValues.colorAlphaPercent * 0.01);
+		break;
+		case "advanced":
+			jsonStr(modeKey, key("Advanced", "AD"));
+			jsonNumChained(key("RedMultiplier", "RM"), colorValues.colorRedPercent * 0.01);
+			jsonNumChained(key("greenMultiplier", "GM"), colorValues.colorGreenPercent * 0.01);
+			jsonNumChained(key("blueMultiplier", "BM"), colorValues.colorBluePercent * 0.01);
+			jsonNum(key("alphaMultiplier", "AM"), colorValues.colorAlphaPercent * 0.01);
+			jsonNumChained(key("redOffset", "RO"), colorValues.colorRedAmount);
+			jsonNumChained(key("greenOffset", "GO"), colorValues.colorGreenAmount);
+			jsonNumChained(key("blueOffset", "BO"), colorValues.colorBlueAmount);
+			jsonNumEnd(key("AlphaOffset", "AO"), colorValues.colorAlphaAmount);
+		break;
+	}
+
+	push('},\n');
 }
 
 function formatSymbolName(name) {
@@ -2780,6 +2801,9 @@ function jsonHeader(name)			{ push('"' + name + '":{\n'); }
 function jsonNumEnd(name, value) { jsonVarEnd(name, rValue(value)); }
 function jsonNum(name, value) { jsonVar(name, rValue(value)); }
 function rValue(value) { return parseFloat(value.toFixed(3)); }
+
+function jsonVarChained(name, value) { push('"' + name + '":' + value + ','); }
+function jsonNumChained(name, value) { jsonVarChained(name, rValue(value)); }
 
 function measure(func)
 {
