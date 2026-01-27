@@ -2466,7 +2466,8 @@ function parseSymbolInstance(instance, itemName, overrideMatrix)
 	if (instance.symbolType != undefined) {
 		var type;
 		switch (instance.symbolType) {
-			case "graphic": 	type = key("graphic", "G"); 	break
+			case "screen":
+			case "graphic": 	type = key("graphic", "G"); 	break;
 			case "movie clip": 	type = key("movieclip", "MC"); 	break;
 			case "button": 		type = key("button", "B"); 		break;
 		}
