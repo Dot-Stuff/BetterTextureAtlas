@@ -1585,8 +1585,9 @@ function parseElements(elements, frameIndex, layerIndex, timeline, frameFilters)
 
 					var hasFilters = element.filters != undefined && element.filters.length > 0;
 					var bakeInstanceFilters = (bakedFilters && hasFilters);
+					var bakeInstanceType = (element.symbolType == "screen");
 					var bakeInstanceSkew = false;//(flattenSkewing && (element.skewX != 0 || element.skewY != 0));
-					var bakeInstance = (bakeInstanceFilters || bakeInstanceSkew);
+					var bakeInstance = (bakeInstanceFilters || bakeInstanceSkew || bakeInstanceType);
 					
 					if (bakeInstance)
 					{
@@ -2075,7 +2076,10 @@ function pushElementSpritemap(timeline, layerIndex, frameIndex, elementIndices)
 	if (curTweenFilters != null)
 		bakedTweenedFilters[smIndex] = curTweenFilters;
 
-	var baseBounds = elem.libraryItem != null ? getFrameBounds(elem.libraryItem.timeline, 0) : elem.objectSpaceBounds;
+	var baseBounds = elem.objectSpaceBounds;
+	if (elem.libraryItem != null && elem.symbolType != "screen")
+		baseBounds = getFrameBounds(elem.libraryItem.timeline, 0);
+
 	var rect = expandBounds(baseBounds, elementFilters);
 
 	var w = rect.right - rect.left;
