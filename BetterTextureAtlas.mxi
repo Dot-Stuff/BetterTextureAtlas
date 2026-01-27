@@ -76,16 +76,15 @@ A popup window will show up, revealing different export settings and an export p
 	</license-agreement>
 
 	<files>
-		<file source="BetterTextureAtlas.jsfl" destination="$flash/Commands" />
-		<file source="BetterTextureAtlas.mxi" destination="$flash/Commands" />
-		<file source="bta_src/save.sjs" destination="$flash/Commands/bta_src" />
-		<file source="bta_src/BTAlogo.swf" destination="$flash/Commands/bta_src" />
-		<file source="bta_src/warningBTA.swf" destination="$flash/Commands/bta_src" />
-		<file source="bta_src/BTADialog.xml" destination="$flash/Commands/bta_src" />
-		<file source="bta_src/BTAAdd.xml" destination="$flash/Commands/bta_src" />
-		<file source="bta_src/BTAConfirm.xml" destination="$flash/Commands/bta_src" />
-		<file source="bta_src/SaveData.sjs" destination="$flash/Commands/bta_src" />
-		<file source="bta_src/xmlScripts/DialogXML.sjs" destination="$flash/Commands/bta_src/xmlScripts" />
+		<file source="BetterTextureAtlas.jsfl" destination="$flash/Commands" file-type="ordinary" />
+		<file source="BetterTextureAtlas.mxi" destination="$flash/Commands" file-type="ordinary" />
+		<file source="bta_src/BTAlogo.swf" destination="$flash/Commands/bta_src" file-type="ordinary" />
+		<file source="bta_src/warningBTA.swf" destination="$flash/Commands/bta_src" file-type="ordinary" />
+		<file source="bta_src/BTADialog.xml" destination="$flash/Commands/bta_src" file-type="ordinary" />
+		<file source="bta_src/BTAAdd.xml" destination="$flash/Commands/bta_src" file-type="ordinary" />
+		<file source="bta_src/BTAConfirm.xml" destination="$flash/Commands/bta_src" file-type="ordinary" />
+		<file source="bta_src/SaveData.js" destination="$flash/Commands/bta_src" file-type="ordinary" />
+		<file source="bta_src/xmlScripts/DialogXML.js" destination="$flash/Commands/bta_src/xmlScripts" file-type="ordinary" />
 	</files>
 
 </macromedia-extension>
