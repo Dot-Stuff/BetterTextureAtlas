@@ -2476,8 +2476,8 @@ function parseSymbolInstance(instance, itemName, overrideMatrix)
 	else if (bakedInstance) jsonStr(key("symbolType", "ST"), key("movieclip", "MC"));
 
 	jsonVar(key("transformationPoint", "TRP"),
-		'{"x":' + instance.transformX +
-		',"y":' + instance.transformY + "}"
+		'{"x":' + rValue(instance.transformationPoint.x) +
+		',"y":' + rValue(instance.transformationPoint.y) + "}"
 	);
 
 	var colorMode = instance.colorMode;
