@@ -435,6 +435,10 @@ function exportAtlas(symbolNames)
 				if (element.colorMode != null)
 					element.colorMode = "none";
 
+				//if (element.elementType == "text") {
+				// TODO: reduce the size of the text down to its minimun size
+				//}
+
 				var tweenFilters = bakedTweenedFilters[i];
 				var filters = (tweenFilters != null) ? tweenFilters : element.filters;
 				filters = (filters == null) ? frameFilters : filters.concat(frameFilters);
@@ -1621,7 +1625,12 @@ function parseElements(elements, frameIndex, layerIndex, timeline, frameFilters)
 					case "dynamic":
 					case "input":
 						//if (!element.useDeviceFonts || bakeTexts)
-						if (bakeTexts)
+
+						var hasFilters = element.filters != undefined && element.filters.length > 0;
+						var bakeInstanceFilters = (bakedFilters && hasFilters);
+						var bakeTextInstance = bakeTexts || bakeInstanceFilters;
+
+						if (bakeTextInstance)
 						{
 							pushElementSpritemap(timeline, layerIndex, frameIndex, [e]);
 						}
@@ -1671,6 +1680,14 @@ function parseTextInstance(text)
 	jsonVar(key("Matrix", "MX"), parseMatrix(text.matrix, true));
 	jsonStr(key("text", "TXT"), text.getTextString());
 	jsonStr(key("type", "TP"), text.textType);
+
+	var filters = text.filters;
+	var hasFilters = (filters != null && filters.length > 0)
+	if (hasFilters && !bakedFilters) {
+		parseFilters(filters);
+		removeTrail(1);
+		push(",");
+	}
 	
 	if (text.textType != "static")
 		jsonStr(key("Instance_name", "IN"), text.name);
@@ -2822,7 +2839,7 @@ function traceFields(value, makeNewLines)
 	var traceCrap = "";
 	for (var field in value)
 	{
-		if (field == "brightness" || field == "tintColor" || field == "tintPercent")
+		if (field == "brightness" || field == "tintColor" || field == "tintPercent" || field == "lineType")
 			continue;
 
 		traceCrap += field + ": " + value[field] + ", ";
