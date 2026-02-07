@@ -114,7 +114,10 @@ function _main()
 
 	if (flversion <= 12)
 	{
-		alert("WARNING: Even though it's functional, we still recommend using a newer version, such as Adobe Animate!");
+		alert("WARNING:\n\nEven though it's functional, we heavily recommend using a newer Flash version, such as Adobe Animate 22!");
+		if (flversion < 12) {
+			alert("WARNING:\n\nThis Flash version doesn't support a spritesheet exporter.\nA replacement exporter will be used with a 2880x2880 limit.\nMake sure to have your PNG export dpi settings set to 72.\n\nSwitch to Flash CS6 or newer for bigger sizes.")
+		}
 	}
 
 	var res = 1.0;
@@ -547,6 +550,7 @@ function exportAtlas(symbolNames)
 		if (FLfile.exists(smPath + ".png"))
 			FLfile.remove(smPath + ".png");
 		
+		// TODO: force dpi to 72, somehow
 		doc.exportPNG(smPath, true, true);
 		renameFile(smPath + "img.png", smPath + ".png");
 
