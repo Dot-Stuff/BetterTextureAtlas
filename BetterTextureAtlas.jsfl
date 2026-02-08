@@ -144,6 +144,12 @@ function _main()
 		return;
 	}
 
+	var prevItems = [];
+	var i = 0;
+	while (i < lib.items.length) {
+		prevItems.push(lib.items[i++].name);
+	}
+
 	var curTl = doc.getTimeline();
 	var curFr = curTl.currentFrame;
 	var tlIndex = doc.currentTimeline;
@@ -211,6 +217,23 @@ function _main()
 
 	if (resizedContain)
 		trace("WARNING: some shapes were resized to fit within the 8192px size limit");
+
+	var i = 0;
+	var itemsLength = lib.items.length;
+	var deleteItems = [];
+	while (i < itemsLength) {
+		var item = lib.items[i++].name;
+		if (prevItems.indexOf(item) == -1) {
+			deleteItems.push(item);
+		}
+	}
+
+	var i = 0;
+	while (i < deleteItems.length) {
+		lib.deleteItem(deleteItems[i++]);
+	}
+	
+	doc.save();
 
 	trace("DONE");
 	fl.showIdleMessage(true);
@@ -504,24 +527,49 @@ function exportAtlas(symbolNames)
 		if (frame.tweenType == "shape" || (lastFrame != null && lastFrame.tweenType == "shape"))
 			canGroup = false;
 
-		if (canGroup) {
+		/*if (canGroup) {
 			doc.selectAll();
-			doc.group();
-		}
+
+			if (allowRotation)
+			{
+				doc.convertSelectionToBitmap();
+
+				var bitmapItem = lib.items[lib.items.length - 1];
+				bitmapItem.allowSmoothing = false;
+			}
+			else {
+				doc.group();
+			}
+			
+		}*/
+
+		doc.selectAll();
+		doc.scaleSelection(scaleX, scaleY);
+
+		doc.convertSelectionToBitmap();
+
+		var bitmapItem = lib.items[lib.items.length - 1];
+		bitmapItem.allowSmoothing = false;
+
+		var bitmap = frame.elements[0];
+		var matrix = bitmap.matrix;
+		matrix.tx = 0;
+		matrix.ty = 0;
+		bitmap.matrix = matrix;
 		
 		// apply the scale
-		var group = frame.elements[0];
-		group.scaleX = scaleX;
-		group.scaleY = scaleY;
+		//var group = frame.elements[0];
+		//group.scaleX = scaleX;
+		//group.scaleY = scaleY;
 
 		// after the size is recalculated, make sure its pixel perfect
-		group.scaleX = (scaleX * Math.ceil(group.width) / group.width);
-		group.scaleY = (scaleY * Math.ceil(group.height) / group.height);
+		//group.scaleX = (scaleX * Math.ceil(group.width) / group.width);
+		//group.scaleY = (scaleY * Math.ceil(group.height) / group.height);
 
 		// make sure the element is inside the render bounds of the spritesheet exporter
 		// also helps a bit with float point accuracy
-		group.x = group.width / 2;
-		group.y = group.height / 2;
+		//group.x = group.width / 2;
+		//group.y = group.height / 2;
 
 		doc.selectNone();
 
@@ -816,7 +864,7 @@ function makeSpritemap() {
 	sm.autoSize = true;
 	sm.borderPadding = max(BrdPad, 1);
 	sm.shapePadding = max(ShpPad, 1);
-	sm.allowRotate = allowRotation && !bakedAFilter;
+	sm.allowRotate = allowRotation;//allowRotation && !bakedAFilter;
 	sm.allowTrimming = true;
 	sm.stackDuplicate = true;
 	return sm;
