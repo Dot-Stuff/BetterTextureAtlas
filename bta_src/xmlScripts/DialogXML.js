@@ -31,7 +31,7 @@ function addParams()
     save[4] = xPan.BF;
     save[5] = xPan.BTW;
     save[6] = xPan.INCAS;
-    save[7] = xPan.ORECTS;
+    save[7] = xPan.CBMPS;
 
     FLfile.write(scriptFolder+"/bta_src/saveADDBTA.txt", save.join("\n"));
 }

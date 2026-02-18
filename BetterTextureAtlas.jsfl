@@ -39,6 +39,7 @@ var bitDepth = 32;
 var inlineSym = false;
 var includeSnd = true;
 var includeAs = false;
+var compressBmps = true;
 
 var bakedFilters = false;
 var bakedTweens = false;
@@ -168,6 +169,7 @@ function _main()
 	bakedFilters = dataAdd[4] == "true";
 	bakedTweens = dataAdd[5] == "true";
 	includeAs = dataAdd[6] == "true";
+	compressBmps = dataAdd[7] == "true";
 
 	if (bakedTweens && flversion < 13)
 	{
@@ -1772,7 +1774,9 @@ function makeBitmapItem(name)
 {
 	var bitmapIndex = cachedBitmaps[name];
 	var bitmapMatrix = cachedMatrices[bitmapIndex];
-	resizeInstanceMatrix(name, bitmapMatrix);
+
+	if (compressBmps)
+		resizeInstanceMatrix(name, bitmapMatrix);
 
 	initJson();
 	push('{\n');
@@ -1802,7 +1806,10 @@ function parseBitmapInstance(bitmap, timeline, layerIndex, frameIndex, elemIndex
 	//item.compressionType = "lossless";
 
 	parseSymbolInstance(bitmap, name);
-	pushInstanceSize(name, min(Math.abs(bitmap.scaleX), 1), min(Math.abs(bitmap.scaleY), 1));
+	pushInstanceSize(name,
+		compressBmps ? min(Math.abs(bitmap.scaleX), 1) : 1,
+		compressBmps ? min(Math.abs(bitmap.scaleY), 1) : 1
+	);
 
 	if (cachedBitmapsList.indexOf(name) == -1)
 	{

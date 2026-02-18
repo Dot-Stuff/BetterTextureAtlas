@@ -23,7 +23,7 @@
         </row>
         <row>
             <checkbox label="Include ActionScript" checked="$INCAS" id="INCAS" />
-            <!-- <checkbox label="Optimized Rectangles" checked="$ORECTS" id="ORECTS" />-->
+            <checkbox label="Compress Bitmaps" checked="$CBMPS" id="CBMPS" />
         </row>
     </rows>
 </grid>

@@ -33,6 +33,7 @@ SaveData.setupSaves = function(scriptFolder)
 		save[4] = false;//bakedFilters;
 		save[5] = true;//bakedTweens;
 		save[6] = false;//includeAs;
+		save[7] = true;//compressBitmaps
 
 		FLfile.write(scriptFolder+"/bta_src/saveADDBTA.txt", save.join("\n"));
 	}
@@ -102,6 +103,7 @@ SaveData.xmlData = function (symbols, scriptFolder)
 
 	data = data.split("$CONFIGDIR").join(FLfile.uriToPlatformPath(scriptFolder));
 	data = data.split("$FILEURI").join(fileuri);
+
 	data = data.split("$SHP").join(saveData[1]);
 	data = data.split("$BRD").join(saveData[2]);
 	data = data.split("$RES").join(saveData[3]);
@@ -124,14 +126,19 @@ SaveData.xmlAddData = function (scriptFolder)
     var data = FLfile.read(scriptFolder+"/bta_src/BTAAdd.xml");
     var saveData = FLfile.read(scriptFolder+"/bta_src/saveADDBTA.txt").split("\n");
 
-	data = data.split("$INSYM").join(saveData[0]);
-	data = data.split("$BATX").join(saveData[1]);
-	data = data.split("$INCS").join(saveData[2]);
-	data = data.split("$BOFS").join(saveData[3]);
-	data = data.split("$BF").join(saveData[4]);
-	data = data.split("$BTW").join(saveData[5]);
-	data = data.split("$INCAS").join(saveData[6]);
-	//data = data.split("$ORECTS").join(saveData[7]);
+	// safety when adding new shit in the future
+	var addToXml = function(id, inValue, defaultValue) {
+		data = data.split("$"+id).join(((inValue != null) && (inValue.length > 0)) ? inValue : defaultValue);
+	}
+
+	addToXml("INSYM", saveData[0], "true");
+	addToXml("BATX", saveData[1], "true");
+	addToXml("INCS", saveData[2], "false");
+	addToXml("BOFS", saveData[3], "true");
+	addToXml("BF", saveData[4], "false");
+	addToXml("BTW", saveData[5], "true");
+	addToXml("INCAS", saveData[6], "false");
+	addToXml("CBMPS", saveData[7], "true");
 
 	var buttonWidth = 0;
 	if (parseInt(SaveData.version[0]) >= 20)
