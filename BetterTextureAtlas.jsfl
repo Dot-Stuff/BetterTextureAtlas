@@ -429,10 +429,11 @@ function exportAtlas(symbolNames)
 
 			if (exportElem)
 			{
-				// TODO: reimplement baked skews
-				element.rotation = 0;
-				element.skewX = 0;
-				element.skewY = 0;
+				if (element.elementType != "shape") {
+					element.rotation = 0;
+					element.skewX = 0;
+					element.skewY = 0;
+				}
 
 				if (element.blendMode != null)
 					element.blendMode = "normal";
