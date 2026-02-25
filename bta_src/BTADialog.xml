@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <dialog title="Generate a Texture Atlas">
 	
-	<flash src="$CONFIGDIR\bta_src\BTAlogo.swf" width="610" height="72"></flash>
+	<flash src="$CONFIGDIR/bta_src/BTAlogo.swf" width="610" height="72"></flash>
 	
 	<hbox>
 		<label value=" " />
