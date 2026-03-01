@@ -2492,6 +2492,13 @@ function parseSymbolInstance(instance, itemName, overrideMatrix)
 		jsonVar(key("firstFrame", "FF"), firstFrame);
 	}
 
+	// TODO: double check this works for baked tweens with last frames
+	if (instance.lastFrame != null && instance.lastFrame != -1)
+	{
+		var lastFrame = instance.firstFrame;
+		jsonVar(key("lastFrame", "LF"), lastFrame);
+	}
+
 	if (instance.symbolType != undefined) {
 		var type;
 		switch (instance.symbolType) {
