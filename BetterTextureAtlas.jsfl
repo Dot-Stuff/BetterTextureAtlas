@@ -425,6 +425,7 @@ function exportAtlas(symbolNames)
 		while (e < elements.length)
 		{
 			var element = elements[e];
+			element.locked = false;
 			var exportElem = elemIndices.indexOf(e) !== -1;
 
 			if (exportElem)
