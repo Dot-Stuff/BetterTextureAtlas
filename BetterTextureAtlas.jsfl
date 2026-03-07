@@ -473,14 +473,6 @@ function exportAtlas(symbolNames)
 						doc.setFilters(new Array(0));
 					}
 				}
-				else
-				{
-					if (element.elementType == "shape") // check if the shape has lines and is scaled
-					{
-						if (checkShapeLines(element, scaleX, scaleY))
-							element = frame.elements[e];
-					}
-				}
 			}
 			else
 			{
@@ -600,46 +592,9 @@ function exportAtlas(symbolNames)
 	trace("Exported to folder: " + FLfile.uriToPlatformPath(path));
 }
 
-function checkShapeLines(shape, targetX, targetY)
-{
-	if (flversion <= 12) // I dont know why this keeps crashing on older flash
-		return false;
-
-	if ((Math.abs(targetX - 1) <= 0.01) && (Math.abs(targetY - 1) <= 0.01))
-		return false; // doesnt need scaling
-
-	var hasLines = false;
-	var edges = shape.edges;
-
-	var i = 0;
-	var len = edges.length;
-	while (i < len)
-	{
-		var stroke = edges[i++].stroke;
-		if ((stroke != null) && (stroke.style != "noStroke")) {
-			hasLines = true;
-			break;
-		}
-	}
-    
-	if (!hasLines)
-		return false; // doesnt have lines
-
-	doc.selectNone();
-	doc.selection = [shape];
-	doc.convertLinesToFills();
-	doc.selectNone();
-
-	return true;
-}
-
 function cleanElement(elem)
 {
 	elem.scaleX = elem.scaleY = 1;
-
-	//if (flattenSkewing)
-	//	return;
-
 	elem.rotation = 0;
 	elem.skewX = elem.skewY = 0;
 }
@@ -2296,9 +2251,24 @@ function pushShapeSpritemap(timeline, layerIndex, frameIndex, elementIndices)
 {
 	pushElementsFromFrame(timeline, layerIndex, frameIndex, elementIndices);
 
+	TEMP_TIMELINE.currentFrame = smIndex;
+	doc.selectNone();
+	doc.selectAll();
+
+	if (doc.selection.length > 0)
+	{
+		try {
+			doc.unGroup(); // turn drawing objects/shape groups back into shapes for the stroke cleanup
+		} catch (e) {}
+	}
+	else
+	{
+		return null; // nothing here
+	}
+
 	var frameElements = TEMP_LAYER.frames[smIndex].elements;
-	if (frameElements.length <= 0)
-		return null;
+	checkShapeStrokes(frameElements, elementIndices);
+	frameElements = TEMP_LAYER.frames[smIndex].elements; // reload this for good measure
 	
 	smIndex++;
 
@@ -2368,6 +2338,45 @@ function pushShapeSpritemap(timeline, layerIndex, frameIndex, elementIndices)
 	}
 
 	return shapes;
+}
+
+function checkShapeStrokes(frameElements, elementIndices)
+{
+	var hasLines = false;
+	var e = 0;
+	var l = frameElements.length;
+	var shapeSelection = new Array();
+	
+	while (e < l)
+	{
+		if (elementIndices.indexOf(e) !== -1)
+		{	
+			var shape = frameElements[e];
+			shapeSelection[shapeSelection.length] = shape;
+
+			if (!hasLines) {
+				var edges = shape.edges;
+				var i = 0;
+				var len = edges.length;
+				while (i < len)
+				{
+					var stroke = edges[i++].stroke;
+					if ((stroke != null) && (stroke.style != "noStroke")) {
+						hasLines = true;
+						break;
+					}
+				}
+			}
+		}
+
+		e++;
+	}
+
+	if (hasLines) {
+		doc.selection = shapeSelection;
+		doc.convertLinesToFills();
+		doc.selectNone();
+	}
 }
 
 var instanceSizes;
