@@ -992,6 +992,7 @@ function metadata()
 function pushFilteredFrame(timeline, layerIndex, frameIndex, frameFilters)
 {
 	var filteredFrame = timeline.layers[layerIndex].frames[frameIndex];
+	bakedAFilter = true;
 
 	if (filteredFrame.startFrame == frameIndex) {
 		var elementIndices = [];
