@@ -568,7 +568,7 @@ function exportAtlas(symbolNames)
 		var sm = makeSpritemap();
 		sm.addSymbol(TEMP_ITEM);
 
-		var smData = {sm: sm, index:0};
+		var smData = {sm: sm, index:0, symbol: TEMP_ITEM};
 		spritemaps = [smData];
 
 		// Divide Spritemap if overflowed
@@ -634,7 +634,7 @@ function divideSpritemap(smData, symbol)
 	symbol.timeline.removeFrames(cutFrames, framesLength);
 
 	var nextSm = makeSpritemap();
-	var nextSmData = {sm: nextSm, index: cutFrames + smData.index};
+	var nextSmData = {sm: nextSm, index: cutFrames + smData.index, symbol: nextSmSymbol};
 	spritemaps.push(nextSmData);
 	nextSm.addSymbol(nextSmSymbol);
 
@@ -735,6 +735,8 @@ function exportSpritemap(id, exportPath, smData, index)
 		var frame = limbData[1].substring(9, limbData[1].length - 2);
 		var rotated = limbData[2].slice(0, -1);
 
+		var isRotated = rotated == '"rotated":true';
+
 		// expand the frame a pixel because animate makes em too small for some reason
 		var frameValues = frame.split(",");
 		
@@ -743,6 +745,15 @@ function exportSpritemap(id, exportPath, smData, index)
 		var w = parseInt(frameValues[2].substring(4, frameValues[2].length));
 		var h = parseInt(frameValues[3].substring(4, frameValues[3].length));
 
+		// small offset because the spritesheet exporter trim is broken
+		// TODO: check if this happens on all flash/animate versions
+		// only tested on Animate 22 so far
+		if (isRotated) {
+			var elem = smData.symbol.timeline.layers[0].frames[name].elements[0];
+			var diffW = Math.round(w - (elem.height));
+			x -= diffW;
+		}
+		
 		// expand frame to reduce sharp edges
 		x -= 1; y -= 1;
 		w += 2; h += 2;
@@ -936,6 +947,7 @@ function metadata()
 function pushFilteredFrame(timeline, layerIndex, frameIndex, frameFilters)
 {
 	var filteredFrame = timeline.layers[layerIndex].frames[frameIndex];
+	bakedAFilter = true;
 
 	if (filteredFrame.startFrame == frameIndex) {
 		var elementIndices = [];
