@@ -450,7 +450,7 @@ function exportAtlas(symbolNames)
 				var filters = (tweenFilters != null) ? tweenFilters : element.filters;
 				filters = (filters == null) ? frameFilters : filters.concat(frameFilters);
 
-				if (filters != null && filters.length > 0)
+				if (hasFilters(filters))
 				{
 					doc.selectNone();
 					element.selected = true;
@@ -1505,7 +1505,7 @@ function parseElements(elements, frameIndex, layerIndex, timeline, frameFilters)
 	}
 
 	if (bakedFilters) {
-		if (frameFilters != null && frameFilters.length > 0) {
+		if (hasFilters(frameFilters)) {
 			pushFilteredFrame(timeline, layerIndex, frameIndex, frameFilters);
 			push(']');
 			return;
@@ -1562,8 +1562,7 @@ function parseElements(elements, frameIndex, layerIndex, timeline, frameFilters)
 				switch (element.instanceType) {
 					case "symbol":
 
-					var hasFilters = element.filters != undefined && element.filters.length > 0;
-					var bakeInstanceFilters = (bakedFilters && hasFilters);
+					var bakeInstanceFilters = (bakedFilters && hasFilters(element.filters));
 					var bakeInstanceType = (element.symbolType == "screen");
 					var bakeInstanceSkew = false;//(flattenSkewing && (element.skewX != 0 || element.skewY != 0));
 					var bakeInstance = (bakeInstanceFilters || bakeInstanceSkew || bakeInstanceType);
@@ -1601,8 +1600,7 @@ function parseElements(elements, frameIndex, layerIndex, timeline, frameFilters)
 					case "input":
 						//if (!element.useDeviceFonts || bakeTexts)
 
-						var hasFilters = element.filters != undefined && element.filters.length > 0;
-						var bakeInstanceFilters = (bakedFilters && hasFilters);
+						var bakeInstanceFilters = (bakedFilters && hasFilters(element.filters));
 						var bakeTextInstance = bakeTexts || bakeInstanceFilters;
 
 						if (bakeTextInstance)
@@ -1657,8 +1655,7 @@ function parseTextInstance(text)
 	jsonStr(key("type", "TP"), text.textType);
 
 	var filters = text.filters;
-	var hasFilters = (filters != null && filters.length > 0)
-	if (hasFilters && !bakedFilters) {
+	if (hasFilters(filters) && !bakedFilters) {
 		parseFilters(filters);
 		removeTrail(1);
 		push(",");
@@ -2583,10 +2580,9 @@ function parseSymbolInstance(instance, itemName, overrideMatrix)
 			jsonVar(key("blend", "B"), parseBlendMode(instance.blendMode));
 
 		var filters = curTweenFilters != null ? curTweenFilters : instance.filters;
-		var hasFilters = (filters != null && filters.length > 0)
 
 		// Add Filters
-		if (hasFilters && !bakedFilters)
+		if (hasFilters(filters) && !bakedFilters)
 		{
 			parseFilters(filters)
 		}
@@ -2668,6 +2664,46 @@ function parseBlendMode(blend)
 	}
 
 	return 10; // normal
+}
+
+function hasFilters(filters)
+{
+	if (filters == null || filters.length <= 0)
+		return false;
+
+	var foundFilter = false;
+	var i = 0;
+	while (i < filters.length)
+	{
+		var filter = filters[i++];
+
+		if (filter == null || filter.enabled === false) {
+			continue;
+		}
+
+		switch (filter.name) {
+			case "adjustColorFilter":
+				if (filter.brightness != 0 || filter.hue != 0 || filter.contrast != 0 || filter.saturation != 0)
+					foundFilter = true;
+			break;
+			case "glowFilter":
+			case "blurFilter":
+				if (filter.blurX > 1 || filter.blurY > 1)
+					foundFilter = true;
+			break;
+			case "dropShadowFilter":
+			case "bevelFilter":
+			case "gradientBevelFilter":
+			case "gradientGlowFilter":
+				foundFilter = true;
+			break;
+		}
+
+		if (foundFilter)
+			break;
+	}
+
+	return foundFilter;
 }
 
 function parseFilters(filters)
