@@ -2262,14 +2262,26 @@ function pushShapeSpritemap(timeline, layerIndex, frameIndex, elementIndices)
 	pushElementsFromFrame(timeline, layerIndex, frameIndex, elementIndices);
 
 	TEMP_TIMELINE.currentFrame = smIndex;
+	var frameElements = TEMP_LAYER.frames[smIndex].elements;
 	doc.selectNone();
-	doc.selectAll();
+	//doc.selectAll();
 
-	if (doc.selection.length > 0)
+	if (frameElements.length > 0)
 	{
-		try {
-			doc.unGroup(); // turn drawing objects/shape groups back into shapes for the stroke cleanup
-		} catch (e) {}
+		var selection = new Array();
+		var e = 0;
+		while (e < frameElements.length) {
+			var elem = frameElements[e++];
+			if (elem.isGroup)
+				selection[selection.length] = elem;
+		}
+
+		if (selection.length > 0) {
+			doc.selection = selection;
+			try {
+				doc.unGroup(); // turn drawing objects/shape groups back into shapes for the stroke cleanup
+			} catch (e) {}
+		}
 	}
 	else
 	{
@@ -2277,8 +2289,13 @@ function pushShapeSpritemap(timeline, layerIndex, frameIndex, elementIndices)
 	}
 
 	var frameElements = TEMP_LAYER.frames[smIndex].elements;
-	checkShapeStrokes(frameElements, elementIndices);
-	frameElements = TEMP_LAYER.frames[smIndex].elements; // reload this for good measure
+	if (flversion > 12) {
+		// TODO: checking for the stroke object in a edge object is broken in CS6
+		// find out why
+		checkShapeStrokes(frameElements, elementIndices);
+		frameElements = TEMP_LAYER.frames[smIndex].elements; // reload this for good measure
+	}
+
 	
 	smIndex++;
 
