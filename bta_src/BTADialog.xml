@@ -4,15 +4,14 @@
 	<flash src="$CONFIGDIR/bta_src/BTAlogo.swf" width="610" height="72"></flash>
 	
 	<hbox>
-		<label value=" " />
-		<label value="Texture Atlas Export" id="stuff" control="radioGroup" />
+		<label value="Texture Atlas output" id="stuff" control="radioGroup" />
 	</hbox>
 
 	<script>
 		eval(FLfile.read($SCRIPTFOLDER+"/bta_src/xmlScripts/DialogXML.js").split("$FOLDERINPUT").join($SCRIPTFOLDER));
 	</script>
 
-	<property id="test"/>
+	<property id="radioGroup"/>
 
 
 		<grid>
@@ -160,12 +159,17 @@
 			</rows>
 		</grid>
 
-		<spacer/>
-		<spacer/>
-		<spacer/>
-	
+	<spacer/>
 	<spacer/>
 
+	<hbox>
+	<label value="$EXPORTATLAS"/>
+	<label value="Frame rate: $EXPORTFPS fps" />
+	<label value="Duration: $EXPORTDURATION seconds" />
+	</hbox>
+
+	<spacer/>
+	<spacer/>
 	<spacer/>
 
 	<grid>
@@ -195,22 +199,16 @@
 		</columns>
 		<rows>
 			<row>
-				<label value="Export Path" control="saveBox" />
+				<label value="Export Path:" control="saveBox" />
 			</row>
 			<row>
-				<textbox id="saveBox" value="$FILEURI" width="300" />
+				<textbox id="saveBox" value="$FILEURI" width="400" />
 				<label value="" />
 				<button align="center" label="Browse" oncommand="getPath();" width="$BWI"/>
 				
 
 				<!-- <choosefile size="40" value="$FILEURI" required="true" pathtype="absolute" id="saveBox" type="save" /> -->
 				<spacer/>
-				<label value=" "/>
-				<label value=" "/>
-				<label value=" "/>
-				<label value=" "/>
-				<label value=" "/>
-				<label value=" "/>
 				<label value=" "/>
 				<label value=" "/>
 				<label value=" "/>

@@ -101,6 +101,11 @@ SaveData.xmlData = function (symbols, scriptFolder)
 	.replace(/</g, '&lt;')
 	.replace(/>/g, '&gt;');
 
+	var doc = fl.getDocumentDOM();
+	data = data.split("$EXPORTATLAS").join('Symbol' +( symbols.length > 1 ? 's' : '') + ': ' + symbols.join(', ') + '');
+	data = data.split("$EXPORTFPS").join('' + doc.frameRate.toFixed(2));
+	data = data.split("$EXPORTDURATION").join('' + ((1 / doc.frameRate) * doc.library.items[doc.library.findItemIndex(symbols[0])].timeline.frameCount).toFixed(2));
+
 	data = data.split("$CONFIGDIR").join(FLfile.uriToPlatformPath(scriptFolder));
 	data = data.split("$FILEURI").join(fileuri);
 
