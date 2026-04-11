@@ -751,7 +751,8 @@ function exportSpritemap(id, exportPath, smData, index)
 		if (isRotated) {
 			var elem = smData.symbol.timeline.layers[0].frames[name].elements[0];
 			var diffW = Math.round(w - (elem.height));
-			x -= diffW;
+			if (Math.abs(diffW) <= 2)
+				x -= diffW;
 		}
 		
 		// expand frame to reduce sharp edges
