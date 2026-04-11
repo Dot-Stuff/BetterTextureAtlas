@@ -2365,14 +2365,16 @@ function checkShapeStrokes(frameElements, elementIndices)
 
 			if (!hasLines) {
 				var edges = shape.edges;
-				var i = 0;
-				var len = edges.length;
-				while (i < len)
-				{
-					var stroke = edges[i++].stroke;
-					if ((stroke != null) && (stroke.style != "noStroke")) {
-						hasLines = true;
-						break;
+				if (edges != null) {
+					var i = 0;
+					var len = edges.length;
+					while (i < len)
+					{
+						var stroke = edges[i++].stroke;
+						if ((stroke != null) && (stroke.style != "noStroke")) {
+							hasLines = true;
+							break;
+						}
 					}
 				}
 			}
