@@ -85,7 +85,9 @@ function _main()
 	}
 
 	var profileXML = fl.getDocumentDOM().exportPublishProfileString(); 
-	onlyVisibleLayers = profileXML.split("<InvisibleLayer>")[1].charAt(0) == "0";
+	if (profileXML != null) {
+		onlyVisibleLayers = profileXML.split("<InvisibleLayer>")[1].charAt(0) == "0";
+	}
 
 	if (doc.selection.length > 0)
 	{
