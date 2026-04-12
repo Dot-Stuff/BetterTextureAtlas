@@ -1,5 +1,29 @@
-﻿fl.outputPanel.clear(); // debug purposes
-fl.showIdleMessage(false);
+﻿var flversion = parseInt(fl.version.split(" ")[1].split(",")[0]);
+
+fl.outputPanel.clear(); // debug purposes
+
+if (flversion >= 8) {
+	fl.showIdleMessage(false);
+}
+
+function trace() {
+	var items = [];
+	var i = 0;
+	while (i < arguments.length)
+		items.push(String(arguments[i++]));
+	fl.trace(items.join(", "));
+}
+
+if (typeof Array.prototype.indexOf !== "function") {
+    Array.prototype.indexOf = function(item) {
+        for (var i = 0; i < this.length; i++) {
+            if (this[i] === item) {
+                return i;
+            }
+        }
+        return -1;
+    };
+}
 
 var scriptFolder = findScriptURI();
 
@@ -53,10 +77,38 @@ var path = "";
 var instance = null;
 var resScale = 1.0;
 
+var uriToPlatformPath = function(uri)
+{
+    if (flversion >= 10)
+        return FLfile.uriToPlatformPath(uri)
+
+    var uri = uri.split("file:///").join( "");
+    uri = uri.split("%20").join( "");
+    uri = uri.split("/").join( "\\");
+    uri = uri.split("|").join( ":");
+    return uri;
+}
+
+var platformPathToURI = function (path)
+{
+    if (flversion >= 10)
+        return FLfile.platformPathToURI(path)
+
+	var path = uriToPlatformPath(path);
+    path = path.split("\\").join( "/");
+    path = path.split(":").join( "|");
+    path = path.split(" ").join( "%20");
+    return "file:///" + path;
+}
+
 function findScriptURI()
 {
 	var err = new Error();
 	var stack = err.stack;
+
+	if (stack == null) {
+		return fl.configURI + 'Commands';
+	}
 
 	var scriptPath = stack.split("\n").join("").split("Error()@:0findScriptURI()@").join("");
 	scriptPath = scriptPath.split("@")[0];
@@ -65,7 +117,7 @@ function findScriptURI()
 	pathSplit.pop();
 	scriptPath = pathSplit.join(":");
 
-	scriptPath = FLfile.platformPathToURI(scriptPath);
+	scriptPath = platformPathToURI(scriptPath);
 	
 	if (FLfile.exists(scriptPath)) {
 		pathSplit = scriptPath.split("/");
@@ -84,9 +136,11 @@ function _main()
 		return;
 	}
 
-	var profileXML = fl.getDocumentDOM().exportPublishProfileString(); 
-	if (profileXML != null) {
-		onlyVisibleLayers = profileXML.split("<InvisibleLayer>")[1].charAt(0) == "0";
+	if (flversion >= 10) {
+		var profileXML = fl.getDocumentDOM().exportPublishProfileString(); 
+		if (profileXML != null) {
+			onlyVisibleLayers = profileXML.split("<InvisibleLayer>")[1].charAt(0) == "0";
+		}
 	}
 
 	if (doc.selection.length > 0)
@@ -154,6 +208,13 @@ function _main()
 
 	ShpPad = parseInt(xPan.ShpPad);
 	BrdPad = parseInt(xPan.BrdPad);
+
+	if (isNaN(ShpPad))
+		ShpPad = 0;
+
+	if (isNaN(BrdPad))
+		BrdPad = 0;
+
 	res = xPan.ResSld;
 	optDimens = xPan.OptDimens;
 	optAn = xPan.OptAn;
@@ -178,8 +239,9 @@ function _main()
 		bakedTweens = false;
 		trace("WARNING: Baked tweens is not supported on this flash version.\nTry using Flash Pro CC or newer.");
 	}
+
 	
-	var fileuri = FLfile.platformPathToURI(xPan.saveBox);
+	var fileuri = platformPathToURI(xPan.saveBox);
 
 	optimizeDimensions = (optDimens == "true");
 	optimizeJson = (optAn == "true");
@@ -217,7 +279,10 @@ function _main()
 		trace("WARNING: some shapes were resized to fit within the 8192px size limit");
 
 	trace("DONE");
-	fl.showIdleMessage(true);
+
+	if (flversion >= 8) {
+		fl.showIdleMessage(true);
+	}
 }
 
 function formatPath(path) {
@@ -246,7 +311,6 @@ var dictionary;
 var bakedDictionary;
 
 var ogSym;
-var flversion;
 
 var oneFrameSymbols;
 var bakedTweenedFilters;
@@ -287,8 +351,6 @@ function initVars()
 	bakedTweenedFilters = {};
 
 	bakedAFilter = false;
-
-	flversion = parseInt(fl.version.split(" ")[1].split(",")[0]);
 }
 
 function exportAtlas(symbolNames)
@@ -532,13 +594,12 @@ function exportAtlas(symbolNames)
 		var SPRITESHEET_ID = "__BTA_TEMP_SPRITESHEET_";
 
 		var sheetItem = initBtaItem(SPRITESHEET_ID);
-		var sheetFrame = sheetItem.timeline.layers[0].frames[0];
 		lib.editItem(sheetItem.name);
 
 		var ogWidth = doc.width;
 		var ogHeight = doc.height;
 
-		var sheet = legacySpritesheet(shapeLength, sheetFrame);
+		var sheet = legacySpritesheet(shapeLength, sheetItem);
 		doc.width = Math.floor(sheet.width);
 		doc.height = Math.floor(sheet.height);
 
@@ -548,9 +609,67 @@ function exportAtlas(symbolNames)
 		if (FLfile.exists(smPath + ".png"))
 			FLfile.remove(smPath + ".png");
 		
-		// TODO: force dpi to 72, somehow
-		doc.exportPNG(smPath, true, true);
-		renameFile(smPath + "img.png", smPath + ".png");
+		if (flversion >= 8)
+		{
+			// TODO: force dpi to 72, somehow
+			doc.exportPNG(smPath, true, true);
+			renameFile(smPath + "img.png", smPath + ".png");
+		}
+		else // export exclusive to Flash MX 2004
+		{
+			// prepare and save a temp document for the spritemap
+			var tempDoc = fl.createDocument("timeline");
+
+			var spritesheetLayers = sheetItem.timeline.layers;
+			var tempDocTimeline = tempDoc.getTimeline();
+			var i = 0;
+			while (i < spritesheetLayers.length) {
+
+				sheetItem.timeline.setSelectedLayers(i++, true);
+				sheetItem.timeline.copyFrames(0);
+
+				var index = tempDocTimeline.addNewLayer("");
+				tempDocTimeline.setSelectedLayers(index, true);
+				tempDocTimeline.pasteFrames(0);
+			}
+
+			var docPath = fl.configURI + '_temp_doc.fla';
+			fl.saveDocument(tempDoc,docPath)
+
+			// prepare publish profile for png
+			var tempProfile = fl.configURI + "_temp_png.xml";
+			tempDoc.exportPublishProfile(tempProfile);
+
+			var xml = FLfile.read(tempProfile);
+			xml = xml.split('name="Default"').join('name="PNGEXPORT"');
+			xml = xml.split("<html>1</html>").join("<html>0</html>");
+			xml = xml.split("<flash>1</flash>").join("<flash>0</flash>");
+			xml = xml.split("<png>0</png>").join("<png>1</png>");
+
+			FLfile.write(tempProfile, xml);
+    		tempDoc.importPublishProfile(tempProfile);
+
+			// move shit from the last fla to this one
+			tempDoc.selectAll();
+			var rect = tempDoc.getSelectionRect();
+			tempDoc.setSelectionBounds({left: 0, top: 0, right: rect.right - rect.left, bottom: rect.bottom - rect.top});
+			tempDoc.width = doc.width;
+			tempDoc.height = doc.height;
+
+			tempDoc.publish();
+
+			var pngURI = platformPathToURI(tempDoc.path).split(".fla").join(".png");
+			if (FLfile.exists(pngURI)) {
+				renameFile(pngURI, smPath + ".png");
+			}
+
+			fl.closeDocument(tempDoc, false);
+			if (FLfile.exists(docPath))
+				FLfile.remove(docPath);
+
+			if (FLfile.exists(tempProfile))
+				FLfile.remove(tempProfile);
+		}
 
 		doc.width = ogWidth;
 		doc.height = ogHeight;
@@ -591,7 +710,7 @@ function exportAtlas(symbolNames)
 	if (tmpSymbol)
 		lib.deleteItem(symbol.name);
 
-	trace("Exported to folder: " + FLfile.uriToPlatformPath(path));
+	trace("Exported to folder: " + uriToPlatformPath(path));
 }
 
 function cleanElement(elem)
@@ -944,7 +1063,7 @@ function metadata()
 	jsonStr(key("backgroundColor", "BGC"), doc.backgroundColor);
 	jsonVar(key("width", "W"), doc.width);
 	jsonVar(key("height", "H"), doc.height);
-	jsonVar(key("asVersion", "ASV"), doc.asVersion);
+	jsonVar(key("asVersion", "ASV"), (doc.asVersion != null) ? doc.asVersion : 2);
 	jsonVarEnd(key("framerate", "FRT"), doc.frameRate);
 }
 
@@ -1098,7 +1217,7 @@ function isBakeableTimeline(targetKeyframe, timeline)
 							return false;
 					}
 				}
-				else if (element.elementType == "shape" && element.isGroup && element.members.length > 0)
+				else if (element.elementType == "shape" && element.isGroup && element.members != null && element.members.length > 0)
 					return false;
 			}
 		}
@@ -1556,7 +1675,7 @@ function parseElements(elements, frameIndex, layerIndex, timeline, frameFilters)
 		var element = elements[e];
 		var elementType = element.elementType;
 		var isShape = (elementType == "shape");
-		var isShapeGroup = isShape && (element.isGroup && element.members.length > 1);
+		var isShapeGroup = isShape && (element.isGroup && element.members != null && element.members.length > 1);
 
 		if (isShapeGroup) {
 			isShape = false;
@@ -2299,7 +2418,7 @@ function pushShapeSpritemap(timeline, layerIndex, frameIndex, elementIndices)
 		var e = 0;
 		while (e < frameElements.length) {
 			var elem = frameElements[e++];
-			if (elem.isGroup)
+			if (elem.isGroup && elem.members != null)
 				selection[selection.length] = elem;
 		}
 
@@ -2577,10 +2696,15 @@ function parseSymbolInstance(instance, itemName, overrideMatrix)
 	}
 	else if (bakedInstance) jsonStr(key("symbolType", "ST"), key("movieclip", "MC"));
 
-	jsonVar(key("transformationPoint", "TRP"),
-		'{"x":' + rValue(instance.transformationPoint.x) +
-		',"y":' + rValue(instance.transformationPoint.y) + "}"
-	);
+	if (instance.transformationPoint != null) {
+		jsonVar(key("transformationPoint", "TRP"),
+			'{"x":' + rValue(instance.transformationPoint.x) +
+			',"y":' + rValue(instance.transformationPoint.y) + "}"
+		);
+	}
+	else {
+		jsonVar(key("transformationPoint", "TRP"), '{"x":0,"y":0}');
+	}
 
 	var colorMode = instance.colorMode;
 	var colorValues = instance;
@@ -2946,13 +3070,20 @@ function jsonHeader(name)			{ push('"' + name + '":{\n'); }
 
 function jsonNumEnd(name, value) { jsonVarEnd(name, rValue(value)); }
 function jsonNum(name, value) { jsonVar(name, rValue(value)); }
-function rValue(value) { return parseFloat(value.toFixed(3)); }
+function rValue(value) {
+	return isNaN(value) ? 1 : parseFloat(value.toFixed(3));
+}
 
 function jsonVarChained(name, value) { push('"' + name + '":' + value + ','); }
 function jsonNumChained(name, value) { jsonVarChained(name, rValue(value)); }
 
 function measure(func)
 {
+	if (Date == null || Date.now == null) {
+		func();
+		return;
+	}
+	
 	var last = Date.now();
 	func();
 	trace("" + ((Date.now() - last) / 1000) + "s");
@@ -2971,14 +3102,7 @@ function traceFields(value, makeNewLines)
 			traceCrap += "\n";
 	}
 	trace(traceCrap);
-}
-
-function trace() {
-	var items = [];
-	var i = 0;
-	while (i < arguments.length)
-		items.push(String(arguments[i++]));
-	fl.trace(items.join(", "));
+	return traceCrap;
 }
 
 function isArray(value)
@@ -3139,7 +3263,7 @@ function renameFile(path, newPath)
 	FLfile.remove(path);
 }
 
-function legacySpritesheet(shapeLength, sheetFrame)
+function legacySpritesheet(shapeLength, sheetItem)
 {
     var curX = BrdPad;
     var curY = BrdPad;
@@ -3153,49 +3277,30 @@ function legacySpritesheet(shapeLength, sheetFrame)
 	var isFiltered;
 	var isRotated;
 
-	for (i = 0; i < 4; i++)
-		lib.addItemToDocument({x: 0, y: 0}, TEMP_SPRITEMAP);
-	
 	var tl = doc.getTimeline();
 	tl.currentLayer = 0;
 	tl.currentFrame = 0;
 
-	doc.selectNone();
-	doc.selectAll();
-	doc.clipCopy();
-
-    while (sheetFrame.elements.length < shapeLength)
-	{
-		doc.clipPaste();
+	var i = 0;
+	while (i < shapeLength) {
+		TEMP_TIMELINE.copyFrames(i++);
+		
+		if (i != 0) {
+			var index = tl.addNewLayer("");
+			tl.setSelectedLayers(index, true);
+		}
+	
+		tl.pasteFrames(0);
 	}
 
 	var updateElemPos = function(ogElem, elem)
 	{
-		if (ogElem.elementType != "shape") {
-			
-			var ogElemPos = {x: ogElem.x, y: ogElem.y};
-
-			if (isFiltered) {
-				ogElemPos.x += rect.left * ogElem.scaleX;
-				ogElemPos.y += rect.top * ogElem.scaleY;
-			}
-
-			/*if (isFiltered) {
-				ogElemPos.x = rect.left * ogElem.scaleX;
-				ogElemPos.y = rect.top * ogElem.scaleY;
-			}*/
-
-			if (isRotated) {
-				ogElemPos.x -= ogElem.width;
-			}
-			
-			elem.x = Math.floor(curX - ogElemPos.x);
-			elem.y = Math.floor(curY - ogElemPos.y);
-		}
-		else {
-			elem.x = Math.floor(curX - ogElem.left);
-			elem.y = Math.floor(curY - ogElem.top);
-		}
+		doc.selectNone();
+		var selectionArray = new Array();
+		selectionArray[0] = elem;
+		fl.getDocumentDOM().selection = selectionArray;
+		doc.setSelectionBounds({left: curX, top: curY, right: curX + elem.width, bottom: curY + elem.height});
+		doc.selectNone();
 	}
 
 	var sortedIndices = [];
@@ -3213,12 +3318,14 @@ function legacySpritesheet(shapeLength, sheetFrame)
 		
 		var rect = {index: i, width: elem.width, height: elem.height, rotated: false};
 
-		if (rect.height > rect.width)
-		{
-			var w = rect.width;
-			rect.width = rect.height;
-			rect.height = w;
-			rect.rotated = true;
+		if (flversion >= 9) {
+			if (rect.height > rect.width)
+			{
+				var w = rect.width;
+				rect.width = rect.height;
+				rect.height = w;
+				rect.rotated = true;
+			}
 		}
 
 		sortedIndices.push(rect);
@@ -3249,8 +3356,7 @@ function legacySpritesheet(shapeLength, sheetFrame)
 			continue;
 		}
 		
-		elem = sheetFrame.elements[elemIndex];
-		elem.firstFrame = elemIndex;
+		elem = sheetItem.timeline.layers[sheetItem.timeline.layers.length - 2 - elemIndex].frames[0].elements[0];
 		i++;
 
 		isRotated = sortedElem.rotated;
@@ -3267,8 +3373,8 @@ function legacySpritesheet(shapeLength, sheetFrame)
 		updateElemPos(ogElem, elem);
 
 		var packedRect = {
-			x: Math.floor(curX-1),
-			y: Math.floor(curY-1),
+			x: max(Math.floor(curX-1), 0),
+			y: max(Math.floor(curY-1), 0),
 			width: Math.floor(rectWidth+1),
 			height: Math.floor(rectHeight+1),
 			rotated: sortedElem.rotated
@@ -3300,20 +3406,6 @@ function legacySpritesheet(shapeLength, sheetFrame)
 		maxSheetHeight = Math.max(maxSheetHeight, curY + maxHeight);
     }
 
-	var extraShapes = sheetFrame.elements.length - shapeLength;
-	if (extraShapes > 0)
-	{
-		i = shapeLength;
-		doc.selectNone();
-		
-		while (i < sheetFrame.elements.length)
-		{
-			sheetFrame.elements[i++].selected = true;
-		}
-
-		if (doc.selection.length > 0)
-			doc.deleteSelection();
-	}
 
 	initJson();
 	push('{"ATLAS":{"SPRITES":[\n');

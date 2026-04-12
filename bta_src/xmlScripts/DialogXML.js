@@ -11,6 +11,32 @@ include("SaveData");
 
 var save = [];
 
+var uriToPlatformPath = function(uri)
+{
+    var flversion = parseInt(fl.version.split(" ")[1].split(",")[0]);
+    if (flversion >= 10)
+        return FLfile.uriToPlatformPath(uri)
+
+    var uri = uri.split("file:///").join( "");
+    uri = uri.split("%20").join( "");
+    uri = uri.split("/").join( "\\");
+    uri = uri.split("|").join( ":");
+    return uri;
+}
+
+var platformPathToURI = function (path)
+{
+    var flversion = parseInt(fl.version.split(" ")[1].split(",")[0]);
+    if (flversion >= 10)
+        return FLfile.platformPathToURI(path)
+
+    var path = uriToPlatformPath(path);
+    path = path.split("\\").join( "/");
+    path = path.split(":").join( "|");
+    path = path.split(" ").join( "%20");
+    return "file:///" + path;
+}
+
 if (FLfile.exists(scriptFolder+"/bta_src/saveBTA.txt"))
     save = FLfile.read(scriptFolder+"/bta_src/saveBTA.txt").split("\n");
 
@@ -136,14 +162,14 @@ function accept()
 {
     var saveBox = fl.xmlui.get("saveBox");
 
-    if (!FLfile.exists(FLfile.platformPathToURI(saveBox)))
+    if (!FLfile.exists(platformPathToURI(saveBox)))
     {
         saveAndClose();
         return;
     }
 
     var data = FLfile.read(scriptFolder+"/bta_src/BTAConfirm.xml");
-	data = data.split("$CONFIGDIR").join(FLfile.uriToPlatformPath(scriptFolder));
+	data = data.split("$CONFIGDIR").join(uriToPlatformPath(scriptFolder));
     data = data.split("$EXPATH").join(saveBox);
     
     var check = SaveData.openXMLFromString(data, scriptFolder);

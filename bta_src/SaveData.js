@@ -43,7 +43,7 @@ SaveData.openXMLFromString = function(rawXML, scriptFolder)
 {
 	// Flash doesnt support direct panels from strings so we gotta create a temp xml
 	var xPan = null;
-	if (parseInt(SaveData.version[0]) < 15 && parseInt(SaveData.version[1]) < 1)
+	if (parseInt(SaveData.version[0]) < 15)
 	{
 		var count = 1;
 		
@@ -56,7 +56,7 @@ SaveData.openXMLFromString = function(rawXML, scriptFolder)
 		}
 
 		FLfile.write(tempP, rawXML, null);
-		xPan = fl.xmlPanel(tempP);
+		xPan = fl.getDocumentDOM().xmlPanel(tempP);
 		FLfile.remove(tempP);
 	}
 	else
@@ -106,7 +106,33 @@ SaveData.xmlData = function (symbols, scriptFolder)
 	data = data.split("$EXPORTFPS").join('' + doc.frameRate.toFixed(2));
 	data = data.split("$EXPORTDURATION").join('' + ((1 / doc.frameRate) * doc.library.items[doc.library.findItemIndex(symbols[0])].timeline.frameCount).toFixed(2));
 
-	data = data.split("$CONFIGDIR").join(FLfile.uriToPlatformPath(scriptFolder));
+	var uriToPlatformPath = function(uri)
+	{
+		var flversion = parseInt(fl.version.split(" ")[1].split(",")[0]);
+		if (flversion >= 10)
+			return FLfile.uriToPlatformPath(uri)
+
+		var uri = uri.split("file:///").join( "");
+		uri = uri.split("%20").join( "");
+		uri = uri.split("/").join( "\\");
+		uri = uri.split("|").join( ":");
+		return uri;
+	}
+
+	var platformPathToURI = function (path)
+	{
+		var flversion = parseInt(fl.version.split(" ")[1].split(",")[0]);
+		if (flversion >= 10)
+			return FLfile.platformPathToURI(path)
+
+		var path = uriToPlatformPath(path);
+		path = path.split("\\").join( "/");
+		path = path.split(":").join( "|");
+		path = path.split(" ").join( "%20");
+		return "file:///" + path;
+	}
+
+	data = data.split("$CONFIGDIR").join(uriToPlatformPath(scriptFolder));
 	data = data.split("$FILEURI").join(fileuri);
 
 	data = data.split("$SHP").join(saveData[1]);
