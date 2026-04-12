@@ -939,12 +939,37 @@ function metadata()
 	accName.pop();
 
 	jsonStr(key("version", "V"), BTA_version);
+	jsonStr(key("flVersion", "FLV"), getFlashVersionName() + " (" + (fl.version.split(",").join(".")) + ")");
 	jsonStr(key("name", "N"), accName.join("."));
 	jsonStr(key("backgroundColor", "BGC"), doc.backgroundColor);
 	jsonVar(key("width", "W"), doc.width);
 	jsonVar(key("height", "H"), doc.height);
 	jsonVar(key("asVersion", "ASV"), doc.asVersion);
 	jsonVarEnd(key("framerate", "FRT"), doc.frameRate);
+}
+
+function getFlashVersionName() {
+	switch (flversion) {
+		case 7:  return "Macromedia Flash MX 2004";
+		case 8:  return "Macromedia Flash 8";
+		case 9:  return "Adobe Flash CS3";
+		case 10: return "Adobe Flash CS4";
+		case 11: return "Adobe Flash CS5";
+		case 12: return "Adobe Flash CS6";
+		case 13: return "Adobe Flash Professional CC";
+		case 14: return "Adobe Flash CC 14";
+		case 15: return "Adobe Flash CC 15";
+		case 16:
+		case 17: return "Adobe Animate CC 17";
+		case 18: return "Adobe Animate CC 18";
+		case 19: return "Adobe Animate CC 19";
+		case 20: return "Adobe Animate 20";
+		case 21: return "Adobe Animate 21";
+		case 22: return "Adobe Animate 22";
+		case 23: return "Adobe Animate 23";
+		case 24: return "Adobe Animate 24";
+    }
+    return "fl" + String(flversion);
 }
 
 function pushFilteredFrame(timeline, layerIndex, frameIndex, frameFilters)
@@ -1971,7 +1996,7 @@ function expandBounds(bounds, filters)
 				var blurY = filter.blurY;
 
 				var expansionX = blurX * quality / 2;
-                var expansionY = blurY * quality / 2;
+				var expansionY = blurY * quality / 2;
 				
 				bounds.left -= expansionX;
 				bounds.top -= expansionY;
@@ -2526,7 +2551,7 @@ function parseSymbolInstance(instance, itemName, overrideMatrix)
 			var length = instance.libraryItem.timeline.frameCount;
 			switch (instance.loop) {
 				case "play once": 		firstFrame = Math.min(firstFrame + curTweenFrame, length); break;
-				case "loop": 			firstFrame = firstFrame + curTweenFrame % length;          break;
+				case "loop": 			firstFrame = firstFrame + curTweenFrame % length;		  break;
 			}
 		}
 		
@@ -2898,7 +2923,7 @@ function parseQuality(quality) {
 function formatLimbName(numStr) {
     var i = 0;
     while (i < numStr.length && numStr[i] === '0') {
-        i++;
+		i++;
     }
     return i === numStr.length ? "0" : numStr.slice(i);
 }
@@ -3272,7 +3297,7 @@ function legacySpritesheet(shapeLength, sheetFrame)
 		}
 
 		maxSheetWidth = Math.max(maxSheetWidth, sheetWidth);
-        maxSheetHeight = Math.max(maxSheetHeight, curY + maxHeight);
+		maxSheetHeight = Math.max(maxSheetHeight, curY + maxHeight);
     }
 
 	var extraShapes = sheetFrame.elements.length - shapeLength;
@@ -3309,9 +3334,9 @@ function legacySpritesheet(shapeLength, sheetFrame)
 	push("]}}\n");
 
     return {
-        width: maxSheetWidth,
-        height: maxSheetHeight,
-        rectangles: packedRectangles,
+		width: maxSheetWidth,
+		height: maxSheetHeight,
+		rectangles: packedRectangles,
 		json: closeJson()
     };
 }
