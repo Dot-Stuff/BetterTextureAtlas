@@ -2014,6 +2014,18 @@ function isShapeRectangle(shape)
 
 var cachedTimelineRects;
 
+function getObjectSpaceBounds(element) {
+	if (element.objectSpaceBounds != null)
+		return element.objectSpaceBounds;
+
+	return {
+		left: element.left,
+		top: element.top,
+		right: element.left + element.width,
+		bottom: element.top + element.height
+	}
+}
+
 function getElementRect(element, overrideFilters)
 {
 	var minX;
@@ -2025,7 +2037,7 @@ function getElementRect(element, overrideFilters)
 	{
 		case "shape":
 		case "text":
-			var bounds = element.objectSpaceBounds;
+			var bounds = getObjectSpaceBounds(element);
 			minX = bounds.left;
 			minY = bounds.top;
 			maxX = bounds.right;
@@ -2218,7 +2230,7 @@ function pushElementSpritemap(timeline, layerIndex, frameIndex, elementIndices)
 	if (curTweenFilters != null)
 		bakedTweenedFilters[smIndex] = curTweenFilters;
 
-	var baseBounds = elem.objectSpaceBounds;
+	var baseBounds = getObjectSpaceBounds(elem);
 	if (elem.libraryItem != null && elem.symbolType != "screen")
 		baseBounds = getFrameBounds(elem.libraryItem.timeline, 0);
 
@@ -2343,7 +2355,7 @@ function getFrameBounds(timeline, frameIndex)
 		var frame = layer.frames[frameIndex];
 		if (frame.elements.length == 1)
 		{
-			return frame.elements[0].objectSpaceBounds;
+			return getObjectSpaceBounds(frame.elements[0]);
 		}
 	}
 
@@ -2439,7 +2451,7 @@ function pushShapeSpritemap(timeline, layerIndex, frameIndex, elementIndices)
 	var lastWidth = Number.NEGATIVE_INFINITY;
 	var lastHeight = Number.NEGATIVE_INFINITY;
 
-	var frameBounds = frameElements[0].objectSpaceBounds;
+	var frameBounds = getObjectSpaceBounds(frameElements[0]);
 	var shapes = [];
 
 	// no cleanup needed here
@@ -3375,7 +3387,7 @@ function legacySpritesheet(shapeLength, sheetItem)
 		isRotated = sortedElem.rotated;
 
 		isFiltered = (ogElem.filters != null && ogElem.filters.length > 0);
-		rect = isFiltered ? getElementRect(ogElem) : (ogElem.objectSpaceBounds);
+		rect = isFiltered ? getElementRect(ogElem) : (getObjectSpaceBounds(ogElem));
 		
 		var rectWidth = isFiltered ? (rect.right - rect.left) : ogElem.width;
 		var rectHeight = isFiltered ? (rect.bottom - rect.top) : ogElem.height;

@@ -119,7 +119,7 @@ SaveData.xmlData = function (symbols, scriptFolder)
 		return uri;
 	}
 
-	var saveBoxWidth = (parseInt(SaveData.version[0]) >= 8) ? '350' : '100';
+	var saveBoxWidth = (parseInt(SaveData.version[0]) >= 8) ? '350' : '70';
 	data = data.split("$SAVEBOXWIDTH").join(saveBoxWidth);
 
 	data = data.split("$CONFIGDIR").join(uriToPlatformPath(scriptFolder));
