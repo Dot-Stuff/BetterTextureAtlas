@@ -1681,7 +1681,7 @@ function parseElements(elements, frameIndex, layerIndex, timeline, frameFilters)
 	//var frameFilters = getFrameFilters(layer, frameIndex);
 	//var hasFrameFilters = (bakedFilters && frameFilters.length > 0);
 	
-	var animType = layer.animationType;
+	var animType = (flversion >= 12) ? layer.animationType : "none";
 	if (animType == null)
 		animType = "none"; // IK pose
 
@@ -1735,7 +1735,7 @@ function parseElements(elements, frameIndex, layerIndex, timeline, frameFilters)
 					}
 					else
 					{
-						if (isOneFrame(element.libraryItem.timeline) && animType == "none")
+						if (isOneFrame(element.libraryItem.timeline) && (animType == "none"))
 						{
 							pushOneFrameSymbol(element, timeline, layerIndex, frameIndex, e);
 						}
@@ -2048,32 +2048,18 @@ function getElementRect(element, overrideFilters)
 						maxY = frameRect.bottom;
 						break;
 					}
-		
-					minX = minY = Number.POSITIVE_INFINITY;
-					maxX = maxY = Number.NEGATIVE_INFINITY;	
-				
-					var l = 0;
-					while (l < timeline.layers.length)
-					{
-						var layer =  timeline.layers[l++];
-						if (!isValidLayer(layer) || layer.layerType == "folder")
-							continue;
+					
+					var frameRect = getFrameBounds(timeline, frameIndex);
+					
+					minX = frameRect.left;
+					minY = frameRect.top;
+					maxX = frameRect.right;
+					maxY = frameRect.bottom;
 
-						var frame = layer.frames[frameIndex];
-						if (frame == null)
-							continue;
-						
-						var frameElements = frame.elements;
-						var e = 0;
-						while (e < frameElements.length)
-						{
-							var elem = getElementRect(frameElements[e++]);
-							minX = min(minX, elem.left);
-							minY = min(minY, elem.top);
-							maxX = max(maxX, elem.right);
-							maxY = max(maxY, elem.bottom);
-						}
-					}
+					minX += element.left;
+					maxX += element.left;
+					minY += element.top;
+					maxY += element.top;
 
 					if (cachedTimelineRects[timeline.name] == null)
 						cachedTimelineRects[timeline.name] = [];
@@ -2383,23 +2369,11 @@ function getFrameBounds(timeline, frameIndex)
 			var elem = elems[e++];
 			foundElements++;
 
-			switch (elem.elementType)
-			{
-				case "shape":
-					var bounds = elem.objectSpaceBounds;
-					minX = min(minX, bounds.left);
-					minY = min(minY, bounds.top);
-					maxX = max(maxX, bounds.right);
-					maxY = max(maxY, bounds.bottom);
-				break;
-				default:
-					var rect = getElementRect(elem);
-					minX = min(minX, rect.left);
-					minY = min(minY, rect.top);
-					maxX = max(maxX, rect.right);
-					maxY = max(maxY, rect.bottom);
-				break;
-			}
+			var rect = getElementRect(elem);
+			minX = min(minX, rect.left);
+			minY = min(minY, rect.top);
+			maxX = max(maxX, rect.right);
+			maxY = max(maxY, rect.bottom);
 		}
 	}
 
