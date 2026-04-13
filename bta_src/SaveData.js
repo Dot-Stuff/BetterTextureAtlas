@@ -119,18 +119,8 @@ SaveData.xmlData = function (symbols, scriptFolder)
 		return uri;
 	}
 
-	var platformPathToURI = function (path)
-	{
-		var flversion = parseInt(fl.version.split(" ")[1].split(",")[0]);
-		if (flversion >= 10)
-			return FLfile.platformPathToURI(path)
-
-		var path = uriToPlatformPath(path);
-		path = path.split("\\").join( "/");
-		path = path.split(":").join( "|");
-		path = path.split(" ").join( "%20");
-		return "file:///" + path;
-	}
+	var saveBoxWidth = (parseInt(SaveData.version[0]) >= 8) ? '350' : '100';
+	data = data.split("$SAVEBOXWIDTH").join(saveBoxWidth);
 
 	data = data.split("$CONFIGDIR").join(uriToPlatformPath(scriptFolder));
 	data = data.split("$FILEURI").join(fileuri);

@@ -77,7 +77,7 @@ var path = "";
 var instance = null;
 var resScale = 1.0;
 
-var uriToPlatformPath = function(uri)
+function uriToPlatformPath(uri)
 {
     if (flversion >= 10)
         return FLfile.uriToPlatformPath(uri)
@@ -89,7 +89,7 @@ var uriToPlatformPath = function(uri)
     return uri;
 }
 
-var platformPathToURI = function (path)
+function platformPathToURI(path)
 {
     if (flversion >= 10)
         return FLfile.platformPathToURI(path)
@@ -608,6 +608,14 @@ function exportAtlas(symbolNames)
 
 		if (FLfile.exists(smPath + ".png"))
 			FLfile.remove(smPath + ".png");
+
+		var tmpPanel = fl.configURI + '_temp_panel.txt';
+		fl.outputPanel.save(tmpPanel);
+		var panelContents = "";
+		if (FLfile.exists(tmpPanel)) {
+			panelContents = FLfile.read(tmpPanel).replace(/\r\n?/g, "\n");
+			FLfile.remove(panelContents);
+		}
 		
 		if (flversion >= 8)
 		{
@@ -669,6 +677,10 @@ function exportAtlas(symbolNames)
 
 			if (FLfile.exists(tempProfile))
 				FLfile.remove(tempProfile);
+		}
+
+		if (panelContents.length > 0) {
+			trace(panelContents);
 		}
 
 		doc.width = ogWidth;
@@ -3293,8 +3305,14 @@ function legacySpritesheet(shapeLength, sheetItem)
 		tl.pasteFrames(0);
 	}
 
-	var updateElemPos = function(ogElem, elem)
+	var updateElemPos = function(elem, isRotated)
 	{
+		if (isRotated) {
+			var mat = elem.matrix;
+			mat.a =  0; mat.b =  1; mat.c = -1; mat.d =  0;
+			elem.matrix = mat;
+		}
+
 		doc.selectNone();
 		var selectionArray = new Array();
 		selectionArray[0] = elem;
@@ -3318,7 +3336,7 @@ function legacySpritesheet(shapeLength, sheetItem)
 		
 		var rect = {index: i, width: elem.width, height: elem.height, rotated: false};
 
-		if (flversion >= 9) {
+		//if (flversion >= 9) {
 			if (rect.height > rect.width)
 			{
 				var w = rect.width;
@@ -3326,7 +3344,7 @@ function legacySpritesheet(shapeLength, sheetItem)
 				rect.height = w;
 				rect.rotated = true;
 			}
-		}
+		//}
 
 		sortedIndices.push(rect);
 		i++;
@@ -3345,7 +3363,7 @@ function legacySpritesheet(shapeLength, sheetItem)
     
     i = 0;
     while (i < shapeLength)
-	{   
+	{
 		var sortedElem = sortedIndices[i];
 		var elemIndex = sortedElem.index;
 		var ogElem = TEMP_LAYER.frames[elemIndex].elements[0];
@@ -3360,9 +3378,6 @@ function legacySpritesheet(shapeLength, sheetItem)
 		i++;
 
 		isRotated = sortedElem.rotated;
-		if (isRotated) {
-			ogElem.rotation += 90;
-		}
 
 		isFiltered = (ogElem.filters != null && ogElem.filters.length > 0);
 		rect = isFiltered ? getElementRect(ogElem) : (ogElem.objectSpaceBounds);
@@ -3370,7 +3385,13 @@ function legacySpritesheet(shapeLength, sheetItem)
 		var rectWidth = isFiltered ? (rect.right - rect.left) : ogElem.width;
 		var rectHeight = isFiltered ? (rect.bottom - rect.top) : ogElem.height;
 
-		updateElemPos(ogElem, elem);
+		var w = isRotated ? rectHeight : rectWidth;
+		var h = isRotated ? rectWidth : rectHeight;
+
+		rectWidth = w;
+		rectHeight = h;
+
+		updateElemPos(elem, isRotated);
 
 		var packedRect = {
 			x: max(Math.floor(curX-1), 0),
@@ -3391,7 +3412,7 @@ function legacySpritesheet(shapeLength, sheetItem)
 			sheetWidth = maxSize;
 			maxHeight = rectHeight;
 
-			updateElemPos(ogElem, elem);
+			updateElemPos(elem, isRotated);
 			packedRect.x = Math.floor(curX);
 			packedRect.y = Math.floor(curY);
 			curX += Math.floor(rectWidth + ShpPad + 1);
@@ -3405,7 +3426,6 @@ function legacySpritesheet(shapeLength, sheetItem)
 		maxSheetWidth = Math.max(maxSheetWidth, sheetWidth);
 		maxSheetHeight = Math.max(maxSheetHeight, curY + maxHeight);
     }
-
 
 	initJson();
 	push('{"ATLAS":{"SPRITES":[\n');
