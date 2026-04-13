@@ -609,12 +609,15 @@ function exportAtlas(symbolNames)
 		if (FLfile.exists(smPath + ".png"))
 			FLfile.remove(smPath + ".png");
 
-		var tmpPanel = fl.configURI + '_temp_panel.txt';
-		fl.outputPanel.save(tmpPanel);
 		var panelContents = "";
-		if (FLfile.exists(tmpPanel)) {
-			panelContents = FLfile.read(tmpPanel).replace(/\r\n?/g, "\n");
-			FLfile.remove(panelContents);
+
+		if (flversion >= 8) {
+			var tmpPanel = fl.configURI + '_temp_panel.txt';
+			fl.outputPanel.save(tmpPanel);
+			if (FLfile.exists(tmpPanel)) {
+				panelContents = FLfile.read(tmpPanel).replace(/\r\n?/g, "\n");
+				FLfile.remove(panelContents);
+			}
 		}
 		
 		if (flversion >= 8)
@@ -3307,17 +3310,35 @@ function legacySpritesheet(shapeLength, sheetItem)
 
 	var updateElemPos = function(elem, isRotated)
 	{
-		if (isRotated) {
-			var mat = elem.matrix;
-			mat.a =  0; mat.b =  1; mat.c = -1; mat.d =  0;
-			elem.matrix = mat;
-		}
-
 		doc.selectNone();
-		var selectionArray = new Array();
+		var selectionArray = new Array(1);
 		selectionArray[0] = elem;
 		fl.getDocumentDOM().selection = selectionArray;
+
+		if (isRotated) {
+			/*
+			var mat = elem.matrix;
+			mat.a =  0; mat.b =  1; mat.c = -1; mat.d =  0;
+			elem.matrix = mat;*/
+
+			doc.rotateSelection(90);
+			fl.getDocumentDOM().selection = selectionArray;
+
+			var mat = elem.matrix;
+			var degrees =  Math.atan2(mat.b, mat.a) * (180 / Math.PI);
+
+			if (degrees > 180) {
+				degrees -= 360;
+			} else if (degrees < -180) {
+				degrees += 360;
+			}
+
+			if (degrees == 180) // what the fuck
+				doc.rotateSelection(-90);
+		}
+
 		doc.setSelectionBounds({left: curX, top: curY, right: curX + elem.width, bottom: curY + elem.height});
+		
 		doc.selectNone();
 	}
 
