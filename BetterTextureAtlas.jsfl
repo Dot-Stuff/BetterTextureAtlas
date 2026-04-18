@@ -35,6 +35,7 @@ fl.include = function(file) {
 }
 
 fl.include("SaveData");
+fl.include("MaxRects");
 
 ///// CONFIGURATION
 
@@ -3266,18 +3267,6 @@ function renameFile(path, newPath)
 
 function legacySpritesheet(shapeLength, sheetItem)
 {
-    var curX = BrdPad;
-    var curY = BrdPad;
-    var sheetWidth = 0;
-    var maxHeight = 0;
-    var maxSheetWidth = 0;
-    var maxSheetHeight = 0;
-    var packedRectangles = [];
-	
-	var elem;
-	var isFiltered;
-	var isRotated;
-
 	var tl = doc.getTimeline();
 	tl.currentLayer = 0;
 	tl.currentFrame = 0;
@@ -3294,19 +3283,41 @@ function legacySpritesheet(shapeLength, sheetItem)
 		tl.pasteFrames(0);
 	}
 
-	var updateElemPos = function(elem, isRotated)
+	var maxRects = [];
+	var sheetElements = [];
+	var i = 0;
+	while (i < shapeLength)
 	{
+		var elem = sheetItem.timeline.layers[sheetItem.timeline.layers.length - 2 - i].frames[0].elements[0];
+		sheetElements.push(elem);
+		maxRects.push({x: elem.left, y: elem.top, width: elem.width, height: elem.height});
+		i++;
+	}
+
+	// TODO: add basic algorithm
+	var maxRectsResult = MaxRects.pack(maxRects, 2880, 2880, max(ShpPad, 1),
+	{
+		border: max(BrdPad, 1),
+		allowRotation: allowRotation && !bakedAFilter
+	});
+
+	var i = 0;
+	var trimWidth = 0;
+	var trimHeight = 0;
+	while (i < maxRectsResult.length) {
+		var rect = maxRectsResult[i];
+		trimWidth = max(trimWidth, rect.x + rect.width);
+		trimHeight = max(trimHeight, rect.y + rect.height);
+
+		// position the element
+		var elem = sheetElements[i];
+
 		doc.selectNone();
 		var selectionArray = new Array(1);
 		selectionArray[0] = elem;
 		fl.getDocumentDOM().selection = selectionArray;
 
-		if (isRotated) {
-			/*
-			var mat = elem.matrix;
-			mat.a =  0; mat.b =  1; mat.c = -1; mat.d =  0;
-			elem.matrix = mat;*/
-
+		if (rect.isRotated) {
 			doc.rotateSelection(90);
 			fl.getDocumentDOM().selection = selectionArray;
 
@@ -3323,128 +3334,23 @@ function legacySpritesheet(shapeLength, sheetItem)
 				doc.rotateSelection(-90);
 		}
 
-		doc.setSelectionBounds({left: curX, top: curY, right: curX + elem.width, bottom: curY + elem.height});
-		
+		doc.setSelectionBounds({left: rect.x, top: rect.y, right: rect.x + elem.width, bottom: rect.y + elem.height});
 		doc.selectNone();
-	}
 
-	var sortedIndices = [];
-
-	i = 0;
-	while (i < shapeLength)
-	{
-		var elem = TEMP_LAYER.frames[i].elements[0];
-		if (elem == null)
-		{
-			sortedIndices.push({index: i, width: 1, height: 1, rotated: false});
-			i++;
-			continue;
-		}
-		
-		var rect = {index: i, width: elem.width, height: elem.height, rotated: false};
-
-		//if (flversion >= 9) {
-			if (rect.height > rect.width)
-			{
-				var w = rect.width;
-				rect.width = rect.height;
-				rect.height = w;
-				rect.rotated = true;
-			}
-		//}
-
-		sortedIndices.push(rect);
 		i++;
 	}
-
-	sortedIndices.sort(function(a, b) {
-		if (a.height === b.height) {
-			return a.width - b.width;
-		}
-		return a.height - b.height;
-	});
-
-	var maxSize = 8192; // CS6 upwards
-	if (flversion < 12) // 2880 limit on older versions
-		maxSize = 2880;
-    
-    i = 0;
-    while (i < shapeLength)
-	{
-		var sortedElem = sortedIndices[i];
-		var elemIndex = sortedElem.index;
-		var ogElem = TEMP_LAYER.frames[elemIndex].elements[0];
-
-		if (ogElem == null) {
-			packedRectangles[elemIndex] = {x:0,y:0,width:1,height:1,rotated:false};
-			i++;
-			continue;
-		}
-		
-		elem = sheetItem.timeline.layers[sheetItem.timeline.layers.length - 2 - elemIndex].frames[0].elements[0];
-		i++;
-
-		isRotated = sortedElem.rotated;
-
-		isFiltered = (ogElem.filters != null && ogElem.filters.length > 0);
-		rect = isFiltered ? getElementRect(ogElem) : (getObjectSpaceBounds(ogElem));
-		
-		var rectWidth = isFiltered ? (rect.right - rect.left) : ogElem.width;
-		var rectHeight = isFiltered ? (rect.bottom - rect.top) : ogElem.height;
-
-		var w = isRotated ? rectHeight : rectWidth;
-		var h = isRotated ? rectWidth : rectHeight;
-
-		rectWidth = w;
-		rectHeight = h;
-
-		updateElemPos(elem, isRotated);
-
-		var packedRect = {
-			x: max(Math.floor(curX-1), 0),
-			y: max(Math.floor(curY-1), 0),
-			width: Math.floor(rectWidth+1),
-			height: Math.floor(rectHeight+1),
-			rotated: sortedElem.rotated
-		}
-
-		packedRectangles[elemIndex] = packedRect;
-
-		curX += Math.floor(rectWidth + ShpPad + 1);
-		
-		if (curX > maxSize)
-		{
-			curX = BrdPad;
-			curY += maxHeight + ShpPad;
-			sheetWidth = maxSize;
-			maxHeight = rectHeight;
-
-			updateElemPos(elem, isRotated);
-			packedRect.x = Math.floor(curX);
-			packedRect.y = Math.floor(curY);
-			curX += Math.floor(rectWidth + ShpPad + 1);
-		}
-		else
-		{
-			maxHeight = Math.max(maxHeight, rectHeight);
-			sheetWidth = Math.max(sheetWidth, curX);
-		}
-
-		maxSheetWidth = Math.max(maxSheetWidth, sheetWidth);
-		maxSheetHeight = Math.max(maxSheetHeight, curY + maxHeight);
-    }
 
 	initJson();
 	push('{"ATLAS":{"SPRITES":[\n');
 
 	var i = 0;
-	while (i < packedRectangles.length)
+	while (i < maxRectsResult.length)
 	{
-		var rect = packedRectangles[i];
+		var rect = maxRectsResult[i];
 		push('{"SPRITE":{"name":"' + i +
 			'","x":' + rect.x + ',"y":' + rect.y +
 			',"w":' + rect.width + ',"h":' + rect.height +
-			',"rotated":' + rect.rotated +
+			',"rotated":' + rect.isRotated +
 		'}},\n');
 		i++;
 	}
@@ -3453,9 +3359,8 @@ function legacySpritesheet(shapeLength, sheetItem)
 	push("]}}\n");
 
     return {
-		width: maxSheetWidth,
-		height: maxSheetHeight,
-		rectangles: packedRectangles,
+		width: trimWidth,
+		height: trimHeight,
 		json: closeJson()
     };
 }
