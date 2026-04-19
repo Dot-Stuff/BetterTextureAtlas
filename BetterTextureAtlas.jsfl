@@ -3365,8 +3365,12 @@ function legacySpritesheet(shapeLength, sheetItem)
 
 		var maxRect = maxRects[i];
 		
-		//doc.setSelectionBounds({left: rect.x, top: rect.y, right: rect.x + elem.width, bottom: rect.y + elem.height});
-		doc.moveSelectionBy({x: (rect.x - elem.left) - maxRect.x, y: (rect.y - elem.top) - maxRect.y});
+		if (flversion >= 8) {
+			doc.moveSelectionBy({x: (rect.x - elem.left) - maxRect.x, y: (rect.y - elem.top) - maxRect.y});
+		}
+		else {
+			doc.setSelectionBounds({left: rect.x, top: rect.y, right: rect.x + elem.width, bottom: rect.y + elem.height});
+		}
 		
 		// debugging stuff
 		//var fill = fl.getDocumentDOM().getCustomFill(); fill.color = '#ff0000';
