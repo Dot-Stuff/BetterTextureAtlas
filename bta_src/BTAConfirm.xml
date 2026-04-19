@@ -8,7 +8,7 @@
     </columns>
     <rows>
         <row>
-            <flash src="warningBTA.swf" width="42" height="75"></flash>
+            <flash src="$CONFIGDIRwarningBTA.swf" width="42" height="75"></flash>
             <label value="" />
             <vbox>
                 <label value="There's a Texture Atlas already with the following path"/>

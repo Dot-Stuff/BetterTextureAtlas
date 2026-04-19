@@ -169,7 +169,11 @@ function accept()
     }
 
     var data = FLfile.read(scriptFolder+"/bta_src/BTAConfirm.xml");
-	data = data.split("$CONFIGDIR").join(uriToPlatformPath(scriptFolder));
+
+    var flversion = parseInt(fl.version.split(" ")[1].split(",")[0]);
+    var configDir = flversion <= 8 ? '' : (uriToPlatformPath(scriptFolder)+'\\bta_src\\');
+
+	data = data.split("$CONFIGDIR").join(configDir);
     data = data.split("$EXPATH").join(saveBox);
     
     var check = SaveData.openXMLFromString(data, scriptFolder);

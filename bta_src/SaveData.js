@@ -122,16 +122,22 @@ SaveData.xmlData = function (symbols, scriptFolder)
 	var saveBoxWidth = (parseInt(SaveData.version[0]) >= 8) ? '350' : '70';
 	data = data.split("$SAVEBOXWIDTH").join(saveBoxWidth);
 
-	data = data.split("$CONFIGDIR").join(uriToPlatformPath(scriptFolder));
-	data = data.split("$FILEURI").join(fileuri);
+	var flversion = parseInt(fl.version.split(" ")[1].split(",")[0]);
 
-	data = data.split("$SHP").join(saveData[1]);
-	data = data.split("$BRD").join(saveData[2]);
-	data = data.split("$RES").join(saveData[3]);
-	data = data.split("$OPTDIM").join(saveData[4]);
-	data = data.split("$OPTAN").join(saveData[5]);
-	data = data.split("$FLAT").join(saveData[6]);
-	data = data.split("$ROT").join(saveData[9]);
+	data = data.split("$CONFIGDIR").join(configDir);
+	data = data.split("$FILEURI").join(fileuri);
+	
+	var formatValue = function (value, defValue) {
+		return (value == null || value == "undefined" || value.length <= 0) ? String(defValue) : value;
+	}
+
+	data = data.split("$SHP").join(formatValue(saveData[1], 3));
+	data = data.split("$BRD").join(formatValue(saveData[2], 3));
+	data = data.split("$RES").join(formatValue(saveData[3], 1));
+	data = data.split("$OPTDIM").join(formatValue(saveData[4], true));
+	data = data.split("$OPTAN").join(formatValue(saveData[5], true));
+	data = data.split("$FLAT").join(formatValue(saveData[6], false));
+	data = data.split("$ROT").join(formatValue(saveData[9], true));
 
 	var buttonWidth = 0;
 	if (parseInt(SaveData.version[0]) >= 20)
