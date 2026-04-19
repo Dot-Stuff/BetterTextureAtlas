@@ -589,7 +589,7 @@ function exportAtlas(symbolNames)
 		i++;
 	}
 	
-	if (flversion < 12) // Super primitive spritemap export for versions below CS6
+	if (flversion < 12) // Custom spritesheet export fallback for versions without the spritesheet exporter
 	{
 		var shapeLength = TEMP_TIMELINE.frameCount;
 		var SPRITESHEET_ID = "__BTA_TEMP_SPRITESHEET_";
@@ -3364,13 +3364,9 @@ function legacySpritesheet(shapeLength, sheetItem)
 		}
 
 		var maxRect = maxRects[i];
-		
-		if (flversion >= 8) {
-			doc.moveSelectionBy({x: (rect.x - elem.left) - maxRect.x, y: (rect.y - elem.top) - maxRect.y});
-		}
-		else {
-			doc.setSelectionBounds({left: rect.x, top: rect.y, right: rect.x + elem.width, bottom: rect.y + elem.height});
-		}
+		var rectX = rect.x - maxRect.x;
+		var rectY = rect.y - maxRect.y;
+		doc.setSelectionBounds({left: rectX, top: rectY, right: rectX + elem.width, bottom: rectY + elem.height});
 		
 		// debugging stuff
 		//var fill = fl.getDocumentDOM().getCustomFill(); fill.color = '#ff0000';
