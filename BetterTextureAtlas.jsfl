@@ -2027,23 +2027,47 @@ function getObjectSpaceBounds(element) {
 	}
 }
 
-function getElementRect(element, overrideFilters)
+function getElementRect(element, overrideFilters, includeFilters)
 {
-	var minX;
-	var minY;
-	var maxX;
-	var maxY;
+	var minX = Number.POSITIVE_INFINITY;
+	var minY = Number.POSITIVE_INFINITY;
+	var maxX = Number.NEGATIVE_INFINITY;
+	var maxY = Number.NEGATIVE_INFINITY;
+
+	if (includeFilters == null)
+		includeFilters = true;
 
 	switch (element.elementType)
 	{
-		case "shape":
 		case "text":
-			var bounds = getObjectSpaceBounds(element);
-			minX = bounds.left;
-			minY = bounds.top;
-			maxX = bounds.right;
-			maxY = bounds.bottom;
+		case "shape":
+			minX = element.left;
+			minY = element.top;
+			maxX = element.left + element.width;
+			maxY = element.top + element.height;
+
+			if (element.isGroup)
+			{
+				if (element.members != null)
+				{
+					if (element.members.length == 1) {
+						var member = element.members[0];
+						if (member.elementType == "instance" && member.instanceType == "symbol")
+						{
+							if (member.filters != null && member.filters.length > 0)
+							{
+								var filters = [];
+								if (overrideFilters != null)
+									filters = filters.concat(overrideFilters);
+								filters = filters.concat(member.filters);
+								overrideFilters = filters;
+							}
+						}
+					}
+				}
+			}
 		break;
+		
 		case "instance":	
 			switch(element.instanceType)
 			{
@@ -2103,7 +2127,10 @@ function getElementRect(element, overrideFilters)
 		bottom: maxY
 	}
 
-	expandBounds(bounds, overrideFilters != null ? overrideFilters : element.filters);
+	if (includeFilters)
+	{
+		expandBounds(bounds, overrideFilters != null ? overrideFilters : element.filters);
+	}
 
 	return bounds;
 }
@@ -3289,8 +3316,10 @@ function legacySpritesheet(shapeLength, sheetItem)
 	while (i < shapeLength)
 	{
 		var elem = sheetItem.timeline.layers[sheetItem.timeline.layers.length - 2 - i].frames[0].elements[0];
+		var rect = getElementRect(elem);
+		
 		sheetElements.push(elem);
-		maxRects.push({x: elem.left, y: elem.top, width: elem.width, height: elem.height});
+		maxRects.push({x: rect.left, y: rect.top, width: rect.right - rect.left, height: rect.bottom - rect.top});
 		i++;
 	}
 
@@ -3334,7 +3363,17 @@ function legacySpritesheet(shapeLength, sheetItem)
 				doc.rotateSelection(-90);
 		}
 
-		doc.setSelectionBounds({left: rect.x, top: rect.y, right: rect.x + elem.width, bottom: rect.y + elem.height});
+		var maxRect = maxRects[i];
+		
+		//doc.setSelectionBounds({left: rect.x, top: rect.y, right: rect.x + elem.width, bottom: rect.y + elem.height});
+		doc.moveSelectionBy({x: (rect.x - elem.left) - maxRect.x, y: (rect.y - elem.top) - maxRect.y});
+		
+		// debugging stuff
+		//var fill = fl.getDocumentDOM().getCustomFill(); fill.color = '#ff0000';
+		//fill.style = "solid"; 
+		//fl.getDocumentDOM().setCustomFill(fill);
+		//doc.addNewRectangle({left: rect.x, top: rect.y, right: rect.x + rect.width, bottom: rect.y + rect.height}, 0, false, true);
+		
 		doc.selectNone();
 
 		i++;
