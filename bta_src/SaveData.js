@@ -123,6 +123,7 @@ SaveData.xmlData = function (symbols, scriptFolder)
 	data = data.split("$SAVEBOXWIDTH").join(saveBoxWidth);
 
 	var flversion = parseInt(fl.version.split(" ")[1].split(",")[0]);
+	var configDir = flversion <= 8 ? '' : (uriToPlatformPath(scriptFolder)+'\\bta_src\\');
 
 	data = data.split("$CONFIGDIR").join(configDir);
 	data = data.split("$FILEURI").join(fileuri);
