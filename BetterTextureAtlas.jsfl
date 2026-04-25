@@ -174,7 +174,7 @@ function _main()
 	{
 		alert("WARNING:\n\nEven though it's functional, we heavily recommend using a newer Flash version, such as Adobe Animate 22!");
 		if (flversion < 10) {
-			alert("WARNING:\n\nThis Flash version doesn't support a spritesheet exporter.\nA replacement exporter will be used with a 2880x2880 limit.\nMake sure to have your PNG export dpi settings set to 72.\n\nSwitch to Flash CS6 or newer for bigger sizes.")
+			alert("WARNING:\n\nThis Flash version doesn't support a spritesheet exporter.\nA replacement exporter will be used with a 2880x2880 limit.\nMake sure to have your PNG export dpi settings set to 72.\n\nSwitch to Flash CS4 or newer for bigger sizes.")
 		}
 	}
 
