@@ -721,6 +721,8 @@ function exportAtlas(symbolNames)
 		{
 			// prepare and save a temp document for the spritemap
 			var tempDoc = generateTempDocument();
+			tempDoc.width = Math.floor(sheet.width);
+			tempDoc.height = Math.floor(sheet.height);
 
 			// prepare publish profile for png
 			var tempProfile = fl.configURI + "_temp_png.xml";
@@ -739,8 +741,6 @@ function exportAtlas(symbolNames)
 			tempDoc.selectAll();
 			var rect = tempDoc.getSelectionRect();
 			tempDoc.setSelectionBounds({left: 0, top: 0, right: rect.right - rect.left, bottom: rect.bottom - rect.top});
-			tempDoc.width = sheet.width;
-			tempDoc.height = sheet.height;
 
 			tempDoc.publish();
 
