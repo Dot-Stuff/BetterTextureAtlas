@@ -581,8 +581,10 @@ function exportAtlas(symbolNames)
 
 		// make sure the element is inside the render bounds of the spritesheet exporter
 		// also helps a bit with float point accuracy
-		group.x = group.width / 2;
-		group.y = group.height / 2;
+		var selection = new Array();
+		selection[0] = group;
+		doc.selection = selection;
+		doc.setSelectionBounds({left: 0, top: 0, right: group.width, bottom: group.height});
 
 		doc.selectNone();
 
@@ -3407,6 +3409,8 @@ function legacySpritesheet(shapeLength, sheetItem)
 	while (i < maxRectsResult.length)
 	{
 		var rect = maxRectsResult[i];
+		rect.x = Math.floor(rect.x);
+		rect.y = Math.floor(rect.y);
 		rect.width = Math.floor(rect.width);
 		rect.height = Math.floor(rect.height);
 
