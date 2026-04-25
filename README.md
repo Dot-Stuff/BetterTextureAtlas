@@ -10,8 +10,22 @@ Adding features and fixing its Animation file format so it presents more data fo
 
 > [!NOTE]
 > BTA is still in active development. It may reproduce incorrect results in some flas.
+> 
 > If you run into any bugs, make sure to create a GitHub issue or contact Dot-Stuff on our Discord server.
-> Support for Flash CS6 and CS4 is still really primitive, we recommend exporting using newer Animate versions.
+
+> [!WARNING]
+> The plugin is technically supported down to Flash MX 2004 7.2. But it comes with limitations.
+> 
+> Flash MX 2004 doesn't expose a exportPNG method, so a slower seperate document method has to be used.
+> 
+> Flash versions below Adobe Flash CS4 have a max size limit of 2880x2880px.
+> 
+> Adobe Flash CS4 and CS5 use a custom PNG export method with Adobe AIR to go beyond the 2880x2880px resolution limit, which may result on very slow exports, depending on the size of the final spritemap.
+
+> [!IMPORTANT]
+> Many old Flash versions lack important util for BetterTextureAtlas to operate correctly.
+> 
+> Its heavily recommended to use **newer Animate versions** for exports as they offer the best export experience and are feature complete.
 
 ## What differs from the default Texture Atlas Exporter?
 
