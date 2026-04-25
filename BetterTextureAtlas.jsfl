@@ -173,7 +173,7 @@ function _main()
 	if (flversion <= 12)
 	{
 		alert("WARNING:\n\nEven though it's functional, we heavily recommend using a newer Flash version, such as Adobe Animate 22!");
-		if (flversion < 12) {
+		if (flversion < 10) {
 			alert("WARNING:\n\nThis Flash version doesn't support a spritesheet exporter.\nA replacement exporter will be used with a 2880x2880 limit.\nMake sure to have your PNG export dpi settings set to 72.\n\nSwitch to Flash CS6 or newer for bigger sizes.")
 		}
 	}
@@ -597,12 +597,10 @@ function exportAtlas(symbolNames)
 		var sheetItem = initBtaItem(SPRITESHEET_ID);
 		lib.editItem(sheetItem.name);
 
-		var ogWidth = doc.width;
-		var ogHeight = doc.height;
+
 
 		var sheet = legacySpritesheet(shapeLength, sheetItem);
-		doc.width = Math.floor(sheet.width);
-		doc.height = Math.floor(sheet.height);
+
 
 		var smPath = path + "/spritemap1";
 		writeFile(smPath + ".json", sheet.json);
@@ -620,16 +618,9 @@ function exportAtlas(symbolNames)
 				FLfile.remove(panelContents);
 			}
 		}
-		
-		if (flversion >= 8)
-		{
-			// TODO: force dpi to 72, somehow
-			doc.exportPNG(smPath, true, true);
-			renameFile(smPath + "img.png", smPath + ".png");
-		}
-		else // export exclusive to Flash MX 2004
-		{
-			// prepare and save a temp document for the spritemap
+
+		// utility stuff im too lazy to add outside
+		var generateTempDocument = function () {
 			var tempDoc = fl.createDocument("timeline");
 
 			var spritesheetLayers = sheetItem.timeline.layers;
@@ -646,7 +637,90 @@ function exportAtlas(symbolNames)
 			}
 
 			var docPath = fl.configURI + '_temp_doc.fla';
-			fl.saveDocument(tempDoc,docPath)
+			fl.saveDocument(tempDoc, docPath);
+
+			return tempDoc;
+		}
+
+		var closeTempDocument = function (tempDoc) {
+			fl.closeDocument(tempDoc, false);
+			var docPath = fl.configURI + '_temp_doc.fla';
+			if (FLfile.exists(docPath))
+				FLfile.remove(docPath);
+		}
+		
+		if (flversion >= 10 && ((sheet.width > 2880) || (sheet.height > 2880))) // CS4+ Adobe AIR method
+		{
+			// prepare and save a temp document for the spritemap
+			var tempDoc = generateTempDocument();
+			var tempDocTimeline = tempDoc.getTimeline();
+
+			var asFrame = tempDocTimeline.layers[0].frames[0];
+			var asCode = FLfile.read(scriptFolder+"/bta_src/flash/PNGEncoder.as");
+			asCode = asCode.split("$SHEETWIDTH").join(String(sheet.width));
+			asCode = asCode.split("$SHEETHEIGHT").join(String(sheet.height));
+			asCode = asCode.split("$SPRITEMAPPATH").join(uriToPlatformPath(smPath).split("\\").join("\\\\") + ".png");
+			asFrame.actionScript = asCode;
+
+			// TODO: double check that AIR is available for this session of flash cs4
+
+			// prepare publish profile for png
+			var tempProfile = fl.configURI + "_temp_air.xml";
+			tempDoc.exportPublishProfile(tempProfile);
+
+			var xml = FLfile.read(tempProfile);
+			xml = xml.split('name="Default"').join('name="AIREXPORT"');
+			xml = xml.split("<html>1</html>").join("<html>0</html>");
+			xml = xml.split("<Version>10</Version>").join("<Version>9</Version>");
+			xml = xml.split("<ExternalPlayer>FlashPlayer10</ExternalPlayer>").join("<ExternalPlayer>AdobeAIR1_1</ExternalPlayer>");
+
+			FLfile.write(tempProfile, xml);
+    		tempDoc.importPublishProfile(tempProfile);
+
+			// move shit from the last fla to this one
+			tempDoc.selectAll();
+			var rect = tempDoc.getSelectionRect();
+			tempDoc.moveSelectionBy({x:-rect.left, y: -rect.top});
+			//tempDoc.setSelectionBounds({left: 0, top: 0, right: rect.right - rect.left, bottom: rect.bottom - rect.top});
+			tempDoc.width = doc.width;
+			tempDoc.height = doc.height;
+
+			//tempDoc.publish();
+
+			//var docExporting = true;
+			tempDoc.testMovie();
+
+			//while (docExporting) {
+			//	try {
+			//		closeTempDocument(tempDoc);
+			//		docExporting = false;
+			//	} catch (e) {}
+			//}
+
+			closeTempDocument(tempDoc);
+
+			if (FLfile.exists(tempProfile))
+				FLfile.remove(tempProfile);
+		}
+		else if (flversion >= 8) // Flash 8+ PNG export method
+		{
+			var ogWidth = doc.width;
+			var ogHeight = doc.height;
+
+			doc.width = Math.floor(sheet.width);
+			doc.height = Math.floor(sheet.height);
+
+			// TODO: force dpi to 72, somehow
+			doc.exportPNG(smPath, true, true);
+			renameFile(smPath + "img.png", smPath + ".png");
+
+			doc.width = ogWidth;
+			doc.height = ogHeight;
+		}
+		else // Flash MX 2004 PNG Publish export method
+		{
+			// prepare and save a temp document for the spritemap
+			var tempDoc = generateTempDocument();
 
 			// prepare publish profile for png
 			var tempProfile = fl.configURI + "_temp_png.xml";
@@ -665,8 +739,8 @@ function exportAtlas(symbolNames)
 			tempDoc.selectAll();
 			var rect = tempDoc.getSelectionRect();
 			tempDoc.setSelectionBounds({left: 0, top: 0, right: rect.right - rect.left, bottom: rect.bottom - rect.top});
-			tempDoc.width = doc.width;
-			tempDoc.height = doc.height;
+			tempDoc.width = sheet.width;
+			tempDoc.height = sheet.height;
 
 			tempDoc.publish();
 
@@ -675,9 +749,7 @@ function exportAtlas(symbolNames)
 				renameFile(pngURI, smPath + ".png");
 			}
 
-			fl.closeDocument(tempDoc, false);
-			if (FLfile.exists(docPath))
-				FLfile.remove(docPath);
+			closeTempDocument(tempDoc);
 
 			if (FLfile.exists(tempProfile))
 				FLfile.remove(tempProfile);
@@ -686,9 +758,6 @@ function exportAtlas(symbolNames)
 		if (panelContents.length > 0) {
 			trace(panelContents);
 		}
-
-		doc.width = ogWidth;
-		doc.height = ogHeight;
 
 		doc.selectNone();
 		doc.exitEditMode();
@@ -3319,22 +3388,28 @@ function legacySpritesheet(shapeLength, sheetItem)
 		var rect = getElementRect(elem);
 		
 		sheetElements.push(elem);
-		maxRects.push({x: rect.left, y: rect.top, width: rect.right - rect.left, height: rect.bottom - rect.top});
+		maxRects.push({x: rect.left, y: rect.top, width: (rect.right - rect.left), height: (rect.bottom - rect.top)});
 		i++;
 	}
 
+	var maxSize = (flversion < 10) ? 2880 : 8192;
+
 	// TODO: add basic algorithm
-	var maxRectsResult = MaxRects.pack(maxRects, 2880, 2880, max(ShpPad, 1),
+	var maxRectsResult = MaxRects.pack(maxRects, maxSize, maxSize, max(ShpPad, 1),
 	{
-		border: max(BrdPad, 1),
+		border: 0,//max(BrdPad, 1),
 		allowRotation: allowRotation && !bakedAFilter
 	});
 
 	var i = 0;
 	var trimWidth = 0;
 	var trimHeight = 0;
-	while (i < maxRectsResult.length) {
+	while (i < maxRectsResult.length)
+	{
 		var rect = maxRectsResult[i];
+		rect.width = Math.floor(rect.width);
+		rect.height = Math.floor(rect.height);
+
 		trimWidth = max(trimWidth, rect.x + rect.width);
 		trimHeight = max(trimHeight, rect.y + rect.height);
 
@@ -3364,12 +3439,32 @@ function legacySpritesheet(shapeLength, sheetItem)
 		}
 
 		var maxRect = maxRects[i];
-		var rectX = rect.x - maxRect.x;
-		var rectY = rect.y - maxRect.y;
-		doc.setSelectionBounds({left: rectX, top: rectY, right: rectX + elem.width, bottom: rectY + elem.height});
+		var rectX = (rect.x - maxRect.x);
+		var rectY = (rect.y - maxRect.y);
 		
-		// debugging stuff
-		//var fill = fl.getDocumentDOM().getCustomFill(); fill.color = '#ff0000';
+		//var matrix = elem.matrix;
+		//matrix.tx += rectX;
+		//matrix.ty += rectY;
+		//elem.matrix = matrix;
+		//elem.x += rectX;
+		//elem.y += rectY;
+		//doc.moveSelectionBy({x: rectX, y: rectY});
+		//traceFields({left: rectX, top: rectY, right: rectX + elem.width, bottom: rectY + elem.height});
+		//doc.setSelectionBounds({left: rectX, top: rectY, right: rectX + elem.width, bottom: rectY + elem.height});
+
+		if (trimWidth <= 2880 && trimHeight <= 2880)
+		{
+			doc.setSelectionBounds({left: rectX, top: rectY, right: rectX + elem.width, bottom: rectY + elem.height});
+		}
+		else
+		{
+			doc.moveSelectionBy({x: rectX, y: rectY});
+		}
+		
+		// 9c000001
+		// TODO: this was supposed to be for debugging but it can be useful to make sure the size of the stage's objects is the same as the final spritemap size
+		// make it work better when shape padding is improved
+		//var fill = fl.getDocumentDOM().getCustomFill(); fill.color = '#9c000001';
 		//fill.style = "solid"; 
 		//fl.getDocumentDOM().setCustomFill(fill);
 		//doc.addNewRectangle({left: rect.x, top: rect.y, right: rect.x + rect.width, bottom: rect.y + rect.height}, 0, false, true);
@@ -3393,6 +3488,9 @@ function legacySpritesheet(shapeLength, sheetItem)
 		'}},\n');
 		i++;
 	}
+
+	// TODO: i think i should add an additional "border" value to spritemap limbs for shit like baked filters and fixing antialiasing issues on borders
+	// otherwise it can very easily break the positioning, specially on small limbs that are supposed to get upscaled later
 
 	removeTrail(2);
 	push("]}}\n");
