@@ -86,9 +86,13 @@ SaveData.xmlData = function (symbols, scriptFolder)
 	
 	if (fileuri.length <= 0) {
 		var document = fl.getDocumentDOM();
-		var docPath = document.path.split("\\");
-		docPath.pop();
-		fileuri = docPath.join("\\");
+		var docPath = document.path;
+		if (docPath == null) // doc is not saved, default to config dir for save
+			docPath = fl.configDirectory;
+		
+		var pathSplit = docPath.split("\\");
+		pathSplit.pop();
+		fileuri = pathSplit.join("\\");
 	}
 
 	fileuri += "\\" + formatSymbolName;
