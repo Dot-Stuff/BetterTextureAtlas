@@ -1049,7 +1049,13 @@ function isOneFrame(itemTimeline)
 			result = true;
 		} else {
 			var frame = layers[0].frames[0];
-			result = frame.elements.length > 1;
+
+			result = false;
+			if (frame.elements.length > 1) {
+				result = true;
+			} else if (frame.elements.length == 1) {
+				result = frame.elements[0].elementType == "shape";
+			}
 		}
 	}
 	else if (usedLayerCount == 1) // "Advanced" one frame check, maybe should make it a setting because i can see this being a bit costy
@@ -1213,13 +1219,16 @@ function parseFrames(frames, layerIndex, timeline)
 	jsonArray(key("Frames", "FR"));
 
 	var layer = timeline.layers[layerIndex];
-	var hasRig = (flversion >= 20) && (layer.getRigParentAtFrame(0) != undefined);
+	
 
 	var f = 0;
 	while (f < frames.length)
 	{
 		var frame = frames[f];
 		var isKeyframe = (f === frame.startFrame);
+
+		var rigParent = (flversion >= 20) ? layer.getRigParentAtFrame(f) : undefined;
+		var hasRig = (rigParent != undefined);
 		
 		var tweenType = frame.tweenType;
 		var isTweenedFrame = (tweenType != "none");
@@ -1238,7 +1247,7 @@ function parseFrames(frames, layerIndex, timeline)
 		var frameFilters = getFrameFilters(timeline.layers[layerIndex], f);
 		var bakeFrameFilters = bakedFilters && frameFilters.length > 0;
 
-		if (isKeyframe || bakeTween || bakeFrameFilters)
+		if (isKeyframe || bakeTween || bakeFrameFilters || hasRig)
 		{
 			if (canBeTween && bakeTween) {
 				if (isKeyframe) {
@@ -1337,7 +1346,7 @@ function parseFrames(frames, layerIndex, timeline)
 
 			jsonVar(key("index", "I"), f);
 
-			var frameDuration = (bakeTween || bakeFrameFilters) ? 1 : frame.duration;
+			var frameDuration = (bakeTween || bakeFrameFilters || hasRig) ? 1 : frame.duration;
 			jsonVar(key("duration", "DU"), frameDuration);
 
 			var frameBlend = getFrameBlend(timeline.layers[layerIndex], f);
@@ -2035,7 +2044,7 @@ function parseAtlasInstance(matrix, index, skipPush)
 		cachedMatrices[index] = matrix;
 	
 	jsonHeader(key("ATLAS_SPRITE_instance", "ASI"));
-	jsonVar(key("Matrix", "MX"), parseMatrix(matrix, false));
+	jsonVar(key("Matrix", "MX"), parseMatrix(matrix, true));
 	jsonStrEnd(key("name", "N"), index);
 	push('}');
 }
@@ -2306,7 +2315,7 @@ function pushShapeSpritemap(timeline, layerIndex, frameIndex, elementIndices)
 		if (selection.length > 0) {
 			doc.selection = selection;
 			try {
-				doc.unGroup(); // turn drawing objects/shape groups back into shapes for the stroke cleanup
+				doc.breakApart(); // turn drawing objects/shape groups back into shapes for the stroke cleanup
 			} catch (e) {}
 		}
 	}
@@ -2888,11 +2897,11 @@ function parseMatrix(m, doConcat)
 	// Concat the matrix
 	if (doConcat)
 	{
-		if (curFrameMatrix != null)
-			m = fl.Math.concatMatrix(m, curFrameMatrix);
-		
 		if (bakedTweens && curTweenMatrix != null)
 			m = fl.Math.concatMatrix(m, curTweenMatrix);
+
+		if (curFrameMatrix != null)
+			m = fl.Math.concatMatrix(m, curFrameMatrix);
 	}
 	
 	return "[" +
