@@ -52,6 +52,9 @@ trace(BTA_version);
 var algorithm = "maxRects";
 var onlyVisibleLayers = true;
 var optimizeDimensions = true;
+var useAutoSize = true;
+var maxSheetWidth = 8192;
+var maxSheetHeight = 8192;
 var optimizeJson = true;
 //var flattenSkewing = false;
 var allowRotation = true;
@@ -221,6 +224,10 @@ function _main()
 	optAn = xPan.OptAn;
 	//flatten = xPan.FlatSke;
 	allRot = xPan.Rotate;
+
+	useAutoSize = (xPan.cusWid == "auto" || xPan.cusHei == "auto");
+	maxSheetWidth = (xPan.cusWid == "auto") ? 8192 : min(parseInt(xPan.cusWid), 8192);
+	maxSheetHeight = (xPan.cusHei == "auto") ? 8192 : min(parseInt(xPan.cusHei), 8192);
 
 	bitDepth = (xPan.imgFormat == "PNG 8 bits") ? 8 : 32;
 	algorithm = (xPan.algorithm == "Basic") ? "basic" : "maxRects";
@@ -833,8 +840,7 @@ function divideSpritemap(smData, symbol)
 	}
 
 	var nextSmID = SPRITEMAP_ID + spritemaps.length;
-	lib.addNewItem("graphic", nextSmID);
-	var nextSmSymbol = findItem(nextSmID);
+	var nextSmSymbol = initBtaItem(nextSmID);
 
 	var cutFrames = Math.floor(framesLength * 0.5);
 	symbol.timeline.copyFrames(cutFrames, framesLength);
@@ -912,7 +918,7 @@ function exportSpritemap(id, exportPath, smData, index)
 			w += 2;
 			h += 2;
 
-			if (w > 8192 || h > 8192) {
+			if (w > maxSheetWidth || h > maxSheetHeight) {
 				hasOverflowed = true;
 				trace("ERROR: Couldn't trim spritemap" + index +" correctly");
 				break;
@@ -957,7 +963,7 @@ function exportSpritemap(id, exportPath, smData, index)
 		// TODO: check if this happens on all flash/animate versions
 		// only tested on Animate 22 so far
 		if (isRotated) {
-			var elem = smData.symbol.timeline.layers[0].frames[name].elements[0];
+			var elem = smData.symbol.timeline.layers[0].frames[name - smData.index].elements[0];
 			var diffW = Math.round(w - (elem.height));
 			if (Math.abs(diffW) <= 2)
 				x -= diffW;
@@ -992,7 +998,11 @@ function makeSpritemap() {
 	var sm = new SpriteSheetExporter;
 	sm.layoutFormat = "JSON-Array";
 	sm.algorithm = (flversion <= 12) ? "basic" : algorithm;
-	sm.autoSize = true;
+	sm.autoSize = useAutoSize;
+	if (!useAutoSize) {
+		sm.sheetWidth = maxSheetWidth;
+		sm.sheetHeight = maxSheetHeight;
+	}
 	sm.borderPadding = max(BrdPad, 1);
 	sm.shapePadding = max(ShpPad, 1);
 	sm.allowRotate = allowRotation && !bakedAFilter;
@@ -2260,10 +2270,12 @@ function getMatrixScale(width, height)
 	var maxSize = max(width * resolution, height * resolution);
 	var mxScale = resScale;
 	
-	if (maxSize > 8192)
+	var maxSheetSize = max(maxSheetWidth, maxSheetHeight);
+
+	if (maxSize > maxSheetSize)
 	{
 		resizedContain = true;
-		mxScale = 1.0 / (((8192 / maxSize) / 1.01) * resolution); // pixel rounding crap
+		mxScale = 1.0 / (((maxSheetSize / maxSize) / 1.01) * resolution); // pixel rounding crap
 	}
 	
 	return mxScale;
@@ -3403,7 +3415,7 @@ function legacySpritesheet(shapeLength, sheetItem)
 		i++;
 	}
 
-	var maxSize = (flversion < 10) ? 2880 : 8192;
+	var maxSize = min(max(maxSheetWidth, maxSheetHeight), (flversion < 10) ? 2880 : 8192);
 
 	// TODO: add basic algorithm
 	var maxRectsResult = MaxRects.pack(maxRects, maxSize, maxSize, max(ShpPad, 1),

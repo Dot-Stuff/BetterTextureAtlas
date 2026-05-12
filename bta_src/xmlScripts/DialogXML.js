@@ -181,6 +181,36 @@ function accept()
         SaveData.saveAndCloseXML(scriptFolder)
 }
 
+// TODO: make the max resolution 2880x2880 in versions lower than Flash CS4
+
+function updateDimensions()
+{
+    var dim = fl.xmlui.get("imgDims");
+    var enabled = (dim === "custom");
+    
+    fl.xmlui.setEnabled("cusWid", enabled);
+    fl.xmlui.setEnabled("cusHei", enabled);
+    
+    if (dim === "auto")
+    {
+        fl.xmlui.set("cusWid", "auto");
+        fl.xmlui.set("cusHei", "auto");
+    }
+    else if (dim.indexOf("x") != -1)
+    {
+        var parts = dim.split("x");
+        fl.xmlui.set("cusWid", parts[0]);
+        fl.xmlui.set("cusHei", parts[1]);
+    }
+    else
+    {
+        if (fl.xmlui.get("cusWid") == "auto")
+             fl.xmlui.set("cusWid", "8192");
+        if (fl.xmlui.get("cusHei") == "auto")
+            fl.xmlui.set("cusHei", "8192");
+    }
+}
+
 function saveAndClose()
 {
     var save = [];
