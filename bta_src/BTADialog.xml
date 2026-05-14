@@ -32,7 +32,7 @@
 							<row>
 								<label value="Image dimensions:" align="right"/>
 								<hbox>
-								<menulist id="imgDims" onchange="updateDimensions()" oncreate="updateDimensions(); createImageDimensions();">
+								<menulist id="imgDims" onchange="updateDimensions()" oncreate="updateDimensions();">
 									<menupop>
 										<menuitem label="Automatic Size" value="auto"/>
 										<menuitem label="Custom Size" value="custom"/>
