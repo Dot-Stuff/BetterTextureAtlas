@@ -452,7 +452,7 @@ function exportAtlas(symbolNames)
 	TEMP_TIMELINE.currentLayer = 0;
 
 	var i = 0;
-	while (i < frameQueue.length)
+	while (i < TEMP_TIMELINE.frameCount)
 	{
 		var elemIndices = frameQueue[i];
 		var matrix = cachedMatrices[i];
@@ -468,20 +468,23 @@ function exportAtlas(symbolNames)
 
 		var selection = new Array();
 		var frameFilters = new Array();
+		var foundFrameFilters = new Array();
 
 		// Remove frame filters (only from Animate 2020 upwards)
 		if (flversion >= 20)
 		{
-			var foundFilters = getFrameFilters(TEMP_LAYER, i);
-			if (foundFilters.length > 0) {
+			foundFrameFilters = getFrameFilters(TEMP_LAYER, i);
+			if (TEMP_LAYER.setBlendModeAtFrame != null)
+				TEMP_LAYER.setBlendModeAtFrame(i, "normal");
+			if (foundFrameFilters.length > 0) {
 				if (!bakedFilters) {
 					TEMP_LAYER.setFiltersAtFrame(i, new Array(0));
 				}
 				else if (frame.elements.length == 1 && frame.elements[0].symbolType == "movie clip") {
 					var applyFilters = new Array();
 					var fi = 0;
-					while (fi < foundFilters.length) {
-						var filter = foundFilters[fi++];
+					while (fi < foundFrameFilters.length) {
+						var filter = foundFrameFilters[fi++];
 						if (filter.name == "blurFilter")
 							frameFilters.push(filter)
 						else
@@ -561,7 +564,6 @@ function exportAtlas(symbolNames)
 			doc.deleteSelection(); // TODO: this sometimes causes crashes on CS6 downwards, look into it
 		}
 
-
 		// make each limb a group so its easier to prepare it for export, normal shapes tend to corrupt easily
 		doc.selectNone();
 
@@ -582,16 +584,21 @@ function exportAtlas(symbolNames)
 		group.scaleX = scaleX;
 		group.scaleY = scaleY;
 
+		// group.width & group.height is innacurate in some cases
+		var groupBounds = doc.getSelectionRect();
+		var groupWidth = groupBounds.right - groupBounds.left;
+		var groupHeight = groupBounds.bottom - groupBounds.top;
+
 		// after the size is recalculated, make sure its pixel perfect
-		group.scaleX = (scaleX * Math.ceil(group.width) / group.width);
-		group.scaleY = (scaleY * Math.ceil(group.height) / group.height);
+		group.scaleX = (scaleX * Math.ceil(groupWidth) / groupWidth);
+		group.scaleY = (scaleY * Math.ceil(groupHeight) / groupHeight);
 
 		// make sure the element is inside the render bounds of the spritesheet exporter
 		// also helps a bit with float point accuracy
 		var selection = new Array();
 		selection[0] = group;
 		doc.selection = selection;
-		doc.setSelectionBounds({left: 0, top: 0, right: group.width, bottom: group.height});
+		doc.setSelectionBounds({left: 0, top: 0, right: groupWidth, bottom: groupHeight});
 
 		doc.selectNone();
 
@@ -991,7 +998,9 @@ function exportSpritemap(id, exportPath, smData, index)
 
 	FLfile.write(smPath + ".json", smJson.join(""));
 
-	lib.deleteItem(id);
+	// delete spritemap temp
+	// i usually turn this off when debugging shit
+	//lib.deleteItem(id);
 }
 
 function makeSpritemap() {
@@ -1188,34 +1197,50 @@ function getFlashVersionName() {
     return "fl" + String(flversion);
 }
 
+var filteredFrameIndices;
+
 function pushFilteredFrame(timeline, layerIndex, frameIndex, frameFilters)
 {
 	var filteredFrame = timeline.layers[layerIndex].frames[frameIndex];
 	bakedAFilter = true;
 
-	if (filteredFrame.startFrame == frameIndex) {
+	if (filteredFrameIndices == null)
+		filteredFrameIndices = {};
+
+	if (filteredFrame.startFrame == frameIndex)
+	{
+		filteredFrameIndices[filteredFrame] = smIndex;
+		var endFrameIndex = filteredFrame.startFrame + filteredFrame.duration - 1;
+		var duration = (endFrameIndex - frameIndex) + 1;
+		
 		var elementIndices = [];
 		var elementsLength = filteredFrame.elements.length;
 		var i = 0;
 		while (i < elementsLength) {
 			elementIndices.push(i++);
 		}
-		pushElementsFromFrame(timeline, layerIndex, frameIndex, elementIndices, filteredFrame.startFrame + filteredFrame.duration);
+		pushElementsFromFrame(timeline, layerIndex, frameIndex, elementIndices, endFrameIndex);
+		smIndex += duration;
 	}
 
-	// TODO: add blur filter compression
+	// fake smIndex
+	var smIndexCopy = filteredFrameIndices[filteredFrame] + (frameIndex - filteredFrame.startFrame);
 
-	var bounds = getFrameBounds(TEMP_TIMELINE, smIndex);
-	//expandBounds(bounds, frameFilters);
-	
-	var atlasMatrix = makeMatrix(1, 0, 0, 1, bounds.left, bounds.top);
-	//resizeInstanceMatrix(curSymbol, atlasMatrix); // TODO: add this shit too
+	// would prefer using getFrameBounds but the dimensions of elements are fucked when frame filtered
+	TEMP_TIMELINE.currentFrame = smIndexCopy;
+	doc.selectNone();
+	doc.selectAll();
+	var bounds = doc.getSelectionRect();
+	expandBounds(bounds, frameFilters);
+	doc.selectNone();
+
+	// compress the filter if necessary
+	var filtersScale = getFiltersScale(frameFilters);
+	var atlasMatrix = makeMatrix(filtersScale.x, 0, 0, filtersScale.y, bounds.left, bounds.top);
 	
 	push("{");
-	parseAtlasInstance(atlasMatrix, smIndex);
+	parseAtlasInstance(atlasMatrix, smIndexCopy);
 	push("}");
-	
-	smIndex++;
 }
 
 function pushOneFrameSymbol(symbolInstance, timeline, layerIndex, frameIndex, elemIndex)
@@ -2117,12 +2142,15 @@ function getObjectSpaceBounds(element) {
 	}
 }
 
-function getElementRect(element, overrideFilters, includeFilters)
+function getElementRect(element, overrideFilters, includeFilters, frameIndexOffset)
 {
 	var minX = Number.POSITIVE_INFINITY;
 	var minY = Number.POSITIVE_INFINITY;
 	var maxX = Number.NEGATIVE_INFINITY;
 	var maxY = Number.NEGATIVE_INFINITY;
+
+	if (frameIndexOffset == null)
+		frameIndexOffset = 0;
 
 	if (includeFilters == null)
 		includeFilters = true;
@@ -2164,6 +2192,7 @@ function getElementRect(element, overrideFilters, includeFilters)
 				case "symbol":
 					var timeline = element.libraryItem.timeline;
 					var frameIndex = (element.firstFrame != undefined) ? element.firstFrame : 0;
+					frameIndex += frameIndexOffset;
 
 					var cachedRect = cachedTimelineRects[timeline.name];
 					if (cachedRect != null && cachedRect[frameIndex] != null)
@@ -2283,8 +2312,10 @@ function getMatrixScale(width, height)
 
 function parseAtlasInstance(matrix, index, skipPush)
 {
-	if (skipPush == null)
+	if (!skipPush)
+	{
 		cachedMatrices[index] = matrix;
+	}
 	
 	jsonHeader(key("ATLAS_SPRITE_instance", "ASI"));
 	jsonVar(key("Matrix", "MX"), parseMatrix(matrix, true));
@@ -2325,8 +2356,49 @@ function pushElementsFromFrame(timeline, layerIndex, frameIndex, elementIndices,
 	var elemFrame = TEMP_LAYER.frames[smIndex];
 	if (elemFrame.tweenType != "none")
 		elemFrame.tweenType = "none";
-	
-	frameQueue.push(elementIndices);
+
+	var duration = (lastFrameIndex - frameIndex) + 1;
+	if (lastFrameIndex != frameIndex) {
+		TEMP_TIMELINE.convertToKeyframes(smIndex, smIndex + duration);
+	}
+
+	var i = 0;
+	while (i < duration)
+	{
+		frameQueue.push(elementIndices);
+		i++;
+	}
+}
+
+function getFiltersScale(filters)
+{
+	if (!bakedFilters)
+		return {x: 1, y: 1};
+
+	var scaleXMult = 1;
+	var scaleYMult = 1;
+
+	// Scaling down blurry symbols so antialiasing can do the dirty work later
+	forEachFilter(filters, function (filter) {
+		switch (filter.name) {
+			case "blurFilter":
+				
+				var qualityScale = 0.25;
+				if (filter.quality == "medium") qualityScale = 0.375;
+				if (filter.quality == "low") 	qualityScale = 0.50;
+				scaleXMult *= (filter.blurX / (30 * qualityScale));
+				scaleYMult *= (filter.blurY / (30 * qualityScale));
+			break;
+		}
+	});
+
+	if (scaleXMult < 1)
+		scaleXMult = 1 / scaleXMult;
+
+	if (scaleYMult < 1)
+		scaleYMult = 1 / scaleYMult;
+
+	return {x: max(scaleXMult, 1), y: max(scaleYMult, 1)};
 }
 
 function pushElementSpritemap(timeline, layerIndex, frameIndex, elementIndices)
@@ -2366,24 +2438,9 @@ function pushElementSpritemap(timeline, layerIndex, frameIndex, elementIndices)
 
 	if (bakedFilters)
 	{
-		var scaleXMult = 1;
-		var scaleYMult = 1;
-	
-		// Scaling down blurry symbols so antialiasing can do the dirty work later
-		forEachFilter(elementFilters, function (filter) {
-			switch (filter.name) {
-				case "blurFilter":
-					var qualityScale = 0.25;
-					if (filter.quality == "medium") qualityScale = 0.375;
-					if (filter.quality == "low") 	qualityScale = 0.50;
-					scaleXMult *= (filter.blurX / (30 * qualityScale));
-					scaleYMult *= (filter.blurY / (30 * qualityScale));
-				break;
-			}
-		});
-	
-		matScaleX *= max(scaleXMult, 1);
-		matScaleY *= max(scaleYMult, 1);
+		var filtersScale = getFiltersScale(elementFilters);
+		matScaleX *= filtersScale.x;
+		matScaleY *= filtersScale.y;
 	}
 
 	var atlasMatrix = makeMatrix(matScaleX, 0, 0, matScaleY, rect.left, rect.top);
@@ -2439,46 +2496,8 @@ function forEachFilter(filters, callback)
 	}
 }
 
-function getFrameBounds(timeline, frameIndex)
+function getFrameBounds(timeline, frameIndex, layerIndex)
 {
-	// For versions where its allowed, timeline.getBounds is generally faster than our own function
-	// TODO: may have to change in the future due to filter bounds tho
-	if (flversion >= 15)
-	{
-		// The timeline.getBounds function will take guides and guided layers, even tho we dont want them
-		// But it does offer a way to exclude hidden layers, so with some visibility fuckery we can select what layers we want to be exported
-		var layerVisibility = [];
-		var l = 0;
-		while (l < timeline.layers.length) {
-			var layer = timeline.layers[l++];
-			layerVisibility.push(layer.visible);
-			if (layer.layerType != "folder")
-				layer.visible = isValidLayer(layer);
-		}
-
-		var bounds = timeline.getBounds(frameIndex + 1, false);
-		bounds = (bounds === 0) ? {left: 0, top: 0, right: 0, bottom: 0} : bounds;
-
-		l = 0;
-		while (l < timeline.layers.length) {
-			var layer = timeline.layers[l];
-			if (layer.layerType != "folder")
-				layer.visible = layerVisibility[l];
-			l++;
-		}
-
-		return bounds;
-	}
-
-	if (timeline.layerCount == 1) {
-		var layer = timeline.layers[0];
-		var frame = layer.frames[frameIndex];
-		if (frame.elements.length == 1)
-		{
-			return getObjectSpaceBounds(frame.elements[0]);
-		}
-	}
-
 	var minX = Number.POSITIVE_INFINITY;
 	var minY = Number.POSITIVE_INFINITY;
 	var maxX = Number.NEGATIVE_INFINITY;
@@ -2493,15 +2512,28 @@ function getFrameBounds(timeline, frameIndex)
 		if (frameIndex > layer.frameCount - 1)
 			continue;
 
+		if (layerIndex != null) {
+			if (layerIndex != (l - 1))
+				continue;
+		}
+
+		switch (layer.layerType) {
+			case "folder": case "guide": case "guided":
+			continue; break;
+		}
+
+		var frame = layer.frames[frameIndex];
+		var frameOffset = frameIndex - frame.startFrame;
+
 		var e = 0;
-		var elems = layer.frames[frameIndex].elements;
+		var elems = frame.elements;
 		
 		while (e < elems.length)
 		{
 			var elem = elems[e++];
 			foundElements++;
 
-			var rect = getElementRect(elem);
+			var rect = getElementRect(elem, null, null, frameOffset);
 			minX = min(minX, rect.left);
 			minY = min(minY, rect.top);
 			maxX = max(maxX, rect.right);
@@ -3019,8 +3051,8 @@ function parseFilters(filters)
 			break;
 			case "bevelFilter":
 				jsonStr(n, key("bevelFilter", "BF"));
-				jsonVar(key("blurX", "BLX"), filter.blurX);
-				jsonVar(key("blurY", "BLY"), filter.blurY);
+				jsonVar(key("blurX", "BLX"), rValue(filter.blurX));
+				jsonVar(key("blurY", "BLY"), rValue(filter.blurY));
 				jsonVar(key("distance", "D"), filter.distance);
 				jsonVar(key("knockout", "KK"), filter.knockout);
 				jsonStr(key("type", "TP"), filter.type);
@@ -3032,14 +3064,14 @@ function parseFilters(filters)
 			break;
 			case "blurFilter":
 				jsonStr(n, key("blurFilter", "BLF"));
-				jsonVar(key("blurX", "BLX"), filter.blurX);
-				jsonVar(key("blurY", "BLY"), filter.blurY);
+				jsonVar(key("blurX", "BLX"), rValue(filter.blurX));
+				jsonVar(key("blurY", "BLY"), rValue(filter.blurY));
 				jsonVarEnd(key("quality", "Q"), parseQuality(filter.quality));
 			break;
 			case "dropShadowFilter":
 				jsonStr(n, key("dropShadowFilter", "DSF"));
-				jsonVar(key("blurX", "BLX"), filter.blurX);
-				jsonVar(key("blurY", "BLY"), filter.blurY);
+				jsonVar(key("blurX", "BLX"), rValue(filter.blurX));
+				jsonVar(key("blurY", "BLY"), rValue(filter.blurY));
 				jsonVar(key("distance", "D"), filter.distance);
 				jsonVar(key("knockout", "KK"), filter.knockout);
 				jsonVar(key("inner", "IN"), filter.inner);
@@ -3051,8 +3083,8 @@ function parseFilters(filters)
 			break;
 			case "glowFilter":
 				jsonStr(n, key("glowFilter", "GF"));
-				jsonVar(key("blurX", "BLX"), filter.blurX);
-				jsonVar(key("blurY", "BLY"), filter.blurY);
+				jsonVar(key("blurX", "BLX"), rValue(filter.blurX));
+				jsonVar(key("blurY", "BLY"), rValue(filter.blurY));
 				jsonVar(key("inner", "IN"), filter.inner);
 				jsonVar(key("knockout", "KK"), filter.knockout);
 				jsonVar(key("strength", "STR"), filter.strength);
@@ -3061,8 +3093,8 @@ function parseFilters(filters)
 			break;
 			case "gradientBevelFilter":
 				jsonStr(n, key("gradientBevelFilter", "GBF"));
-				jsonVar(key("blurX", "BLX"), filter.blurX);
-				jsonVar(key("blurY", "BLY"), filter.blurY);
+				jsonVar(key("blurX", "BLX"), rValue(filter.blurX));
+				jsonVar(key("blurY", "BLY"), rValue(filter.blurY));
 				jsonVar(key("distance", "D"), filter.distance);
 				jsonVar(key("knockout", "KK"), filter.knockout);
 				jsonStr(key("type", "TP"), filter.type);
@@ -3073,8 +3105,8 @@ function parseFilters(filters)
 			break;
 			case "gradientGlowFilter":
 				jsonStr(n, key("gradientGlowFilter", "GGF"));
-				jsonVar(key("blurX", "BLX"), filter.blurX);
-				jsonVar(key("blurY", "BLY"), filter.blurY);
+				jsonVar(key("blurX", "BLX"), rValue(filter.blurX));
+				jsonVar(key("blurY", "BLY"), rValue(filter.blurY));
 				jsonVar(key("inner", "IN"), filter.inner);
 				jsonVar(key("knockout", "KK"), filter.knockout);
 				jsonVar(key("strength", "STR"), filter.strength);
