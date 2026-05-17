@@ -452,7 +452,7 @@ function exportAtlas(symbolNames)
 	TEMP_TIMELINE.currentLayer = 0;
 
 	var i = 0;
-	while (i < TEMP_TIMELINE.frameCount)
+	while (i < frameQueue.length)
 	{
 		var elemIndices = frameQueue[i];
 		var matrix = cachedMatrices[i];
@@ -1000,7 +1000,7 @@ function exportSpritemap(id, exportPath, smData, index)
 
 	// delete spritemap temp
 	// i usually turn this off when debugging shit
-	//lib.deleteItem(id);
+	lib.deleteItem(id);
 }
 
 function makeSpritemap() {
