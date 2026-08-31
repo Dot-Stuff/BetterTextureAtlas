@@ -1002,7 +1002,7 @@ function pushFilteredFrame(timeline, layerIndex, frameIndex, frameFilters)
 	smIndex++;
 }
 
-function pushOneFrameSymbol(symbolInstance, timeline, layerIndex, frameIndex, elemIndex)
+function pushOneFrameSymbol(symbolInstance, timeline, layerIndex, frameIndex, elemIndex, shapeGroupIndex)
 {
 	var item = symbolInstance.libraryItem;
 	var name = item.name;
@@ -1012,7 +1012,20 @@ function pushOneFrameSymbol(symbolInstance, timeline, layerIndex, frameIndex, el
 
 	oneFrameSymbols[name] = smIndex;
 	pushElementsFromFrame(timeline, layerIndex, frameIndex, [elemIndex]);
-	cleanElement(TEMP_LAYER.frames[smIndex].elements[elemIndex]);
+
+	// break apart the source shape group
+	if (shapeGroupIndex != null) {
+		var shapeGroup = TEMP_LAYER.frames[smIndex].elements[shapeGroupIndex];
+		doc.selectNone();
+		doc.selection = [shapeGroup];
+		doc.breakApart();
+	}
+	else {
+		shapeGroupIndex = 0;
+	}
+
+	var element = TEMP_LAYER.frames[smIndex].elements[shapeGroupIndex+elemIndex];
+	cleanElement(element);
 	smIndex++;
 }
 
@@ -1364,7 +1377,7 @@ function parseFrames(frames, layerIndex, timeline)
 			}
 
 			curFrameMatrix = (hasRig) ? layer.getRigMatrixAtFrame(f) : null;
-			parseElements(frame.elements, f, layerIndex, timeline, frameFilters);
+			parseElements(frame.elements, f, layerIndex, timeline, frameFilters, null);
 			push('},');
 		}
 		f++;
@@ -1530,7 +1543,7 @@ function setupBakedTween(frame, frameIndex)
 	}
 }
 
-function parseElements(elements, frameIndex, layerIndex, timeline, frameFilters)
+function parseElements(elements, frameIndex, layerIndex, timeline, frameFilters, parentShapeGroup)
 {
 	jsonArray(key("elements", "E"));
 
@@ -1612,7 +1625,7 @@ function parseElements(elements, frameIndex, layerIndex, timeline, frameFilters)
 					{
 						if (isOneFrame(element.libraryItem.timeline) && animType == "none")
 						{
-							pushOneFrameSymbol(element, timeline, layerIndex, frameIndex, e);
+							pushOneFrameSymbol(element, timeline, layerIndex, frameIndex, e, parentShapeGroup);
 						}
 
 						parseSymbolInstance(element);
@@ -1674,7 +1687,7 @@ function parseElements(elements, frameIndex, layerIndex, timeline, frameFilters)
 function parseShapeGroup(timeline, layerIndex, frameIndex, elementIndex, group)
 {
 	initJson();
-	parseElements(group.members, frameIndex, layerIndex, timeline);
+	parseElements(group.members, frameIndex, layerIndex, timeline, null, elementIndex);
 
 	curJson[0] = "";
 	curJson[1] = "";
@@ -2075,6 +2088,7 @@ function pushElementsFromFrame(timeline, layerIndex, frameIndex, elementIndices,
 	}
 
 	TEMP_TIMELINE.pasteFrames(smIndex);
+	TEMP_TIMELINE.currentFrame = smIndex;
 
 	if (TEMP_LAYER.frames[smIndex].elements.length <= 0)
 		return;
