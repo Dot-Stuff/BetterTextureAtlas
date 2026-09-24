@@ -751,7 +751,7 @@ function exportSpritemap(id, exportPath, smData, index)
 		// TODO: check if this happens on all flash/animate versions
 		// only tested on Animate 22 so far
 		if (isRotated) {
-			var elem = smData.symbol.timeline.layers[0].frames[name].elements[0];
+			var elem = smData.symbol.timeline.layers[0].frames[name-smData.index].elements[0];
 			var diffW = Math.round(w - (elem.height));
 			if (Math.abs(diffW) <= 2)
 				x -= diffW;
@@ -1792,7 +1792,12 @@ function makeBitmapItem(name)
 	var bitmapMatrix = cachedMatrices[bitmapIndex];
 
 	if (compressBmps)
+	{
+		var scale = getMatrixScale(0, 0);
+		bitmapMatrix.a *= scale;
+		bitmapMatrix.d *= scale;
 		resizeInstanceMatrix(name, bitmapMatrix);
+	}
 
 	initJson();
 	push('{\n');
@@ -1822,6 +1827,7 @@ function parseBitmapInstance(bitmap, timeline, layerIndex, frameIndex, elemIndex
 	//item.compressionType = "lossless";
 
 	parseSymbolInstance(bitmap, name);
+
 	pushInstanceSize(name,
 		compressBmps ? min(Math.abs(bitmap.scaleX), 1) : 1,
 		compressBmps ? min(Math.abs(bitmap.scaleY), 1) : 1
