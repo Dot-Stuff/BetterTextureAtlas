@@ -1239,7 +1239,7 @@ function pushFilteredFrame(timeline, layerIndex, frameIndex, frameFilters)
 	var atlasMatrix = makeMatrix(filtersScale.x, 0, 0, filtersScale.y, bounds.left, bounds.top);
 	
 	push("{");
-	parseAtlasInstance(atlasMatrix, smIndexCopy);
+	parseAtlasInstance(atlasMatrix, smIndexCopy, false, true);
 	push("}");
 }
 
@@ -1370,7 +1370,7 @@ function parseSymbol(symbol)
 			var matrix = makeMatrix(scale, 0, 0, scale, bounds.left, bounds.top);
 
 			resizeInstanceMatrix(curSymbol, matrix);
-			parseAtlasInstance(matrix, index);
+			parseAtlasInstance(matrix, index, false, true);
 		}, timeline.frameCount);
 		return;
 	}
@@ -1647,7 +1647,7 @@ function parseShapeTween(keyframe, timeline, layerIndex)
 		makeBasicFrame(function () {
 			var mtx = makeMatrix(1, 0, 0, 1, left, top);
 			resizeInstanceMatrix(curSymbol, mtx);
-			parseAtlasInstance(mtx, smIndex);
+			parseAtlasInstance(mtx, smIndex, false, true);
 			smIndex++;
 		}, keyframe.startFrame + i, 1);
 		push((i < du - 1) ? ',\n' : ',');
@@ -2033,7 +2033,7 @@ function makeBitmapItem(name)
 	jsonArray(key("LAYERS", "L"));	
 
 	makeBasicLayer(function () {
-		parseAtlasInstance(bitmapMatrix, bitmapIndex, true);
+		parseAtlasInstance(bitmapMatrix, bitmapIndex, true, true);
 	}, 1);
 
 	if (inlineSym)
@@ -2096,7 +2096,7 @@ function parseShape(timeline, layerIndex, frameIndex, elementIndices)
 	var mtx = makeMatrix(scale, 0, 0, scale, shapeLeft, shapeTop);
 	resizeInstanceMatrix(curSymbol, mtx);
 	
-	parseAtlasInstance(mtx, atlasIndex);
+	parseAtlasInstance(mtx, atlasIndex, false, true);
 }
 
 function isShapeRectangle(shape)
@@ -2310,7 +2310,7 @@ function getMatrixScale(width, height)
 	return mxScale;
 }
 
-function parseAtlasInstance(matrix, index, skipPush)
+function parseAtlasInstance(matrix, index, skipPush, doMatrixConcat)
 {
 	if (!skipPush)
 	{
@@ -2318,7 +2318,7 @@ function parseAtlasInstance(matrix, index, skipPush)
 	}
 	
 	jsonHeader(key("ATLAS_SPRITE_instance", "ASI"));
-	jsonVar(key("Matrix", "MX"), parseMatrix(matrix, true));
+	jsonVar(key("Matrix", "MX"), parseMatrix(matrix, doMatrixConcat));
 	jsonStrEnd(key("name", "N"), index);
 	push('}');
 }
@@ -2460,7 +2460,7 @@ function pushElementSpritemap(timeline, layerIndex, frameIndex, elementIndices)
 
 	makeBasicLayer(function () {
 		resizeInstanceMatrix(curSymbol, atlasMatrix);
-		parseAtlasInstance(atlasMatrix, smIndex);
+		parseAtlasInstance(atlasMatrix, smIndex, false, false);
 		smIndex++;
 	}, 1);
 
